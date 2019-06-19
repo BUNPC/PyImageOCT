@@ -22,8 +22,10 @@ import numpy as np
 
 class FileGroupbox(QGroupBox):
 
-    def __init__(self, name, parent=None):
+    def __init__(self, name, controller):
         super().__init__(name)
+
+        self.controller = controller
 
         self.layout = QFormLayout()
 
@@ -36,16 +38,20 @@ class FileGroupbox(QGroupBox):
         now = time.strftime("%y-%m-%d")
         default = now + '-PyImageOCT-exp'
         self.entryExpName.setText(default)
+        self.entryExpName.editingFinished.connect(self.update)
 
         self.entryExpDir = QLineEdit()
         here = str(Path.home()) + '\\PyImageOCT\\Experiments\\' + default
         self.entryExpDir.setText(here)
+        self.entryExpDir.editingFinished.connect(self.update)
 
         self.entryFileSize = QComboBox()
         self.entryFileSize.addItems(["250 MB", "500 MB", "1 GB"])
+        self.entryFileSize.currentIndexChanged.connect(self.update)
 
         self.entryFileType = QComboBox()
         self.entryFileType.addItems([".npy", ".csv"])
+        self.entryFileType.currentIndexChanged.connect(self.update)
 
         self.layout.addRow(QLabel("Experiment name"), self.entryExpName)
         self.layout.addRow(QLabel("Experiment directory"), self.entryExpDir)
@@ -54,11 +60,21 @@ class FileGroupbox(QGroupBox):
 
         self.setLayout(self.layout)
 
+        self.update()
+
+    def update(self):
+
+        self.controller.experimentName = self.entryExpName.text()
+        self.controller.experimentDirectory = self.entryExpDir.text()
+        self.controller.maxFileSize = str(self.entryFileSize.currentText())
+        self.controller.fileType = str(self.entryFileType.currentText())
 
 class ControlGroupbox(QGroupBox):
 
-    def __init__(self,name,spectralRadarController):
+    def __init__(self, name, controller):
         super().__init__(name)
+
+        self.controller = controller
 
         self.layout = QGridLayout()
 
@@ -66,9 +82,9 @@ class ControlGroupbox(QGroupBox):
         self.acqButton = QPushButton('ACQUIRE')
         self.abortButton = QPushButton('STOP')
 
-        self.scanButton.clicked.connect(spectralRadarController.initScan)
-        self.acqButton.clicked.connect(spectralRadarController.initAcq)
-        self.abortButton.clicked.connect(spectralRadarController.abort)
+        self.scanButton.clicked.connect(self.controller.initScan)
+        self.acqButton.clicked.connect(self.controller.initAcq)
+        self.abortButton.clicked.connect(self.controller.abort)
 
         self.layout.addWidget(self.scanButton, 0, 0)
         self.layout.addWidget(self.acqButton, 0, 1)
@@ -84,7 +100,7 @@ class ControlGroupbox(QGroupBox):
         self.scanButton.setEnabled(True)
         self.acqButton.setEnabled(True)
 
-class RealTimePlot(PyQtG.PlotWidget):
+class plotWidget2D(PyQtG.PlotWidget):
 
     def __init__(self,type='curve',name=None):
 

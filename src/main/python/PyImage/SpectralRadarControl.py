@@ -4,16 +4,16 @@ from PyQt5.QtCore import QThread
 
 class FigureEight:
 
-    def __init__(self,display):
+    def __init__(self, plotWidget=None, scatterWidget=None, imageWidget=None, infoWidget=None):
 
-        self.display = display
+        self.plotWidget = plotWidget
         self.liveX = np.arange(1024)
         self.liveY = np.empty(1024)
 
     def initScan(self):
         print('Init scan')
         test = PyQtPlot2DThread()
-        test.start(self.display)
+        test.start(self.plotWidget)
 
     def initAcq(self):
         print('Init acq')
@@ -30,9 +30,9 @@ class PyQtPlot2DThread(QThread):
     def __del__(self):
         self.wait()
 
-    def start(self,display):
+    def start(self,plotWidget):
         for i in range(10000):
             liveX = np.arange(1024)
             liveY = np.random.randint(0, 2000, 1024)
-            display.plot2D(liveX, liveY)
+            plotWidget.plot2D(liveX, liveY)
 

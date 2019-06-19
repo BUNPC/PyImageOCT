@@ -68,20 +68,24 @@ class TabFigEight(QWidget):
         self.mainGrid = QGridLayout()
         self.setLayout(self.mainGrid)
 
-        #File I/O properties interface
-        self.file = Widgets.FileGroupbox('File')
-        self.mainGrid.addWidget(self.file,1,2)
-
-        #Real-time plot widget for display of data
-        self.plotSpectrum = Widgets.RealTimePlot(name="Raw Spectrum")
+        #Real-time plot widget for display of raw spectral data
+        self.plotSpectrum = Widgets.plotWidget2D(name="Raw Spectrum",type='curve')
         self.mainGrid.addWidget(self.plotSpectrum,1,1)
+
+        #Real-time scatter plot widget for display of scan pattern
+        self.plotSpectrum = Widgets.plotWidget2D(name="Scan Pattern",type='scatter')
+        self.mainGrid.addWidget(self.plotSpectrum,2,1)
 
         #Thorlabs SpectralRadar SDK is wrapped with PySpectralRadar module.
         #Interfaces corresponding to scanning modes are defined PyImage.SpectralRadarControl
         #All display widgets must be passed to the controller!
-        self.controller = SpectralRadarControl.FigureEight(self.plotSpectrum)
+        self.controller = SpectralRadarControl.FigureEight(plotWidget=self.plotSpectrum)
 
-        #Control GUI must be passed the controller define above
+        #File I/O properties interface
+        self.file = Widgets.FileGroupbox('File',self.controller)
+        self.mainGrid.addWidget(self.file,1,2)
+
+        #Control GUI must be passed the controller defined above in order to call its methods
         self.controlButtons = Widgets.ControlGroupbox('Control',self.controller)
         self.mainGrid.addWidget(self.controlButtons,2,2)
 
