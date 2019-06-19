@@ -1,7 +1,6 @@
 import numpy as np
 import numba
 
-@numba.jit
 def generateIdealFigureEightPositions(xsize, alinesPerX, rpt=1):
     '''
     Generates figure-8 scan pattern positions with orthogonal cross.
@@ -44,4 +43,4 @@ def generateIdealFigureEightPositions(xsize, alinesPerX, rpt=1):
         print(str(len(B1[0])) + ' points in each orthogonal cross...')
         print(str(len(X)) + ' total points.')
 
-        return posRpt, X, Y, b1, b2, N, D
+        return [posRpt, X, Y, b1, b2, N, D]

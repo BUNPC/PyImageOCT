@@ -1,8 +1,7 @@
 import PySpectralRadar as SpectralRadar
 import numpy as np
-import numba
 from PyQt5.QtCore import QThread
-from OCT import all
+from PyImage.OCT import *
 
 class FigureEight:
 
@@ -15,8 +14,8 @@ class FigureEight:
 
     def initScan(self):
         print('Init scan')
-        pos, X, Y = generateIdealFigureEightPositions
-        scatterWidget.plot(X,Y)
+        [pos, X, Y, b1, b2, N, D] = generateIdealFigureEightPositions(0.064,40,rpt=20)
+        self.scatterWidget.plot(X,Y)
         test = PyQtPlot2DThread()
         test.start(self.plotWidget)
 

@@ -120,11 +120,22 @@ class plotWidget2D(PyQtG.PlotWidget):
 
         self.addItem(self.item)
 
+        self.hold = False
+
+    def hold_on(self):
+
+        self.hold = True
+
+    def hold_off(self):
+
+        self.hold = False
+
     def plot(self,X,Y):
         '''
-        Overwrites content in PyQtGraph Item and replaces it with new X, Y
+        Plot
         '''
-        self.item.clear()
+        if not self.hold:
+            self.item.clear()
         self.item.setData(x=X,y=Y)
         QtGui.QApplication.processEvents()
 
