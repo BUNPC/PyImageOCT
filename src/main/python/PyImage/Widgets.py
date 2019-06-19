@@ -10,6 +10,7 @@ from PyQt5.QtWidgets import QPushButton
 from PyQt5.QtWidgets import QGroupBox
 from PyQt5.QtWidgets import QGridLayout
 from PyQt5.QtWidgets import QFormLayout
+from PyQt5.QtWidgets import QTextEdit
 
 import pyqtgraph as PyQtG
 from pyqtgraph.Qt import QtGui
@@ -20,19 +21,20 @@ from pathlib import Path
 
 import numpy as np
 
+from PyImage.OCT import *
+
 class FileGroupbox(QGroupBox):
 
-    def __init__(self, name, controller):
+    def __init__(self, name, controller, width=500):
         super().__init__(name)
 
         self.controller = controller
 
         self.layout = QFormLayout()
 
-        self.setFixedWidth(700)
+        self.setFixedWidth(width)
 
         self.formFile = QGroupBox("File")
-        self.fileLayout = QFormLayout()
 
         self.entryExpName = QLineEdit()
         now = time.strftime("%y-%m-%d")
@@ -92,17 +94,85 @@ class ControlGroupbox(QGroupBox):
 
         self.setLayout(self.layout)
 
-    def disable(self):
-        self.scanButton.setEnabled(False)
-        self.acqButton.setEnabled(False)
+    def disabled(self,bool):
+        self.scanButton.setEnabled(bool)
+        self.acqButton.setEnabled(bool)
 
-    def enable(self):
-        self.scanButton.setEnabled(True)
-        self.acqButton.setEnabled(True)
+
+class Fig8Groupbox(QGroupBox):
+
+    def __init__(self, name, controller, width=500):
+        super().__init__(name)
+
+        self.controller = controller
+
+        self.layout = QFormLayout()
+
+        self.setFixedWidth(width)
+
+        self.spinALinesPerX = QSpinBox()
+        self.spinALinesPerX.setRange(5,200)
+        self.spinALinesPerX.setValue(40)
+        self.spinALinesPerX.valueChanged.connect(self.update)
+
+        self.spinFig8Size = QDoubleSpinBox()
+        self.spinFig8Size.setRange(0.0001,3)
+        self.spinFig8Size.setValue(0.1)
+        self.spinFig8Size.valueChanged.connect(self.update)
+
+        self.spinFig8Total = QSpinBox()
+        self.spinFig8Total.setRange(1,5000)
+        self.spinFig8Total.setValue(500)
+        self.spinFig8Total.valueChanged.connect(self.update)
+
+        self.spinAcqTime = QSpinBox()
+        self.spinAcqTime.setRange(10,20000)
+        self.spinAcqTime.setValue(1000)
+        self.spinAcqTime.valueChanged.connect(self.update)
+
+        self.textDistance = QTextEdit()
+        self.textDistance.setReadOnly(True)
+        self.textDistance.setFixedHeight(24)
+
+        self.textTotal = QTextEdit()
+        self.textTotal.setReadOnly(True)
+        self.textTotal.setFixedHeight(24)
+
+        self.layout.addRow(QLabel("A-lines per B-scan"), self.spinALinesPerX)
+        self.layout.addRow(QLabel("Figure-8 width (mm)"), self.spinFig8Size)
+        self.layout.addRow(QLabel("Distance between adjacent A-scans (mm)"),self.textDistance)
+        self.layout.addRow(QLabel("Total A-scans in each figure-8"),self.textTotal)
+        self.layout.addRow(QLabel("Total Figure-8s to acquire"), self.spinFig8Total)
+        self.layout.addRow(QLabel("Total acquisition time"), self.spinAcqTime)
+
+        self.setLayout(self.layout)
+
+        self.update()
+
+    def update(self):
+
+        [self.controller.pos,
+         self.controller.X,
+         self.controller.Y,
+         self.controller.b1,
+         self.controller.b2,
+         self.controller.N,
+         self.controller.D] = generateIdealFigureEightPositions(self.spinFig8Size.value(),self.spinALinesPerX.value(),self.spinFig8Total.value())
+
+        self.textDistance.setText(str(self.controller.D))
+        self.textTotal.setText(str(self.controller.N))
+
+        self.controller.displayPattern()
+
+    def disabled(self,bool):
+        self.spinALinesPerX.setDisabled(bool)
+        self.spinFig8Size.setDisabled(bool)
+
+
 
 class plotWidget2D(PyQtG.PlotWidget):
 
-    def __init__(self,type='curve',name=None):
+    def __init__(self,type='curve',name=None, width=400):
 
         super().__init__(name=name)
 
@@ -113,6 +183,9 @@ class plotWidget2D(PyQtG.PlotWidget):
         else:
             raise Exception('Invalid type for PyQtGraph item. Only "curve" and "scatter" are supported.')
 
+        self.setFixedWidth(width)
+        self.setTitle(title=name)
+        self.showGrid(x=1,y=1)
         self.addItem(self.item)
 
     def plot(self,X,Y):

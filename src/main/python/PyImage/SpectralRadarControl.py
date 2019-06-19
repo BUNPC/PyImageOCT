@@ -12,31 +12,38 @@ class FigureEight:
         self.liveX = np.arange(1024)
         self.liveY = np.empty(1024)
 
+        self.__RUNNING__ = True
+
     def initScan(self):
         print('Init scan')
-        [pos, X, Y, b1, b2, N, D] = generateIdealFigureEightPositions(0.064,40,rpt=20)
-        self.scatterWidget.plot(X,Y)
-        test = PyQtPlot2DThread()
+        test = PyQtPlot2DThread(self)
         test.start(self.plotWidget)
+
+    def displayPattern(self):
+        self.scatterWidget.plot(self.X, self.Y)
 
     def initAcq(self):
         print('Init acq')
 
     def abort(self):
         print('Abort')
+        self.__RUNNING__ = False
 
 class PyQtPlot2DThread(QThread):
 
-    def __init__(self):
+    def __init__(self,controller):
 
         QThread.__init__(self)
+
+        self.controller = controller
 
     def __del__(self):
         self.wait()
 
     def start(self,plotWidget):
         for i in range(10000):
-            liveX = np.arange(1024)
-            liveY = np.random.randint(0, 2000, 1024)
-            plotWidget.plot(liveX, liveY)
+            while self.controller.__RUNNING__:
+                liveX = np.arange(1024)
+                liveY = np.random.randint(0, 2000, 1024)
+                plotWidget.plot(liveX, liveY)
 
