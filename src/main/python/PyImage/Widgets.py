@@ -116,11 +116,11 @@ class plotWidget2D(PyQtG.PlotWidget):
 
         else:
 
-            raise Exception('Invalid type for PyQtGraph item. "curve" and "scatter" are supported.')
+            raise Exception('Invalid type for PyQtGraph item. Only "curve" and "scatter" are supported.')
 
         self.addItem(self.item)
 
-    def plot2D(self,X,Y):
+    def plot(self,X,Y):
         '''
         Overwrites content in PyQtGraph Item and replaces it with new X, Y
         '''
