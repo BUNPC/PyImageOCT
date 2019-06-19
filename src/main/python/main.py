@@ -12,8 +12,6 @@ from PyQt5.QtWidgets import QGroupBox
 from PyQt5.QtWidgets import QGridLayout
 from PyQt5.QtWidgets import QFormLayout
 
-import pyqtgraph as PyQtG
-
 import time
 
 import sys
@@ -74,17 +72,18 @@ class TabFigEight(QWidget):
         self.file = Widgets.FileGroupbox('File')
         self.mainGrid.addWidget(self.file,1,2)
 
-        #Thorlabs SpectralRadar SDK is wrapped with PySpectralRadar module.
-        #Interfaces corresponding to scanning modes are in PyImage.SpectralRadarControl
-        self.srcontrol = SpectralRadarControl.FigureEight()
-
-        #Control GUI which is slave of SpectralRadarController defined above
-        self.control = Widgets.ControlGroupbox('Control',spectralRadarController=self.srcontrol)
-        self.mainGrid.addWidget(self.control,2,2)
-        
-        #PLOTS
-        self.plotSpectrum = PyQtG.PlotWidget(name="Spectral Scan")
+        #Real-time plot widget for display of data
+        self.plotSpectrum = Widgets.RealTimePlot(name="Raw Spectrum")
         self.mainGrid.addWidget(self.plotSpectrum,1,1)
+
+        #Thorlabs SpectralRadar SDK is wrapped with PySpectralRadar module.
+        #Interfaces corresponding to scanning modes are defined PyImage.SpectralRadarControl
+        #All display widgets must be passed to the controller!
+        self.controller = SpectralRadarControl.FigureEight(self.plotSpectrum)
+
+        #Control GUI must be passed the controller define above
+        self.controlButtons = Widgets.ControlGroupbox('Control',self.controller)
+        self.mainGrid.addWidget(self.controlButtons,2,2)
 
 #Qt main loop
 if __name__ == '__main__':

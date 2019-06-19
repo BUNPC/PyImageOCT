@@ -12,6 +12,7 @@ from PyQt5.QtWidgets import QGridLayout
 from PyQt5.QtWidgets import QFormLayout
 
 import pyqtgraph as PyQtG
+from pyqtgraph.Qt import QtGui
 
 import time
 
@@ -56,7 +57,7 @@ class FileGroupbox(QGroupBox):
 
 class ControlGroupbox(QGroupBox):
 
-    def __init__(self, name, spectralRadarController=None):
+    def __init__(self,name,spectralRadarController):
         super().__init__(name)
 
         self.layout = QGridLayout()
@@ -82,3 +83,33 @@ class ControlGroupbox(QGroupBox):
     def enable(self):
         self.scanButton.setEnabled(True)
         self.acqButton.setEnabled(True)
+
+class RealTimePlot(PyQtG.PlotWidget):
+
+    def __init__(self,type='curve',name=None):
+
+        super().__init__(name=name)
+
+        if type == 'curve':
+
+            self.item = PyQtG.PlotCurveItem()
+
+        elif type == 'scatter':
+
+            self.item = PyQtG.ScatterPlotItem()
+
+        else:
+
+            raise Exception('Invalid type for PyQtGraph item. "curve" and "scatter" are supported.')
+
+        self.addItem(self.item)
+
+    def plot2D(self,X,Y):
+        '''
+        Overwrites content in PyQtGraph Item and replaces it with new X, Y
+        '''
+        self.item.clear()
+        self.item.setData(x=X,y=Y)
+        QtGui.QApplication.processEvents()
+
+
