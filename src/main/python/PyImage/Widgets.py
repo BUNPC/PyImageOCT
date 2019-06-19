@@ -107,35 +107,19 @@ class plotWidget2D(PyQtG.PlotWidget):
         super().__init__(name=name)
 
         if type == 'curve':
-
             self.item = PyQtG.PlotCurveItem()
-
         elif type == 'scatter':
-
             self.item = PyQtG.ScatterPlotItem()
-
         else:
-
             raise Exception('Invalid type for PyQtGraph item. Only "curve" and "scatter" are supported.')
 
         self.addItem(self.item)
-
-        self.hold = False
-
-    def hold_on(self):
-
-        self.hold = True
-
-    def hold_off(self):
-
-        self.hold = False
 
     def plot(self,X,Y):
         '''
         Plot
         '''
-        if not self.hold:
-            self.item.clear()
+        self.item.clear()
         self.item.setData(x=X,y=Y)
         QtGui.QApplication.processEvents()
 
