@@ -6,6 +6,8 @@ import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 import collections
 import threading
+import numba
+from scipy.interpolate import interp1d as interp1
 
 from PySpectralRadar import *
 
@@ -80,14 +82,22 @@ print('----------------------------------\n')
 FALSE = BOOL(0)
 TRUE = BOOL(1)
 
-size = 0.95
-# ascans = 200
+size = .032
+N = 40
 repeats = 1
+intpDk = -0.19
+apod = np.hanning(2048)
+k = np.linspace(1-intpDk/2, 1+intpDk/2, 2048)
+lam = 1/k[::-1]
+interpIndices = np.linspace( min(lam), max(lam), 2048)
 
-fig8pos, X, Y = generateIdealFigureEightPositions(size,30,rpt=repeats)
+xsection1 = np.arange(16,56)
+xsection2 = np.arange(88,128)
+
+fig8pos, X, Y = generateIdealFigureEightPositions(size,N,rpt=repeats)
 
 scanPattern = createFreeformScanPattern(probe,fig8pos,len(X)*repeats,1,FALSE)
-rotateScanPattern(scanPattern,40.0)
+rotateScanPattern(scanPattern,30.0)
 
 print('\n----------------------------------')
 print('Created scan pattern: 10X figure-8.')
@@ -139,46 +149,55 @@ def AcqThread():
         cholder = np.empty(complexDim,dtype=np.complex64)
         copyComplexDataContent(complexDataHandle,cholder)
 
-        QUEUE.append(holder)
+        if (i % 9) == 0:
+            PREVIEW.append(holder)
 
         i -= 1
 
     stopMeasurement(dev)
 
 
-QUEUE = collections.deque()
+PREVIEW = collections.deque()
 
 fig = plt.figure()
 
 window = np.hanning(2048)
 
+# @numba.jit
+def process(raw):
+
+    proc = np.empty([1024,N],dtype=np.complex64)
+    fig8 = np.empty([2048,N],dtype=np.uint16)
+    flat = raw.flatten()
+
+    i = 0
+    for n in xsection1:
+        fig8[:,i] = flat[2048*n:2048*n+2048]
+        i += 1
+
+    dc = np.mean(fig8,axis=1)
+
+    for n in range(N):
+        corr = (fig8[:,n] - dc) * apod
+        proc[:,n] = np.fft.ifft(corr)[1024:2048].astype(np.complex64)
+
+    return proc
+
 def animate(i):
 
-    disp = np.zeros([1024,30],dtype=np.float32)
+    disp = np.zeros([1024,N],dtype=np.float32)
     plt.cla()
-    if len(QUEUE) > 0:
+    if len(PREVIEW) > 10:
 
-        latest = QUEUE.popleft()
+        latest = PREVIEW.popleft()
 
         if latest.size > 0:
 
-            fig8 = np.empty([2048,30],dtype=np.uint16)
+            bscan = process(latest)
 
-            raw = latest.flatten()
+            disp = 20*np.log10(abs(np.real(bscan)))
 
-            i = 0
-            for n in np.arange(16,46):
-                fig8[:,i] = raw[2048*n:2048*n+2048]
-                i += 1
-
-            bscan = np.empty([1024,30])
-
-            for n in range(30):
-                bscan[:,n] = 20*np.log10(abs(np.real(np.fft.ifft((fig8[:,n] - np.mean(fig8,axis=1))*window)[1024::])))
-
-            disp = bscan
-
-    return plt.imshow(disp,aspect=0.1)
+    return plt.imshow(disp,aspect=0.5,cmap='gray',origin='lower')
 
 
 
@@ -193,8 +212,6 @@ clearRawData(rawDataHandle)
 closeProcessing(proc)
 closeProbe(probe)
 closeDevice(dev)
-
-print(np.shape(QUEUE))
 
 print('\n----------------------------------')
 print('Cleared objects from memory.')
