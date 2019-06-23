@@ -12,7 +12,6 @@ class FigureEight:
         self._scanPatternSize = None
         self._scanPatternAlinesPerCross = None
         self._scanPatternTotalRepeats = None
-
         self._fileExperimentName = None
         self._fileExperimentDirectory = None
         self._fileMaxSize = None
@@ -33,8 +32,9 @@ class FigureEight:
         self._rawSpectrum = np.empty(1024)
         self._bScan = None
 
+        self._RAW = collections.deque()
+
         self.ACTIVE = True
-        self.RAW = collections.deque()
 
     def initScan(self):
 
@@ -50,7 +50,7 @@ class FigureEight:
         plotter.start()
 
     def displayPattern(self):
-        self.scatterWidget.plot(self.Y)
+        self.scatterWidget.plot(self.scanPatternY)
 
     def initAcq(self):
         print('Init acq')
@@ -76,7 +76,7 @@ class FigureEight:
          self.scanPatternB1,
          self.scanPatternB2,
          self.scanPatternN,
-         self.scanPatternD] = generateIdealFigureEightPositions(patternSize,aLinesPerCross,totalSize)
+         self.scanPatternD] = generateIdealFigureEightPositions(patternSize,aLinesPerCross,rpt=totalSize)
 
 class PyQtPlotThread(QThread):
 
@@ -90,8 +90,8 @@ class PyQtPlotThread(QThread):
 
     def start(self):
             while self.controller.ACTIVE:
-                if len(self.controller.RAW) > 5:
-                    Y = self.controller.RAW.popleft()
+                if len(self.controller._RAW) > 5:
+                    Y = self.controller._RAW.popleft()
                     self.plotWidget.plot(Y)
 
 class AcquisitionThread(QThread):
@@ -117,7 +117,7 @@ class Acquisition(QObject):
         thread_id = int(QThread.currentThreadId())  # cast to int() is necessary
         for i in range(5000):
             while not self.__abort:
-                self.controller.RAW.append(np.random.randint(0,100,1024))
+                self.controller._RAW.append(np.random.randint(0,100,1024))
 
     def abort(self):
         self.__abort = True

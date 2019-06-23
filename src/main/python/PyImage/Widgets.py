@@ -153,17 +153,22 @@ class Fig8Groupbox(QGroupBox):
 
     def update(self):
 
-        [self.controller.pos,
-         self.controller.X,
-         self.controller.Y,
-         self.controller.b1,
-         self.controller.b2,
-         self.controller.N,
-         self.controller.D] = generateIdealFigureEightPositions(self.spinFig8Size.value(),self.spinALinesPerX.value(),self.spinFig8Total.value())
+        [self.controller.scanPatternPositions,
+         self.controller.scanPatternX,
+         self.controller.scanPatternY,
+         self.controller.scanPatternB1,
+         self.controller.scanPatternB2,
+         self.controller.scanPatternN,
+         self.controller.scanPatternD] = generateIdealFigureEightPositions(self.spinFig8Size.value(),
+                                                                           self.spinALinesPerX.value(),
+                                                                           rpt=self.spinFig8Total.value())
+
+        self.controller.setScanPatternParams(self.spinFig8Size.value(),
+                                             self.spinALinesPerX.value(),
+                                             self.spinFig8Size.value())
 
         self.textDistance.setText(str(self.controller.D))
         self.textTotal.setText(str(self.controller.N))
-
         self.controller.displayPattern()
 
     def disabled(self,bool):
