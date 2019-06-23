@@ -153,22 +153,12 @@ class Fig8Groupbox(QGroupBox):
 
     def update(self):
 
-        [self.controller.scanPatternPositions,
-         self.controller.scanPatternX,
-         self.controller.scanPatternY,
-         self.controller.scanPatternB1,
-         self.controller.scanPatternB2,
-         self.controller.scanPatternN,
-         self.controller.scanPatternD] = generateIdealFigureEightPositions(self.spinFig8Size.value(),
-                                                                           self.spinALinesPerX.value(),
-                                                                           rpt=self.spinFig8Total.value())
-
         self.controller.setScanPatternParams(self.spinFig8Size.value(),
                                              self.spinALinesPerX.value(),
-                                             self.spinFig8Size.value())
+                                             self.spinFig8Total.value())
 
-        self.textDistance.setText(str(self.controller.D))
-        self.textTotal.setText(str(self.controller.N))
+        self.textDistance.setText(str(self.controller.scanPatternD))
+        self.textTotal.setText(str(self.controller.scanPatternN))
         self.controller.displayPattern()
 
     def disabled(self,bool):
@@ -188,15 +178,19 @@ class plotWidget2D(PyQtG.PlotWidget):
         else:
             raise Exception('Invalid type for PyQtGraph item. Only "curve" and "scatter" are supported.')
 
-        self.setFixedWidth(width)
         self.setTitle(title=name)
         self.X = xaxis
         self.showGrid(x=1,y=1)
         self.addItem(self.item)
 
-    def plot(self,Y):
+    def plot1D(self,Y):
         self.item.clear()
         self.item.setData(x=self.X,y=Y)
         QtGui.QApplication.processEvents()
+
+    def plot2D(self,X,Y):
+        self.item.clear()
+        self.item.setData(x=X,y=Y)
+        QtGui.QGuiApplication.processEvents()
 
 

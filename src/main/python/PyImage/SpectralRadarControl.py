@@ -50,7 +50,7 @@ class FigureEight:
         plotter.start()
 
     def displayPattern(self):
-        self.scatterWidget.plot(self.scanPatternY)
+        self.scatterWidget.plot2D(self.scanPatternX,self.scanPatternY)
 
     def initAcq(self):
         print('Init acq')
@@ -65,10 +65,10 @@ class FigureEight:
         self._fileMaxSize = maxSize
         self._fileType = fileType
 
-    def setScanPatternParams(self,aLinesPerCross,patternSize,totalSize):
+    def setScanPatternParams(self,patternSize,aLinesPerCross,repeats):
         self._scanPatternAlinesPerCross = aLinesPerCross
         self._scanPatternSize = patternSize
-        self._scanPatternTotalRepeats = totalSize
+        self._scanPatternTotalRepeats = repeats
 
         [self.scanPatternPositions,
          self.scanPatternX,
@@ -76,7 +76,7 @@ class FigureEight:
          self.scanPatternB1,
          self.scanPatternB2,
          self.scanPatternN,
-         self.scanPatternD] = generateIdealFigureEightPositions(patternSize,aLinesPerCross,rpt=totalSize)
+         self.scanPatternD] = generateIdealFigureEightPositions(patternSize,aLinesPerCross,rpt=repeats)
 
 class PyQtPlotThread(QThread):
 

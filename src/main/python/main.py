@@ -70,8 +70,8 @@ class TabFigEight(QWidget):
         self.mainGrid.addWidget(self.plotSpectrum,1,1,2,1)
 
         #Real-time scatter plot widget for display of scan pattern
-        self.plotPattern = Widgets.plotWidget2D(name="Scan Pattern",type='scatter')
-        self.mainGrid.addWidget(self.plotPattern,3,1,2,1)
+        self.plotPattern = Widgets.plotWidget2D(name="Scan Pattern Parameters",type='scatter')
+        self.mainGrid.addWidget(self.plotPattern,2,3,1,1)
 
         #Thorlabs SpectralRadar SDK is wrapped with PySpectralRadar module.
         #Interfaces corresponding to scanning modes are defined PyImage.SpectralRadarControl
@@ -86,7 +86,7 @@ class TabFigEight(QWidget):
 
         #Master scan/acquire/stop buttons
         self.controlButtons = Widgets.ControlGroupbox('Control',self.controller)
-        self.mainGrid.addWidget(self.controlButtons,5,1)
+        self.mainGrid.addWidget(self.controlButtons,4,1)
 
         #Fig 8 scan pattern parameters
         self.scanParameters = Widgets.Fig8Groupbox('Scan Pattern',self.controller)
