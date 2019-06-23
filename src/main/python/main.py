@@ -19,8 +19,6 @@ from PyQt5 import QtCore
 from PyImage import SpectralRadarControl
 from PyImage import Widgets
 
-QtInstance = QtCore.QCoreApplication.instance()
-
 #Something wrong with these-- intended to fix DPI scaling issues but they make it worse
 '''
 if hasattr(QtCore.Qt, 'AA_EnableHighDpiScaling'):
@@ -30,7 +28,9 @@ if hasattr(QtCore.Qt, 'AA_UseHighDpiPixmaps'):
     PyQt5.QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_UseHighDpiPixmaps, True)
 '''
 
-#Allows IPython kernal to recover from closing of app
+QtInstance = QtCore.QCoreApplication.instance()
+
+#Supposed to allow IPython kernal to recover from closing of app
 if QtInstance is None:
     QtInstance = QApplication(sys.argv)
 
@@ -90,7 +90,7 @@ class TabFigEight(QWidget):
 
         #Fig 8 scan pattern parameters
         self.scanParameters = Widgets.Fig8Groupbox('Scan Pattern',self.controller)
-        self.mainGrid.addWidget(self.scanParameters,2,2)
+        self.mainGrid.addWidget(self.scanParameters,2,2,1,1)
 
 #Qt main loop
 if __name__ == '__main__':

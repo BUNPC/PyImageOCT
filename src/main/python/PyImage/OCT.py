@@ -1,5 +1,4 @@
 import numpy as np
-import numba
 
 def generateIdealFigureEightPositions(xsize, alinesPerX, rpt=1):
     '''

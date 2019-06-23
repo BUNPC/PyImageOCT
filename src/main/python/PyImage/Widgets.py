@@ -32,7 +32,7 @@ class FileGroupbox(QGroupBox):
 
         self.layout = QFormLayout()
 
-        self.setFixedWidth(width)
+        # self.setFixedWidth(width)
 
         self.formFile = QGroupBox("File")
 
@@ -66,10 +66,12 @@ class FileGroupbox(QGroupBox):
 
     def update(self):
 
-        self.controller.experimentName = self.entryExpName.text()
-        self.controller.experimentDirectory = self.entryExpDir.text()
-        self.controller.maxFileSize = str(self.entryFileSize.currentText())
-        self.controller.fileType = str(self.entryFileType.currentText())
+        experimentName = self.entryExpName.text()
+        experimentDirectory = self.entryExpDir.text()
+        maxFileSize = str(self.entryFileSize.currentText())
+        fileType = str(self.entryFileType.currentText())
+
+        self.controller.setFileParams(experimentName,experimentDirectory,maxFileSize,fileType)
 
 class ControlGroupbox(QGroupBox):
 
@@ -108,7 +110,7 @@ class Fig8Groupbox(QGroupBox):
 
         self.layout = QFormLayout()
 
-        self.setFixedWidth(width)
+        # self.setFixedWidth(width)
 
         self.spinALinesPerX = QSpinBox()
         self.spinALinesPerX.setRange(5,200)
@@ -168,11 +170,9 @@ class Fig8Groupbox(QGroupBox):
         self.spinALinesPerX.setDisabled(bool)
         self.spinFig8Size.setDisabled(bool)
 
-
-
 class plotWidget2D(PyQtG.PlotWidget):
 
-    def __init__(self,type='curve',name=None, width=400):
+    def __init__(self,type='curve',name=None, xaxis=np.arange(1024), width=400):
 
         super().__init__(name=name)
 
@@ -185,15 +185,13 @@ class plotWidget2D(PyQtG.PlotWidget):
 
         self.setFixedWidth(width)
         self.setTitle(title=name)
+        self.X = xaxis
         self.showGrid(x=1,y=1)
         self.addItem(self.item)
 
-    def plot(self,X,Y):
-        '''
-        Plot
-        '''
+    def plot(self,Y):
         self.item.clear()
-        self.item.setData(x=X,y=Y)
+        self.item.setData(x=self.X,y=Y)
         QtGui.QApplication.processEvents()
 
 
