@@ -34,8 +34,6 @@ class FileGroupbox(QGroupBox):
 
         # self.setFixedWidth(width)
 
-        self.formFile = QGroupBox("File")
-
         self.entryExpName = QLineEdit()
         now = time.strftime("%y-%m-%d")
         default = now + '-PyImageOCT-exp'
@@ -72,6 +70,34 @@ class FileGroupbox(QGroupBox):
         fileType = str(self.entryFileType.currentText())
 
         self.controller.setFileParams(experimentName,experimentDirectory,maxFileSize,fileType)
+
+class ParamsGroupbox(QGroupBox):
+
+    def __init__(self, name, controller):
+        super().__init__(name)
+
+        self.controller = controller
+
+        self.layout = QFormLayout()
+
+        self.entryImagingRate = QComboBox()
+        self.entryImagingRate.addItems(["76 kHz","146 kHz"])
+        self.entryImagingRate.currentIndexChanged.connect(self.update)
+
+        self.entryConfig = QComboBox()
+        self.entryConfig.addItems(["10X"])
+        self.entryConfig.currentIndexChanged.connect(self.update)
+
+        self.layout.addRow(QLabel("Imaging rate"), self.entryImagingRate)
+        self.layout.addRow(QLabel("Objective configuration"), self.entryConfig)
+
+        self.setLayout(self.layout)
+
+    def update(self):
+
+        pass
+
+
 
 class ControlGroupbox(QGroupBox):
 

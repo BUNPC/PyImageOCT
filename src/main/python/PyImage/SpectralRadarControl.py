@@ -33,6 +33,7 @@ class FigureEight:
         self._bScan = None
 
         self._RAW = collections.deque()
+        self._PROC = collections.deque()
 
         self.ACTIVE = True
 

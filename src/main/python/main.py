@@ -67,11 +67,11 @@ class TabFigEight(QWidget):
 
         #Real-time plot widget for display of raw spectral data
         self.plotSpectrum = Widgets.plotWidget2D(name="Raw Spectrum",type='curve')
-        self.mainGrid.addWidget(self.plotSpectrum,1,1,2,1)
+        self.mainGrid.addWidget(self.plotSpectrum,3,1,2,1)
 
         #Real-time scatter plot widget for display of scan pattern
-        self.plotPattern = Widgets.plotWidget2D(name="Scan Pattern Parameters",type='scatter')
-        self.mainGrid.addWidget(self.plotPattern,2,3,1,1)
+        self.plotPattern = Widgets.plotWidget2D(name="Scan Pattern Preview",type='scatter')
+        self.mainGrid.addWidget(self.plotPattern,1,1,2,1)
 
         #Thorlabs SpectralRadar SDK is wrapped with PySpectralRadar module.
         #Interfaces corresponding to scanning modes are defined PyImage.SpectralRadarControl
@@ -84,13 +84,17 @@ class TabFigEight(QWidget):
         self.file = Widgets.FileGroupbox('File',self.controller)
         self.mainGrid.addWidget(self.file,1,2,1,2)
 
+        #Main OCT device settings
+        self.params = Widgets.ParamsGroupbox('OCT Imaging Parameters',self.controller)
+        self.mainGrid.addWidget(self.params,2,2,1,1)
+
         #Master scan/acquire/stop buttons
         self.controlButtons = Widgets.ControlGroupbox('Control',self.controller)
-        self.mainGrid.addWidget(self.controlButtons,4,1)
+        self.mainGrid.addWidget(self.controlButtons,5,1)
 
         #Fig 8 scan pattern parameters
         self.scanParameters = Widgets.Fig8Groupbox('Scan Pattern',self.controller)
-        self.mainGrid.addWidget(self.scanParameters,2,2,1,1)
+        self.mainGrid.addWidget(self.scanParameters,2,3,1,1)
 
 #Qt main loop
 if __name__ == '__main__':
