@@ -114,7 +114,7 @@ class Fig8Groupbox(QGroupBox):
 
         self.spinALinesPerX = QSpinBox()
         self.spinALinesPerX.setRange(5,200)
-        self.spinALinesPerX.setValue(40)
+        self.spinALinesPerX.setValue(10)
         self.spinALinesPerX.valueChanged.connect(self.update)
 
         self.spinFig8Size = QDoubleSpinBox()
@@ -137,11 +137,13 @@ class Fig8Groupbox(QGroupBox):
 
         self.textDistance = QTextEdit()
         self.textDistance.setReadOnly(True)
-        self.textDistance.setFixedHeight(24)
+        self.textDistance.setFixedHeight(30)
+        self.textDistance.setCursorWidth(0)
 
         self.textTotal = QTextEdit()
         self.textTotal.setReadOnly(True)
-        self.textTotal.setFixedHeight(24)
+        self.textTotal.setFixedHeight(30)
+        self.textTotal.setCursorWidth(0)
 
         self.layout.addRow(QLabel("A-lines per B-scan"), self.spinALinesPerX)
         self.layout.addRow(QLabel("Figure-8 width"), self.spinFig8Size)

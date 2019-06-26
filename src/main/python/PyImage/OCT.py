@@ -14,17 +14,17 @@ def generateIdealFigureEightPositions(xsize, alinesPerX, rpt=1):
              N: Total number of A-scans in the pattern
     '''
     if rpt > 0:
-        t = np.linspace(0, 2 * np.pi, 50, dtype=np.float32)
+        t = np.linspace(0, 2 * np.pi, 40, dtype=np.float32)
         cross = np.linspace(-xsize, xsize, alinesPerX)
         B1 = np.array([cross[::-1], cross[::-1]])
         B2 = np.array([cross, -cross])
         D = np.sqrt((B1[0][0] - B1[0][1]) ** 2 + (B1[1][0] - B1[1][1]) ** 2)
         x = 2 * xsize * np.cos(t)
         y = ((2 * xsize) / 1.7) * np.sin(2 * t)
-        x1 = x[x > xsize + 0.001 * xsize]
-        x2 = x[x < -xsize - 0.001 * xsize]
-        y1 = y[x > xsize + 0.001 * xsize]
-        y2 = y[x < -xsize - 0.001 * xsize]
+        x1 = x[x > xsize + 0.1 * xsize]
+        x2 = x[x < -xsize - 0.1 * xsize]
+        y1 = y[x > xsize + 0.1 * xsize]
+        y2 = y[x < -xsize - 0.1 * xsize]
         X = np.concatenate([x1, B1[0], x2, B2[0], x1])
         Y = np.concatenate([y1, B1[1], y2, B2[1], y1])
         b1 = np.concatenate([np.zeros(np.size(x1)), np.ones(alinesPerX),np.zeros(np.size(x2)),np.zeros(alinesPerX),np.zeros(np.size(x1))])
