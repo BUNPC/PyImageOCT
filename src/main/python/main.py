@@ -39,7 +39,7 @@ class Main(QTabWidget):
     At the highest level, the GUI consists of tabs which organize various scanning/acquisition modes, similar to the
     OCT Imaging Freeform SDK program developed in LabView
     '''
-    
+
     def __init__(self,parent=None):
 
         super().__init__(parent)
@@ -47,19 +47,19 @@ class Main(QTabWidget):
         self.tabFigEight = TabFigEight(parent=self)
 
         self.addTab(self.tabFigEight,'Figure-8 Motion Quantification')
-        
+
         self.windowTitle = 'PyOCT V.0.0.1'
         self.setWindowTitle(self.windowTitle)
-    
-        
+
+
 class TabFigEight(QWidget):
     '''
     Experimental scanning mode which uses figure-8 pattern to quickly measure 3D motion
     along two orthogonal B-scans.
     '''
-    
+
     def __init__(self,parent=None):
-        
+
         super().__init__(parent)
 
         self.mainGrid = QGridLayout()

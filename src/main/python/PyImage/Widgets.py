@@ -118,8 +118,11 @@ class Fig8Groupbox(QGroupBox):
         self.spinALinesPerX.valueChanged.connect(self.update)
 
         self.spinFig8Size = QDoubleSpinBox()
-        self.spinFig8Size.setRange(0.0001,3)
-        self.spinFig8Size.setValue(0.1)
+        self.spinFig8Size.setRange(0.00001,3)
+        self.spinFig8Size.setValue(0.01)
+        self.spinFig8Size.setSuffix(' mm')
+        self.spinFig8Size.setDecimals(5)
+        self.spinFig8Size.setSingleStep(0.00001)
         self.spinFig8Size.valueChanged.connect(self.update)
 
         self.spinFig8Total = QSpinBox()
@@ -141,7 +144,7 @@ class Fig8Groupbox(QGroupBox):
         self.textTotal.setFixedHeight(24)
 
         self.layout.addRow(QLabel("A-lines per B-scan"), self.spinALinesPerX)
-        self.layout.addRow(QLabel("Figure-8 width (mm)"), self.spinFig8Size)
+        self.layout.addRow(QLabel("Figure-8 width"), self.spinFig8Size)
         self.layout.addRow(QLabel("Distance between adjacent A-scans (mm)"),self.textDistance)
         self.layout.addRow(QLabel("Total A-scans in each figure-8"),self.textTotal)
         self.layout.addRow(QLabel("Total Figure-8s to acquire"), self.spinFig8Total)
@@ -157,7 +160,7 @@ class Fig8Groupbox(QGroupBox):
                                              self.spinALinesPerX.value(),
                                              self.spinFig8Total.value())
 
-        self.textDistance.setText(str(self.controller.scanPatternD))
+        self.textDistance.setText(str(self.controller.scanPatternD*10**6)[0:10]+' nm')
         self.textTotal.setText(str(self.controller.scanPatternN))
         self.controller.displayPattern()
 
