@@ -14,6 +14,7 @@ from PyQt5.QtWidgets import QTextEdit
 
 import pyqtgraph as PyQtG
 from pyqtgraph.Qt import QtGui
+from PyQt5 import QtCore
 
 import time
 
@@ -23,7 +24,7 @@ import numpy as np
 
 from PyImage.OCT import *
 
-class FileGroupbox(QGroupBox):
+class FileGroupBox(QGroupBox):
 
     def __init__(self, name, controller, width=500):
         super().__init__(name)
@@ -71,7 +72,8 @@ class FileGroupbox(QGroupBox):
 
         self.controller.setFileParams(experimentName,experimentDirectory,maxFileSize,fileType)
 
-class ParamsGroupbox(QGroupBox):
+
+class ParamsGroupBox(QGroupBox):
 
     def __init__(self, name, controller):
         super().__init__(name)
@@ -99,7 +101,7 @@ class ParamsGroupbox(QGroupBox):
 
 
 
-class ControlGroupbox(QGroupBox):
+class ControlGroupBox(QGroupBox):
 
     def __init__(self, name, controller):
         super().__init__(name)
@@ -127,7 +129,7 @@ class ControlGroupbox(QGroupBox):
         self.acqButton.setEnabled(bool)
 
 
-class Fig8Groupbox(QGroupBox):
+class Fig8GroupBox(QGroupBox):
 
     def __init__(self, name, controller, width=500):
         super().__init__(name)
@@ -163,13 +165,15 @@ class Fig8Groupbox(QGroupBox):
 
         self.textDistance = QTextEdit()
         self.textDistance.setReadOnly(True)
-        self.textDistance.setFixedHeight(30)
+        self.textDistance.setFixedHeight(24)
         self.textDistance.setCursorWidth(0)
+        self.textDistance.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
 
         self.textTotal = QTextEdit()
         self.textTotal.setReadOnly(True)
-        self.textTotal.setFixedHeight(30)
+        self.textTotal.setFixedHeight(24)
         self.textTotal.setCursorWidth(0)
+        self.textTotal.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
 
         self.layout.addRow(QLabel("A-lines per B-scan"), self.spinALinesPerX)
         self.layout.addRow(QLabel("Figure-8 width"), self.spinFig8Size)

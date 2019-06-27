@@ -65,35 +65,35 @@ class TabFigEight(QWidget):
         self.mainGrid = QGridLayout()
         self.setLayout(self.mainGrid)
 
-        #Real-time plot widget for display of raw spectral data
+        # Real-time plot widget for display of raw spectral data
         self.plotSpectrum = Widgets.plotWidget2D(name="Raw Spectrum",type='curve')
         self.mainGrid.addWidget(self.plotSpectrum,3,1,2,1)
 
-        #Real-time scatter plot widget for display of scan pattern
+        # Real-time scatter plot widget for display of scan pattern
         self.plotPattern = Widgets.plotWidget2D(name="Scan Pattern Preview",type='scatter')
         self.mainGrid.addWidget(self.plotPattern,1,1,2,1)
 
-        #Thorlabs SpectralRadar SDK is wrapped with PySpectralRadar module.
-        #Interfaces corresponding to scanning modes are defined PyImage.SpectralRadarControl
-        #All display widgets must be passed to the controller!
+        # Thorlabs SpectralRadar SDK is wrapped with PySpectralRadar module.
+        # Interfaces corresponding to scanning modes are defined PyImage.SpectralRadarControl
+        # All display widgets must be passed to the controller!
         self.controller = SpectralRadarControl.FigureEight(plotWidget=self.plotSpectrum,scatterWidget=self.plotPattern)
 
         # Control GUI must be passed the controller defined above in order to call its methods
 
-        #File I/O properties interface
-        self.file = Widgets.FileGroupbox('File',self.controller)
+        # File I/O properties interface
+        self.file = Widgets.FileGroupBox('File',self.controller)
         self.mainGrid.addWidget(self.file,1,2,1,2)
 
-        #Main OCT device settings
-        self.params = Widgets.ParamsGroupbox('OCT Imaging Parameters',self.controller)
+        # Main OCT device settings
+        self.params = Widgets.ParamsGroupBox('OCT Imaging Parameters',self.controller)
         self.mainGrid.addWidget(self.params,2,2,1,1)
 
-        #Master scan/acquire/stop buttons
-        self.controlButtons = Widgets.ControlGroupbox('Control',self.controller)
+        # Master scan/acquire/stop buttons
+        self.controlButtons = Widgets.ControlGroupBox('Control',self.controller)
         self.mainGrid.addWidget(self.controlButtons,5,1)
 
-        #Fig 8 scan pattern parameters
-        self.scanParameters = Widgets.Fig8Groupbox('Scan Pattern',self.controller)
+        # Fig 8 scan pattern parameters
+        self.scanParameters = Widgets.Fig8GroupBox('Scan Pattern',self.controller)
         self.mainGrid.addWidget(self.scanParameters,2,3,1,1)
 
 #Qt main loop

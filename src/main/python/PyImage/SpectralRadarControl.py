@@ -1,23 +1,32 @@
-import PySpectralRadar as SpectralRadar
+import PySpectralRadar
 import numpy as np
-import collections
+from queue import Queue
 from PyQt5.QtCore import QObject, QThread, pyqtSignal, pyqtSlot
 from PyImage.OCT import *
+
+TRUE = PySpectralRadar.TRUE
+FALSE = PySpectralRadar.FALSE
 
 class FigureEight:
 
     def __init__(self, plotWidget=None, scatterWidget=None, imageWidget=None, infoWidget=None):
 
-        #GUI Inputs (setters called by update() method of Widgets)
-        self._scanPatternSize = None
-        self._scanPatternAlinesPerCross = None
-        self._scanPatternTotalRepeats = None
+        # Arguments
+        self.plotWidget = plotWidget
+        self.scatterWidget = scatterWidget
+
+        # File params
         self._fileExperimentName = None
         self._fileExperimentDirectory = None
         self._fileMaxSize = None
         self._fileType = None
 
-        #Scan Pattern
+        # Scan pattern params
+        self._scanPatternSize = None
+        self._scanPatternAlinesPerCross = None
+        self._scanPatternTotalRepeats = None
+
+        # Scan geometry
         self.scanPatternPositions = None
         self.scanPatternX = None
         self.scanPatternY = None
@@ -26,16 +35,59 @@ class FigureEight:
         self.scanPatternN = None
         self.scanPatternD = None
 
-        self.plotWidget = plotWidget
-        self.scatterWidget = scatterWidget
+        # Device config
+        self._imagingRate = None
+        self._config = None
 
-        self._rawSpectrum = np.empty(1024)
-        self._bScan = None
+        self._active = False
 
-        self._RAW = collections.deque()
-        self._PROC = collections.deque()
+        self._RawQueue = Queue()
+        self._ProcQueue = Queue()
 
-        self.ACTIVE = True
+        # SpectralRadar handles
+        self._device = None
+        self._probe = 'Probe' #For offline testing purposes ONLY
+        self._proc = None
+        self._scanPattern = None
+        self._triggerType = None
+        self._triggerTimeout = None
+
+
+    def initializeSpectralRadar(self):
+        self._device = PySpectralRadar.initDevice()
+        self._probe = PySpectralRadar.initProbe(self._device,self._config)
+        self._proc = PySpectralRadar.createProcessingForDevice(self._device)
+
+        PySpectralRadar.setCameraPreset(self._device,self._probe,self._proc,0) # 0 is the main camera
+
+        self._triggerType = PySpectralRadar.Device_TriggerType.Trigger_FreeRunning # Default
+        self._triggerTimeout = 5 # Number from old labVIEW program
+        PySpectralRadar.setTriggerMode(self._device,self._triggerType)
+        PySpectralRadar.setTriggerTimeoutSec(self._device,self._triggerTimeout)
+
+    def getTriggerType(self):
+        return self._triggerType
+
+    def updateScanPattern(self):
+        self._scanPattern =  PySpectralRadar.createFreeformScanPattern(self._probe,self.scanPatternPositions,len(self.scanPatternX)*self._scanPatternTotalRepeats,1,FALSE)
+
+    def getScanPattern(self):
+       return self._scanPattern
+
+    def isActive(self):
+        return self._active
+
+    def activate(self):
+        self._active = True
+
+    def deactivate(self):
+        self._active = False
+
+    def getRawQueue(self):
+        return self._RawQueue
+
+    def getProcessingQueue(self):
+        return self._ProcQueue
 
     def initScan(self):
 
@@ -46,9 +98,6 @@ class FigureEight:
         acq.moveToThread(acquisitionThread)
         acquisitionThread.started.connect(acq.work)
         acquisitionThread.start()
-
-        plotter = PyQtPlotThread(self,self.plotWidget)
-        plotter.start()
 
     def displayPattern(self):
         self.scatterWidget.plot2D(self.scanPatternX,self.scanPatternY)
@@ -66,6 +115,10 @@ class FigureEight:
         self._fileMaxSize = maxSize
         self._fileType = fileType
 
+    def setDeviceParams(self,rate,config):
+        self._imagingRate = rate
+        self._config = config
+
     def setScanPatternParams(self,patternSize,aLinesPerCross,repeats):
         self._scanPatternAlinesPerCross = aLinesPerCross
         self._scanPatternSize = patternSize
@@ -79,24 +132,10 @@ class FigureEight:
          self.scanPatternN,
          self.scanPatternD] = generateIdealFigureEightPositions(patternSize,aLinesPerCross,rpt=repeats)
 
-class PyQtPlotThread(QThread):
-
-    def __init__(self,controller,plotWidget):
-        QThread.__init__(self)
-        self.controller = controller
-        self.plotWidget = plotWidget
-
-    def __del__(self):
-        self.wait()
-
-    def start(self):
-            while self.controller.ACTIVE:
-                if len(self.controller._RAW) > 5:
-                    Y = self.controller._RAW.popleft()
-                    self.plotWidget.plot(Y)
-
 class AcquisitionThread(QThread):
-
+    """
+    PySpectralRadar acquisition thread for use with PyQt5
+    """
     def __init__(self,controller):
         QThread.__init__(self)
         self.controller = controller
@@ -104,21 +143,26 @@ class AcquisitionThread(QThread):
     def __del__(self):
         self.wait()
 
+    def start(self, priority=None):
+        self.controller.initializeSpectralRadar()
+
+
 class Acquisition(QObject):
 
-    def __init__(self,controller,id: int):
+    def __init__(self,controller,id=0):
         super().__init__()
-        self.controller = controller
         self.__id = id
         self.__abort = False
+        self.controller = controller
+        self.rawQueue = controller.getRawQueue()
+        self.processingQueue = controller.getProcessingQueue()
+        self.scanPattern = controller.getScanPattern()
 
     @pyqtSlot()
     def work(self):
         thread_name = QThread.currentThread().objectName()
         thread_id = int(QThread.currentThreadId())  # cast to int() is necessary
-        for i in range(5000):
-            while not self.__abort:
-                self.controller._RAW.append(np.random.randint(0,100,1024))
+
 
     def abort(self):
         self.__abort = True
