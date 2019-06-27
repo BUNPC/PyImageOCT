@@ -69,6 +69,12 @@ class FigureEight:
 
         self.updateScanPattern()
 
+    def closeSpectralRadar(self):
+        PySpectralRadar.closeDevice(self._device)
+        PySpectralRadar.closeProcessing(self._proc)
+        PySpectralRadar.closeProbe(self._probe)
+        PySpectralRadar.clearScanPattern(self._scanPattern)
+
     def startMeasurement(self):
         PySpectralRadar.startMeasurement(self._device,self._scanPattern,self._acquisitionType)
 
@@ -103,8 +109,10 @@ class FigureEight:
     def initScan(self):
 
         print('Init scan')
-        acquisitionThread = AcquisitionThread(self)
 
+        self.active = True
+
+        acquisitionThread = AcquisitionThread(self)
         acq = Acquisition(self,0)
         acq.moveToThread(acquisitionThread)
         acquisitionThread.started.connect(acq.work)
@@ -118,6 +126,7 @@ class FigureEight:
 
     def abort(self):
         print('Abort')
+        self.abortSpectralRadar()
         self.active = False
 
     def setFileParams(self,experimentDirectory,experimentName,maxSize,fileType):
@@ -150,13 +159,10 @@ class AcquisitionThread(QThread):
     def __init__(self,controller):
         QThread.__init__(self)
         self.controller = controller
+        self.controller.initializeSpectralRadar()
 
     def __del__(self):
         self.wait()
-
-    def start(self, priority=None):
-        self.controller.initializeSpectralRadar()
-
 
 class Acquisition(QObject):
 
@@ -167,16 +173,23 @@ class Acquisition(QObject):
         self.controller = controller
         self.rawQueue = controller.getRawQueue()
         self.processingQueue = controller.getProcessingQueue()
-        print('Acquisition loop instantiated')
 
     @pyqtSlot()
     def work(self):
-        thread_name = QThread.currentThread().objectName()
-        thread_id = int(QThread.currentThreadId())  # cast to int() is necessary
 
-        self.controller.startMeasurement()
-        rawData = PySpectralRadar.createRawData
+        while self.controller.active:
 
+            thread_name = QThread.currentThread().objectName()
+            thread_id = int(QThread.currentThreadId())  # cast to int() is necessary
+
+            self.controller.startMeasurement()
+            rawDataHandle = PySpectralRadar.createRawData()
+            self.controller.getRawData(rawDataHandle)
+            dim = PySpectralRadar.getRawDataShape(rawDataHandle)
+            temp = np.array(dim,dtype=np.uint16)
+            self.rawQueue.put(temp)
+            PySpectralRadar.copyRawDataContent(rawDataHandle,temp)
+            PySpectralRadar.clearRawData(rawDataHandle) # Might nix queued data, not sure
 
     def abort(self):
         self.__abort = True
