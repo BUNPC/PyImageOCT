@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def generateIdealFigureEightPositions(xsize, alinesPerX, rpt=1, alinesPerFlyback=20):
+def generateIdealFigureEightPositions(xsize, alinesPerX, rpt=1, flyback=20):
     '''
     Generates figure-8 scan pattern positions with orthogonal cross.
     :param xdistance: Distance between adjacent scans in perpendicular B-scans
@@ -15,12 +15,12 @@ def generateIdealFigureEightPositions(xsize, alinesPerX, rpt=1, alinesPerFlyback
              N: Total number of A-scans in the pattern
     '''
     if rpt > 0:
-        t = np.linspace(0, 2 * np.pi, alinesPerFlyback, dtype=np.float32)
+        t = np.linspace(0, 2 * np.pi, flyback, dtype=np.float32)
 
         cross = np.linspace(-xsize, xsize, alinesPerX)
 
-        fb1 = np.linspace(-np.pi / 3.2, np.pi / 3.2, alinesPerFlyback, dtype=np.float32)
-        fb2 = np.linspace(-np.pi / 3.2 + np.pi, np.pi / 3.2 + np.pi, alinesPerFlyback, dtype=np.float32)
+        fb1 = np.linspace(-np.pi / 3.4, np.pi / 3.4, flyback, dtype=np.float32)
+        fb2 = np.linspace(-np.pi / 3.4 + np.pi, np.pi / 3.4 + np.pi, flyback, dtype=np.float32)
 
         B1 = np.array([cross[::-1], cross[::-1]])
         B2 = np.array([cross, -cross])
@@ -36,10 +36,10 @@ def generateIdealFigureEightPositions(xsize, alinesPerX, rpt=1, alinesPerFlyback
         Y = np.concatenate([y1, B1[1], y2, B2[1]])
 
         b1 = np.concatenate(
-            [np.zeros(alinesPerFlyback), np.ones(alinesPerX), np.zeros(alinesPerFlyback), np.zeros(alinesPerX)]).astype(
+            [np.zeros(flyback), np.ones(alinesPerX), np.zeros(flyback), np.zeros(alinesPerX)]).astype(
             np.bool)
         b2 = np.concatenate(
-            [np.zeros(alinesPerFlyback), np.zeros(alinesPerX), np.zeros(alinesPerFlyback), np.ones(alinesPerX)]).astype(
+            [np.zeros(flyback), np.zeros(alinesPerX), np.zeros(flyback), np.ones(alinesPerX)]).astype(
             np.bool)
 
         pos = np.empty(int(2 * len(X)), dtype=np.float32)

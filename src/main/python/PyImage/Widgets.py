@@ -145,6 +145,11 @@ class Fig8GroupBox(QGroupBox):
         self.spinALinesPerX.setValue(10)
         self.spinALinesPerX.valueChanged.connect(self.update)
 
+        self.spinFlyback = QSpinBox()
+        self.spinFlyback.setRange(2,100)
+        self.spinFlyback.setValue(10)
+        self.spinFlyback.valueChanged.connect(self.update)
+
         self.spinFig8Size = QDoubleSpinBox()
         self.spinFig8Size.setRange(0.00001,3)
         self.spinFig8Size.setValue(0.01)
@@ -169,6 +174,12 @@ class Fig8GroupBox(QGroupBox):
         self.textDistance.setCursorWidth(0)
         self.textDistance.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
 
+        self.textRate = QTextEdit()
+        self.textRate.setReadOnly(True)
+        self.textRate.setFixedHeight(24)
+        self.textRate.setCursorWidth(0)
+        self.textRate.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+
         self.textTotal = QTextEdit()
         self.textTotal.setReadOnly(True)
         self.textTotal.setFixedHeight(24)
@@ -176,12 +187,12 @@ class Fig8GroupBox(QGroupBox):
         self.textTotal.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
 
         self.layout.addRow(QLabel("A-lines per B-scan"), self.spinALinesPerX)
+        self.layout.addRow(QLabel("A-lines per flyback"), self.spinFlyback)
         self.layout.addRow(QLabel("Figure-8 width"), self.spinFig8Size)
-        self.layout.addRow(QLabel("Distance between adjacent A-scans (mm)"),self.textDistance)
+        self.layout.addRow(QLabel("Distance between adjacent A-scans"),self.textDistance)
         self.layout.addRow(QLabel("Total A-scans in each figure-8"),self.textTotal)
         self.layout.addRow(QLabel("Total Figure-8s to acquire"), self.spinFig8Total)
-        self.layout.addRow(QLabel("Total acquisition time"), self.spinAcqTime)
-
+        self.layout.addRow(QLabel("Rate of figure-8 acquisition"),self.textRate)
         self.setLayout(self.layout)
 
         self.update()
@@ -190,10 +201,14 @@ class Fig8GroupBox(QGroupBox):
 
         self.controller.setScanPatternParams(self.spinFig8Size.value(),
                                              self.spinALinesPerX.value(),
+                                             self.spinFlyback.value(),
                                              self.spinFig8Total.value())
 
         self.textDistance.setText(str(self.controller.scanPatternD*10**6)[0:10]+' nm')
         self.textTotal.setText(str(self.controller.scanPatternN))
+
+        w = 1/(1/self.controller.getRate() * self.controller.scanPatternN)
+        self.textRate.setText(str(w)[0:10]+' hz ')
         self.controller.displayPattern()
 
     def disabled(self,bool):

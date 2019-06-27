@@ -36,7 +36,7 @@ class FigureEight:
         self.scanPatternD = None
 
         # Device config
-        self._imagingRate = None
+        self._imagingRate = 76000 # Rate in hz. NOT FUNCTIONAL
         self._config = "Probe" #For offline testing ONLY
 
         self.active = False
@@ -106,6 +106,9 @@ class FigureEight:
     def getProcessingQueue(self):
         return self._ProcQueue
 
+    def getRate(self):
+        return self._imagingRate
+
     def initScan(self):
 
         print('Init scan')
@@ -139,9 +142,10 @@ class FigureEight:
         self._imagingRate = rate
         self._config = config
 
-    def setScanPatternParams(self,patternSize,aLinesPerCross,repeats):
-        self._scanPatternAlinesPerCross = aLinesPerCross
+    def setScanPatternParams(self,patternSize,aLinesPerCross,aLinesPerFlyback,repeats):
         self._scanPatternSize = patternSize
+        self._scanPatternAlinesPerCross = aLinesPerCross
+        self._scanPatternAlinesPerFlyback = aLinesPerFlyback
         self._scanPatternTotalRepeats = repeats
 
         [self.scanPatternPositions,
@@ -150,7 +154,7 @@ class FigureEight:
          self.scanPatternB1,
          self.scanPatternB2,
          self.scanPatternN,
-         self.scanPatternD] = generateIdealFigureEightPositions(patternSize,aLinesPerCross,rpt=repeats)
+         self.scanPatternD] = generateIdealFigureEightPositions(patternSize,aLinesPerCross,flyback=aLinesPerFlyback,rpt=repeats)
 
 class AcquisitionThread(QThread):
     """
