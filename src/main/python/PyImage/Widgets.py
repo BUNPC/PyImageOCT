@@ -152,10 +152,10 @@ class Fig8GroupBox(QGroupBox):
 
         self.spinFig8Size = QDoubleSpinBox()
         self.spinFig8Size.setRange(0.00001,3)
-        self.spinFig8Size.setValue(0.01)
         self.spinFig8Size.setSuffix(' mm')
-        self.spinFig8Size.setDecimals(5)
+        self.spinFig8Size.setDecimals(6)
         self.spinFig8Size.setSingleStep(0.00001)
+        self.spinFig8Size.setValue(0.003182)
         self.spinFig8Size.valueChanged.connect(self.update)
 
         self.spinFig8Total = QSpinBox()
@@ -204,7 +204,7 @@ class Fig8GroupBox(QGroupBox):
                                              self.spinFlyback.value(),
                                              self.spinFig8Total.value())
 
-        self.textDistance.setText(str(self.controller.scanPatternD*10**6)[0:10]+' nm')
+        self.textDistance.setText(str(self.controller.scanPatternD*10**6)[0:8]+' nm')
         self.textTotal.setText(str(self.controller.scanPatternN))
 
         w = 1/(1/self.controller.getRate() * self.controller.scanPatternN)
