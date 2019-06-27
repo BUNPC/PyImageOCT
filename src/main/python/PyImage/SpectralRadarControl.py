@@ -186,7 +186,7 @@ class Acquisition(QObject):
             rawDataHandle = PySpectralRadar.createRawData()
             self.controller.getRawData(rawDataHandle)
             dim = PySpectralRadar.getRawDataShape(rawDataHandle)
-            temp = np.array(dim,dtype=np.uint16)
+            temp = np.empty(dim,dtype=np.uint16)
             self.rawQueue.put(temp)
             PySpectralRadar.copyRawDataContent(rawDataHandle,temp)
             PySpectralRadar.clearRawData(rawDataHandle) # Might nix queued data, not sure
