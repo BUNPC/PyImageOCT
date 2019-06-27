@@ -37,19 +37,20 @@ class FigureEight:
 
         # Device config
         self._imagingRate = None
-        self._config = None
+        self._config = "Probe" #For offline testing ONLY
 
-        self._active = False
+        self.active = False
 
         self._RawQueue = Queue()
         self._ProcQueue = Queue()
 
         # SpectralRadar handles
         self._device = None
-        self._probe = 'Probe' #For offline testing purposes ONLY
+        self._probe = None
         self._proc = None
         self._scanPattern = None
         self._triggerType = None
+        self._acquisitionType = None
         self._triggerTimeout = None
 
 
@@ -62,26 +63,36 @@ class FigureEight:
 
         self._triggerType = PySpectralRadar.Device_TriggerType.Trigger_FreeRunning # Default
         self._triggerTimeout = 5 # Number from old labVIEW program
+        self._acquisitionType = PySpectralRadar.AcquisitionType.Acquisition_AsyncContinuous
         PySpectralRadar.setTriggerMode(self._device,self._triggerType)
         PySpectralRadar.setTriggerTimeoutSec(self._device,self._triggerTimeout)
+
+        self.updateScanPattern()
+
+    def startMeasurement(self):
+        PySpectralRadar.startMeasurement(self._device,self._scanPattern,self._acquisitionType)
+
+    def setComplexDataOutput(self,complexDataHandle):
+        PySpectralRadar.setComplexDataOutput(self._proc,complexDataHandle)
+
+    def getRawData(self,rawDataHandle):
+        PySpectralRadar.getRawData(self._device,rawDataHandle)
+
+    def stopMeasurement(self):
+        PySpectralRadar.stopMeasurement(self._device)
 
     def getTriggerType(self):
         return self._triggerType
 
+    def getAcquisitionType(self):
+        return self._acquisitionType
+
     def updateScanPattern(self):
-        self._scanPattern =  PySpectralRadar.createFreeformScanPattern(self._probe,self.scanPatternPositions,len(self.scanPatternX)*self._scanPatternTotalRepeats,1,FALSE)
+        n = len(self.scanPatternX)*self._scanPatternTotalRepeats
+        self._scanPattern =  PySpectralRadar.createFreeformScanPattern(self._probe,self.scanPatternPositions,n,1,FALSE)
 
     def getScanPattern(self):
        return self._scanPattern
-
-    def isActive(self):
-        return self._active
-
-    def activate(self):
-        self._active = True
-
-    def deactivate(self):
-        self._active = False
 
     def getRawQueue(self):
         return self._RawQueue
@@ -107,7 +118,7 @@ class FigureEight:
 
     def abort(self):
         print('Abort')
-        self.ACTIVE = False
+        self.active = False
 
     def setFileParams(self,experimentDirectory,experimentName,maxSize,fileType):
         self._fileExperimentDirectory = experimentDirectory
@@ -156,12 +167,15 @@ class Acquisition(QObject):
         self.controller = controller
         self.rawQueue = controller.getRawQueue()
         self.processingQueue = controller.getProcessingQueue()
-        self.scanPattern = controller.getScanPattern()
+        print('Acquisition loop instantiated')
 
     @pyqtSlot()
     def work(self):
         thread_name = QThread.currentThread().objectName()
         thread_id = int(QThread.currentThreadId())  # cast to int() is necessary
+
+        self.controller.startMeasurement()
+        rawData = PySpectralRadar.createRawData
 
 
     def abort(self):

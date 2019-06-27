@@ -6,7 +6,7 @@ Python wrapper for Thorlabs SpectralRadar SDK
 
 @author: sstucker
 
-Version 0.0.1
+Version 0.0.3
 
 """
 import ctypes as C
@@ -218,6 +218,14 @@ class Device_TriggerType(CEnum):
     Trigger_FreeRunning = 0
     Trigger_TrigBoard_ExternalStart = 1
     Trigger_External_AScan = 2
+
+class Device_CameraPreset(CEnum):
+
+    Device_CameraPreset_Default = 0
+    Device_CameraPreset_1 = 1
+    Device_CameraPreset_2 = 2
+    Device_CameraPreset_3 = 3
+    Device_CameraPreset_4 = 4
 
 #Wrapper functions ------------------------------------------------------------
 
@@ -470,3 +478,15 @@ def copyRawDataContent(RawDataSource,DataContent):
     '''
     SpectralRadar.copyRawDataContent.argtypes = [RawDataHandle,ndpointer(dtype=np.uint16,ndim=3,flags='C_CONTIGUOUS')]
     SpectralRadar.copyRawDataContent(RawDataSource,DataContent)
+
+def getRawDataShape(rawDataHandle):
+    """
+    :param rawDataHandle: SpectralRadar raw data handle object
+    :return: 3D shape of raw data
+    """
+    prop = RawDataPropertyInt
+    rawSize1 = getRawDataPropertyInt(rawDataHandle,prop.RawData_Size1)
+    rawSize2 = getRawDataPropertyInt(rawDataHandle,prop.RawData_Size2)
+    rawSize3 = getRawDataPropertyInt(rawDataHandle,prop.RawData_Size3)
+
+    return np.array([rawSize1,rawSize2,rawSize3])
