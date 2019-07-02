@@ -4,7 +4,7 @@ import sys
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
-import collections
+from queue import Queue
 import threading
 import numba
 from scipy.interpolate import interp1d as interp1
@@ -13,36 +13,57 @@ from PySpectralRadar import *
 
 #-------------------------------------------------------------------------------
 
-def generateIdealFigureEightPositions(xsize,alinesPerX,rpt=1):
-
+def generateIdealFigureEightPositions(xsize, alinesPerX, rpt=1, flyback=10):
+    '''
+    Generates figure-8 scan pattern positions with orthogonal cross.
+    :param xdistance: Distance between adjacent scans in perpendicular B-scans
+    :param alinesPerX: Number of A-lines in each orthogonal B-scan
+    :param rpt: Number of times to repeat the pattern in the 1D positions array
+    :return: posRpt: 1D positions array for use with FreeformScanPattern; [x1,y1,x2,y2...]
+             X: X coordinates of a single figure-8
+             Y: Y coordinates of a single figure-8
+             B1: Indices of first B-scan
+             B2: Indices of second B-scan
+             N: Total number of A-scans in the pattern
+    '''
     if rpt > 0:
+        t = np.linspace(0, 2 * np.pi, flyback, dtype=np.float32)
 
-        t = np.linspace(0,2*np.pi,100,dtype=np.float32)
-        cross = np.linspace(-xsize,xsize,alinesPerX)
-        cross1 = np.array([cross[::-1],cross[::-1]])
-        cross2 = np.array([cross,-cross])
-        d = np.sqrt((cross1[0][0]-cross1[0][1])**2+(cross1[1][0]-cross1[1][1])**2)
-        x = 2*xsize*np.cos(t)
-        y = ((2*xsize)/1.7)*np.sin(2*t)
-        x1 = x[x>xsize+0.001*xsize]
-        x2 = x[x<-xsize-0.001*xsize]
-        y1 = y[x>xsize+0.001*xsize]
-        y2 = y[x<-xsize-0.001*xsize]
+        cross = np.linspace(-xsize, xsize, alinesPerX)
 
-        X = np.concatenate([x1[0:16],cross1[0],x2,cross2[0],x1[17::]])
-        Y = np.concatenate([y1[0:16],cross1[1],y2,cross2[1],y1[17::]])
+        fb1 = np.linspace(-np.pi / 3.4, np.pi / 3.4, flyback, dtype=np.float32)
+        fb2 = np.linspace(-np.pi / 3.4 + np.pi, np.pi / 3.4 + np.pi, flyback, dtype=np.float32)
 
-        pos = np.empty(int(2*len(X)), dtype=np.float32)
+        B1 = np.array([cross[::-1], cross[::-1]])
+        B2 = np.array([cross, -cross])
+
+        D = np.sqrt((B1[0][0] - B1[0][1]) ** 2 + (B1[1][0] - B1[1][1]) ** 2)
+
+        x1 = 2 * xsize * np.cos(fb1)
+        y1 = ((2 * xsize) / 1.7) * np.sin(2 * fb1)
+        x2 = 2 * xsize * np.cos(fb2)
+        y2 = ((2 * xsize) / 1.7) * np.sin(2 * fb2)
+
+        X = np.concatenate([x1, B1[0], x2, B2[0]])
+        Y = np.concatenate([y1, B1[1], y2, B2[1]])
+
+        b1 = np.concatenate(
+            [np.zeros(flyback), np.ones(alinesPerX), np.zeros(flyback), np.zeros(alinesPerX)]).astype(
+            np.bool).astype(np.bool)
+        b2 = np.concatenate(
+            [np.zeros(flyback), np.zeros(alinesPerX), np.zeros(flyback), np.ones(alinesPerX)]).astype(
+            np.bool).astype(np.bool)
+
+        pos = np.empty(int(2 * len(X)), dtype=np.float32)
+
         pos[0::2] = X
         pos[1::2] = Y
-        posRepeated = np.tile(pos,rpt)
 
-        print('Figure-8 scan pattern generated...')
-        print(str(len(cross1[0]))+' points in each orthogonal cross...')
-        print('Distance between points in orthogonal crosses: '+str(d)+' mm')
-        print(str(len(X))+' total points.')
+        posRpt = np.tile(pos, rpt)
 
-        return posRepeated, X, Y
+        N = len(X)
+
+        return [posRpt, X, Y, b1, b2, N, D]
 
 #-------------------------------------------------------------------------------
 
@@ -82,8 +103,10 @@ print('----------------------------------\n')
 FALSE = BOOL(0)
 TRUE = BOOL(1)
 
-size = .032
-N = 40
+
+
+size = 0.75
+N = 200
 repeats = 1
 intpDk = -0.19
 apod = np.hanning(2048)
@@ -91,16 +114,19 @@ k = np.linspace(1-intpDk/2, 1+intpDk/2, 2048)
 lam = 1/k[::-1]
 interpIndices = np.linspace( min(lam), max(lam), 2048)
 
-xsection1 = np.arange(16,56)
-xsection2 = np.arange(88,128)
+fig8pos, X, Y, b1, b2, Na, D = generateIdealFigureEightPositions(size,N,rpt=repeats,flyback=40)
 
-fig8pos, X, Y = generateIdealFigureEightPositions(size,N,rpt=repeats)
+xsection1 = np.arange(Na)[b1]
+xsection = np.arange(Na)[b2]
 
 scanPattern = createFreeformScanPattern(probe,fig8pos,len(X)*repeats,1,FALSE)
-rotateScanPattern(scanPattern,30.0)
+angle = 45
+
+rotateScanPattern(scanPattern,angle)
 
 print('\n----------------------------------')
 print('Created scan pattern: 10X figure-8.')
+print(D)
 print('----------------------------------\n')
 
 acq = AcquisitionType
@@ -117,7 +143,6 @@ rpt = 10000
 def AcqThread():
 
     i = rpt
-
     startMeasurement(dev,scanPattern,acq.Acquisition_AsyncContinuous)
 
     while i > 0:
@@ -150,14 +175,14 @@ def AcqThread():
         copyComplexDataContent(complexDataHandle,cholder)
 
         if (i % 9) == 0:
-            PREVIEW.append(holder)
+            PREVIEW.put(holder)
 
         i -= 1
 
     stopMeasurement(dev)
 
 
-PREVIEW = collections.deque()
+PREVIEW = Queue()
 
 fig = plt.figure()
 
@@ -181,25 +206,24 @@ def process(raw):
         corr = (fig8[:,n] - dc) * apod
         proc[:,n] = np.fft.ifft(corr)[1024:2048].astype(np.complex64)
 
-    return proc
+    return proc[-400::]
 
 def animate(i):
 
     disp = np.zeros([1024,N],dtype=np.float32)
     plt.cla()
-    if len(PREVIEW) > 10:
 
-        latest = PREVIEW.popleft()
+    latest = PREVIEW.get()
 
-        if latest.size > 0:
+    if latest.size > 0:
 
-            bscan = process(latest)
+        bscan = process(latest)
 
-            disp = 20*np.log10(abs(np.real(bscan)))
+        disp = 20*np.log10(abs(bscan))
 
-    return plt.imshow(disp,aspect=0.5,cmap='gray',origin='lower')
+    b = plt.imshow(disp,aspect=1,cmap='gray',origin='lower',vmin=-100,vmax=-2)
 
-
+    return b
 
 Acquisition = threading.Thread(target=AcqThread)
 Acquisition.start()
