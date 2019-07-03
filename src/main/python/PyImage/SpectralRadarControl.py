@@ -53,21 +53,22 @@ class FigureEight:
         self._acquisitionType = None
         self._triggerTimeout = None
 
-
     def initializeSpectralRadar(self):
         self._device = PySpectralRadar.initDevice()
         self._probe = PySpectralRadar.initProbe(self._device,self._config)
         self._proc = PySpectralRadar.createProcessingForDevice(self._device)
-
         PySpectralRadar.setCameraPreset(self._device,self._probe,self._proc,0) # 0 is the main camera
-
         self._triggerType = PySpectralRadar.Device_TriggerType.Trigger_FreeRunning # Default
         self._triggerTimeout = 5 # Number from old labVIEW program
         self._acquisitionType = PySpectralRadar.AcquisitionType.Acquisition_AsyncContinuous
         PySpectralRadar.setTriggerMode(self._device,self._triggerType)
         PySpectralRadar.setTriggerTimeoutSec(self._device,self._triggerTimeout)
-
+        self.controller.setScanPatternParams(self._scanPatternSize,
+                                             self._scanPatternAlinesPerCross,
+                                             self._scanPatternAlinesPerFlyback,
+                                             1)
         self.updateScanPattern()
+        print('Telesto initialized successfully.')
 
     def closeSpectralRadar(self):
         PySpectralRadar.closeDevice(self._device)
@@ -177,6 +178,7 @@ class Acquisition(QObject):
         self.controller = controller
         self.rawQueue = controller.getRawQueue()
         self.processingQueue = controller.getProcessingQueue()
+        self.counter = 0
 
     @pyqtSlot()
     def work(self):
@@ -187,15 +189,63 @@ class Acquisition(QObject):
             thread_id = int(QThread.currentThreadId())  # cast to int() is necessary
 
             self.controller.startMeasurement()
+
             rawDataHandle = PySpectralRadar.createRawData()
             self.controller.getRawData(rawDataHandle)
             dim = PySpectralRadar.getRawDataShape(rawDataHandle)
             temp = np.empty(dim,dtype=np.uint16)
-            self.rawQueue.put(temp)
+
             PySpectralRadar.copyRawDataContent(rawDataHandle,temp)
+            self.rawQueue.put(np.squeeze(temp))
+            if self.counter % 10 == 0:
+                self.processingQueue.put(np.squeeze(temp))
             PySpectralRadar.clearRawData(rawDataHandle) # Might nix queued data, not sure
+
+            self.controller.stopMeasurement()
 
     def abort(self):
         self.__abort = True
 
+class DisplayThread(QThread):
+    """
+    PySpectralRadar acquisition thread for use with PyQt5
+    """
+    def __init__(self,controller):
+        QThread.__init__(self)
+        self.controller = controller
+        self.controller.initializeSpectralRadar()
 
+    def __del__(self):
+        self.wait()
+
+class Acquisition(QObject):
+
+    def __init__(self,controller,id=0):
+        super().__init__()
+        self.__id = id
+        self.__abort = False
+        self.controller = controller
+        self.rawQueue = controller.getRawQueue()
+        self.processingQueue = controller.getProcessingQueue()
+
+    @pyqtSlot()
+    def work(self):
+
+        while self.controller.active:
+
+            thread_name = QThread.currentThread().objectName()
+            thread_id = int(QThread.currentThreadId())  # cast to int() is necessary
+
+            self.controller.startMeasurement()
+            print('Measurement started.')
+            rawDataHandle = PySpectralRadar.createRawData()
+            self.controller.getRawData(rawDataHandle)
+            dim = PySpectralRadar.getRawDataShape(rawDataHandle)
+            temp = np.empty(dim,dtype=np.uint16)
+            self.rawQueue.put(np.squeeze(temp))
+            PySpectralRadar.copyRawDataContent(rawDataHandle,temp)
+            PySpectralRadar.clearRawData(rawDataHandle) # Might nix queued data, not sure
+            self.controller.stopMeasurement()
+
+    def abort(self):
+        self.__abort = True
