@@ -1,6 +1,0 @@
-{
-    "app_name": "PyImageOCT",
-    "author": "Stephen Scott Tucker",
-    "main_module": "src/main/python/main.py",
-    "version": "0.0.0"
-}

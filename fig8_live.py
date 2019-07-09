@@ -1,15 +1,11 @@
 # -*- coding: utf-8 -*-
 
-import sys
-import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 from queue import Queue
 import threading
-import numba
-from scipy.interpolate import interp1d as interp1
 
-from PySpectralRadar import *
+from src.main.python.PySpectralRadar import *
 
 #-------------------------------------------------------------------------------
 
