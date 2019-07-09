@@ -116,6 +116,9 @@ class FigureEight:
     def getRate(self):
         return self._imagingRate
 
+    def getApodWindow(self):
+        return np.hamming(2048)
+
     def setConfig(self, config):
         self._config = config
 
@@ -285,7 +288,7 @@ class ScanEight(QObject):
             PySpectralRadar.copyRawDataContent(rawDataHandle, temp)
             if np.size(temp) > 0:
                 if self.counter % 10 == 0:
-                    self.processingQueue.put(np.squeeze(temp))
+                    self.processingQueue.put(temp)
             PySpectralRadar.clearRawData(rawDataHandle)  # Might nix queued data, not sure
 
             self.controller.stopMeasurement()
@@ -321,7 +324,7 @@ class AcqEight(QObject):
 
             PySpectralRadar.copyRawDataContent(rawDataHandle, temp)
             if np.size(temp) > 0:
-                self.rawQueue.put(np.squeeze(temp))
+                self.rawQueue.put(temp)
             PySpectralRadar.clearRawData(rawDataHandle)  # Might nix queued data, not sure
 
             self.controller.stopMeasurement()
@@ -356,9 +359,20 @@ class Display(QObject):
         while self.controller.active:
             thread_name = QThread.currentThread().objectName()
             thread_id = int(QThread.currentThreadId())  # cast to int() is necessary
+
             raw = self.processingQueue.get()
-            spec = raw[0:2048] # First spectrum of the B-scan only is plotted
-            self.controller.plotWidget.plot1D(spec)
+
+            if raw.size() > 0:
+
+                spec = raw.flatten()[0:2048] # First spectrum of the B-scan only is plotted
+
+                bscan = fig8ToBScan(raw,
+                                    self.controller.scanPatternN,
+                                    self.controller.scanPatternB1,
+                                    self.controller._scanPatternAlinesPerCross
+                                    self.controller.getApodWindow())
+
+                self.controller.plotWidget.plot1D(spec)
 
     def abort(self):
         self.__abort = True

@@ -52,3 +52,37 @@ def generateIdealFigureEightPositions(xsize, alinesPerX, rpt=1, flyback=20):
         N = len(X)
 
         return [posRpt, X, Y, b1, b2, N, D]
+
+def fig8ToBScan(A,N,B,AlinesPerX,apod,ROI=400):
+    """
+    Converts a raw array of unsigned 16 bit integer fig-8 data from Telesto to ROI of spatial domain pixels for
+    live display ONLY (no lambda-k interpolation)
+    :param A: Raw figure-8 data
+    :param N: The total number of A-lines in the figure-8 pattern
+    :param B: Boolean-type array representing indices in N-length A which make up a B-scan
+    :param AlinesPerX: Number of A-lines in each B-scan
+    :param apod: Apodization window. Must be 2048 in length
+    :param ROI: number of pixels from the top of the B-scan to return
+    :return: A 2D array of dB scale quasi-spatial data
+    """
+    flat = A.flatten()
+    proc = np.empty([1024,AlinesPerX],dtype=np.complex64)
+    fig8 = np.empty([2048,AlinesPerX],dtype=np.uint16)
+
+    i = 0
+    for n in np.arange(N):
+        if B[n]:
+            fig8[:,i] = flat[2048*n:2048*n+2048]
+            i += 1
+
+    dc = np.mean(fig8,axis=1)
+
+    for n in np.arange(AlinesPerX):
+        c = (fig8[:,n] - dc) * apod
+        proc[:,n] = np.fft.ifft(c)[0:1024].astype(np.complex64)
+
+    return 20*np.log10(np.abs(proc[0:ROI]))
+
+
+
+

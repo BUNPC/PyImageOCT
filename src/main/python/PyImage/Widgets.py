@@ -249,4 +249,3 @@ class plotWidget2D(PyQtG.PlotWidget):
         self.item.setData(x=X,y=Y)
         QtGui.QGuiApplication.processEvents()
 
-
