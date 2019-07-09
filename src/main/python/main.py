@@ -10,7 +10,7 @@ from PyQt5 import QtCore
 
 from src.main.python.PyImage import SpectralRadarControl, Widgets
 
-#Something wrong with these-- intended to fix DPI scaling issues but they make it worse
+# Something wrong with these-- intended to fix DPI scaling issues but they make it worse
 '''
 if hasattr(QtCore.Qt, 'AA_EnableHighDpiScaling'):
     PyQt5.QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling, True)
@@ -21,9 +21,10 @@ if hasattr(QtCore.Qt, 'AA_UseHighDpiPixmaps'):
 
 QtInstance = QtCore.QCoreApplication.instance()
 
-#Supposed to allow IPython kernal to recover from closing of app
+# Supposed to allow IPython kernal to recover from closing of app
 if QtInstance is None:
     QtInstance = QApplication(sys.argv)
+
 
 class Main(QTabWidget):
     '''
@@ -31,13 +32,12 @@ class Main(QTabWidget):
     OCT Imaging Freeform SDK program developed in LabView
     '''
 
-    def __init__(self,parent=None):
-
+    def __init__(self, parent=None):
         super().__init__(parent)
 
         self.tabFigEight = TabFigEight(parent=self)
 
-        self.addTab(self.tabFigEight,'Figure-8 Motion Quantification')
+        self.addTab(self.tabFigEight, 'Figure-8 Motion Quantification')
 
         self.windowTitle = 'PyOCT V.0.0.1'
         self.setWindowTitle(self.windowTitle)
@@ -52,8 +52,7 @@ class TabFigEight(QWidget):
     along two orthogonal B-scans.
     '''
 
-    def __init__(self,parent=None):
-
+    def __init__(self, parent=None):
         super().__init__(parent)
 
         self.mainGrid = QGridLayout()
@@ -61,12 +60,13 @@ class TabFigEight(QWidget):
 
         # Real-time plot widget for display of raw spectral data
         self.plotSpectrum = Widgets.plotWidget2D(name="Raw Spectrum", type='curve', height=300, width=300)
-        self.mainGrid.addWidget(self.plotSpectrum,0,0,2,2)
+        self.mainGrid.addWidget(self.plotSpectrum, 0, 0, 2, 2)
 
         # Real-time scatter plot widget for display of scan pattern
-        self.plotPattern = Widgets.plotWidget2D(name="Scan Pattern Preview", type='scatter',height=250, width=300, aspectLocked=True)
-        self.mainGrid.addWidget(self.plotPattern,1,4,1,1)
-        self.plotPattern.labelAxes('mm','')
+        self.plotPattern = Widgets.plotWidget2D(name="Scan Pattern Preview", type='scatter', height=250, width=300,
+                                                aspectLocked=True)
+        self.mainGrid.addWidget(self.plotPattern, 1, 4, 1, 1)
+        self.plotPattern.labelAxes('mm', '')
 
         # Thorlabs SpectralRadar SDK is wrapped with PySpectralRadar module.
         # Interfaces corresponding to scanning modes are defined PyImage.SpectralRadarControl
@@ -77,21 +77,22 @@ class TabFigEight(QWidget):
 
         # File I/O properties interface
         self.file = Widgets.FileGroupBox('File', self.controller)
-        self.mainGrid.addWidget(self.file,0,2,1,3)
+        self.mainGrid.addWidget(self.file, 0, 2, 1, 3)
 
         # Main OCT device settings
         self.params = Widgets.ParamsGroupBox('OCT Imaging Parameters', self.controller)
-        self.mainGrid.addWidget(self.params,1,2,1,1)
+        self.mainGrid.addWidget(self.params, 1, 2, 1, 1)
 
         # Fig 8 scan pattern parameters
         self.scanParameters = Widgets.Fig8GroupBox('Scan Pattern', self.controller)
-        self.mainGrid.addWidget(self.scanParameters,1,3,1,1)
+        self.mainGrid.addWidget(self.scanParameters, 1, 3, 1, 1)
 
         # Master scan/acquire/stop buttons
         self.controlButtons = Widgets.ControlGroupBox('Control', self.controller)
-        self.mainGrid.addWidget(self.controlButtons,2,1)
+        self.mainGrid.addWidget(self.controlButtons, 2, 1)
 
-#Qt main loop
+
+# Qt main loop
 if __name__ == '__main__':
     appctxt = ApplicationContext()
     window = Main()
