@@ -99,7 +99,7 @@ class FigureEight:
                                                                       FALSE)
 
     def getFilepath(self):
-        return self._fileExperimentDirectory+'/'+self._fileExperimentName
+        return self._fileExperimentDirectory + '/' + self._fileExperimentName
 
     def getScanPattern(self):
         return self._scanPattern
@@ -128,7 +128,7 @@ class FigureEight:
         self.active = True
 
         # For scanning, acquisition occurs after each figure-8, so rpt is set to 1
-        self.controller.setScanPatternParams(self._scanPatternSize,
+        self.setScanPatternParams(self._scanPatternSize,
                                              self._scanPatternAlinesPerCross,
                                              self._scanPatternAlinesPerFlyback,
                                              1)
@@ -222,6 +222,7 @@ class ExportThread(QThread):
     def __del__(self):
         self.wait()
 
+
 class ExportEight(QObject):
 
     def __init__(self, controller, id=0):
@@ -235,15 +236,13 @@ class ExportEight(QObject):
 
     @pyqtSlot()
     def work(self):
-
         while self.controller.active:
-
-            with open(self.filepath,'wb') as f:
-
-                np.save(f,self.rawQueue.get())
+            with open(self.filepath, 'wb') as f:
+                np.save(f, self.rawQueue.get())
 
     def abort(self):
         self.__abort = True
+
 
 class AcquisitionThread(QThread):
     """
@@ -296,6 +295,7 @@ class ScanEight(QObject):
     def abort(self):
         self.__abort = True
 
+
 class AcqEight(QObject):
 
     def __init__(self, controller, id=0):
@@ -310,7 +310,7 @@ class AcqEight(QObject):
     @pyqtSlot()
     def work(self):
 
-        while self.controller.active:
+        if self.controller.active:  # Only one loop for acquisiton, assumes long scan pattern.
 
             thread_name = QThread.currentThread().objectName()
             thread_id = int(QThread.currentThreadId())  # cast to int() is necessary
@@ -332,6 +332,7 @@ class AcqEight(QObject):
     def abort(self):
         self.__abort = True
 
+
 class DisplayThread(QThread):
     """
     PySpectralRadar B-scan/spectral display thread for use with PyQt5
@@ -343,6 +344,7 @@ class DisplayThread(QThread):
 
     def __del__(self):
         self.wait()
+
 
 class Display(QObject):
 
@@ -363,13 +365,12 @@ class Display(QObject):
             raw = self.processingQueue.get()
 
             if raw.size() > 0:
-
-                spec = raw.flatten()[0:2048] # First spectrum of the B-scan only is plotted
+                spec = raw.flatten()[0:2048]  # First spectrum of the B-scan only is plotted
 
                 bscan = fig8ToBScan(raw,
                                     self.controller.scanPatternN,
                                     self.controller.scanPatternB1,
-                                    self.controller._scanPatternAlinesPerCross
+                                    self.controller._scanPatternAlinesPerCross,
                                     self.controller.getApodWindow())
 
                 self.controller.plotWidget.plot1D(spec)

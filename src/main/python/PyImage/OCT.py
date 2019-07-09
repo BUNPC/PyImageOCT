@@ -7,12 +7,13 @@ def generateIdealFigureEightPositions(xsize, alinesPerX, rpt=1, flyback=20):
     :param xdistance: Distance between adjacent scans in perpendicular B-scans
     :param alinesPerX: Number of A-lines in each orthogonal B-scan
     :param rpt: Number of times to repeat the pattern in the 1D positions array
-    :return: posRpt: 1D positions array for use with FreeformScanPattern; [x1,y1,x2,y2...]
+    :return: posRpt: 1D positions array for use with FreeformScanPattern; [x1,y1,x2,y2...] format
              X: X coordinates of a single figure-8
              Y: Y coordinates of a single figure-8
              B1: Indices of first B-scan
              B2: Indices of second B-scan
              N: Total number of A-scans in the pattern
+             D: Distance between adjacent A-scans in the B-scans
     '''
     if rpt > 0:
         t = np.linspace(0, 2 * np.pi, flyback, dtype=np.float32)
