@@ -6,7 +6,6 @@ from src.main.python.PyImage.OCT import *
 TRUE = PySpectralRadar.TRUE
 FALSE = PySpectralRadar.FALSE
 
-
 class FigureEight:
 
     def __init__(self, plotWidget=None, scatterWidget=None, imageWidget=None, infoWidget=None):
@@ -91,7 +90,10 @@ class FigureEight:
 
     def updateScanPattern(self):
         n = len(self.scanPatternX) * self._scanPatternTotalRepeats
-        self._scanPattern = PySpectralRadar.createFreeformScanPattern(self._probe, self.scanPatternPositions, n, 1,
+        self._scanPattern = PySpectralRadar.createFreeformScanPattern(self._probe,
+                                                                      self.scanPatternPositions,
+                                                                      n,
+                                                                      1,
                                                                       FALSE)
 
     def getScanPattern(self):
@@ -124,10 +126,15 @@ class FigureEight:
                                              1)
 
         acquisitionThread = AcquisitionThread(self)
+        displayThread = DisplayThread(self)
         acq = Acquisition(self, 0)
+        disp = Display(self, 1)
         acq.moveToThread(acquisitionThread)
+        disp.moveToThread(displayThread)
         acquisitionThread.started.connect(acq.work)
+        displayThread.started.connect(disp.work)
         acquisitionThread.start()
+        displayThread.start()
 
     def displayPattern(self):
         self.scatterWidget.plot2D(self.scanPatternX, self.scanPatternY)
@@ -221,9 +228,9 @@ class Acquisition(QObject):
         self.__abort = True
 
 
-class DisplayBScanThread(QThread):
+class DisplayThread(QThread):
     """
-    PySpectralRadar B-scan display thread for use with PyQt5
+    PySpectralRadar B-scan/spectral display thread for use with PyQt5
     """
 
     def __init__(self, controller):
@@ -233,20 +240,24 @@ class DisplayBScanThread(QThread):
     def __del__(self):
         self.wait()
 
-
-class DisplayBScan(QObject):
+class Display(QObject):
 
     def __init__(self, controller, id=0):
         super().__init__()
         self.__id = id
         self.__abort = False
         self.controller = controller
+        self.processingQueue = controller.getProcessingQueue()
+        self.counter = 0
 
     @pyqtSlot()
     def work(self):
         while self.controller.active:
             thread_name = QThread.currentThread().objectName()
             thread_id = int(QThread.currentThreadId())  # cast to int() is necessary
+            raw = self.processingQueue.get()
+            spec = raw[0:2048]
+            self.controller.plotWidget.plot1D(spec)
 
     def abort(self):
         self.__abort = True

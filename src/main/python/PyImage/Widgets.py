@@ -217,7 +217,7 @@ class Fig8GroupBox(QGroupBox):
 
 class plotWidget2D(PyQtG.PlotWidget):
 
-    def __init__(self,type='curve',name=None, xaxis=np.arange(1024),height=100,width=100,aspectLocked=False):
+    def __init__(self,type='curve',name=None, xaxis=np.arange(2048),height=100,width=100,aspectLocked=False):
 
         super().__init__(name=name)
 
