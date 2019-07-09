@@ -263,7 +263,6 @@ class ScanEight(QObject):
         self.__id = id
         self.__abort = False
         self.controller = controller
-        self.rawQueue = controller.getRawQueue()
         self.processingQueue = controller.getProcessingQueue()
         self.counter = 0
         self.mode = mode
@@ -285,7 +284,6 @@ class ScanEight(QObject):
 
             PySpectralRadar.copyRawDataContent(rawDataHandle, temp)
             if np.size(temp) > 0:
-                self.rawQueue.put(np.squeeze(temp))
                 if self.counter % 10 == 0:
                     self.processingQueue.put(np.squeeze(temp))
             PySpectralRadar.clearRawData(rawDataHandle)  # Might nix queued data, not sure
@@ -295,6 +293,41 @@ class ScanEight(QObject):
     def abort(self):
         self.__abort = True
 
+class AcqEight(QObject):
+
+    def __init__(self, controller, id=0):
+        super().__init__()
+        self.__id = id
+        self.__abort = False
+        self.controller = controller
+        self.rawQueue = controller.getRawQueue()
+        self.counter = 0
+        self.mode = mode
+
+    @pyqtSlot()
+    def work(self):
+
+        while self.controller.active:
+
+            thread_name = QThread.currentThread().objectName()
+            thread_id = int(QThread.currentThreadId())  # cast to int() is necessary
+
+            self.controller.startMeasurement()
+
+            rawDataHandle = PySpectralRadar.createRawData()
+            self.controller.getRawData(rawDataHandle)
+            dim = PySpectralRadar.getRawDataShape(rawDataHandle)
+            temp = np.empty(dim, dtype=np.uint16)
+
+            PySpectralRadar.copyRawDataContent(rawDataHandle, temp)
+            if np.size(temp) > 0:
+                self.rawQueue.put(np.squeeze(temp))
+            PySpectralRadar.clearRawData(rawDataHandle)  # Might nix queued data, not sure
+
+            self.controller.stopMeasurement()
+
+    def abort(self):
+        self.__abort = True
 
 class DisplayThread(QThread):
     """
