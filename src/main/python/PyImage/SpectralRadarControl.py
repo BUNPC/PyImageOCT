@@ -51,6 +51,8 @@ class FigureEight:
         self._acquisitionType = None
         self._triggerTimeout = None
 
+        self._threads = []
+
     def initializeSpectralRadar(self):
         self._device = PySpectralRadar.initDevice()
         self._probe = PySpectralRadar.initProbe(self._device, self._config)
@@ -96,6 +98,9 @@ class FigureEight:
                                                                       1,
                                                                       FALSE)
 
+    def getFilepath(self):
+        return self._fileExperimentDirectory+'/'+self._fileExperimentName
+
     def getScanPattern(self):
         return self._scanPattern
 
@@ -127,20 +132,44 @@ class FigureEight:
 
         acquisitionThread = AcquisitionThread(self)
         displayThread = DisplayThread(self)
-        acq = Acquisition(self, 0)
+
+        acq = ScanEight(self, 0)
         disp = Display(self, 1)
+
         acq.moveToThread(acquisitionThread)
         disp.moveToThread(displayThread)
+
         acquisitionThread.started.connect(acq.work)
         displayThread.started.connect(disp.work)
-        acquisitionThread.start()
-        displayThread.start()
 
-    def displayPattern(self):
-        self.scatterWidget.plot2D(self.scanPatternX, self.scanPatternY)
+        self._threads.append(acquisitionThread)
+        self._threads.append(displayThread)
+
+        for thread in self._threads:
+            thread.start()
 
     def initAcq(self):
         print('Init acq')
+
+        self.active = True
+
+        acquisitionThread = AcquisitionThread(self)
+        exportThread = ExportThread(self)
+
+        acq = AcqEight(self, 0)
+        exp = ExportEight(self, 1)
+
+        acq.moveToThread(acquisitionThread)
+        exp.moveToThread(exportThread)
+
+        acquisitionThread.started.connect(acq.work)
+        exportThread.started.connect(exp.work)
+
+        self._threads.append(acquisitionThread)
+        self._threads.append(exportThread)
+
+        for thread in self._threads:
+            thread.start()
 
     def abort(self):
         print('Abort')
@@ -174,6 +203,44 @@ class FigureEight:
                                                                 flyback=aLinesPerFlyback,
                                                                 rpt=repeats)
 
+    def displayPattern(self):
+        self.scatterWidget.plot2D(self.scanPatternX, self.scanPatternY)
+
+
+class ExportThread(QThread):
+    """
+    PySpectralRadar export thread for use with PyQt5
+    """
+
+    def __init__(self, controller):
+        QThread.__init__(self)
+        self.controller = controller
+
+    def __del__(self):
+        self.wait()
+
+class ExportEight(QObject):
+
+    def __init__(self, controller, id=0):
+        super().__init__()
+        self.__id = id
+        self.__abort = False
+        self.controller = controller
+        self.rawQueue = controller.getRawQueue()
+        self.filepath = controller.getFilepath()
+        self.counter = 0
+
+    @pyqtSlot()
+    def work(self):
+
+        while self.controller.active:
+
+            with open(self.filepath,'wb') as f:
+
+                np.save(f,self.rawQueue.get())
+
+    def abort(self):
+        self.__abort = True
 
 class AcquisitionThread(QThread):
     """
@@ -189,7 +256,7 @@ class AcquisitionThread(QThread):
         self.wait()
 
 
-class Acquisition(QObject):
+class ScanEight(QObject):
 
     def __init__(self, controller, id=0):
         super().__init__()
@@ -199,6 +266,7 @@ class Acquisition(QObject):
         self.rawQueue = controller.getRawQueue()
         self.processingQueue = controller.getProcessingQueue()
         self.counter = 0
+        self.mode = mode
 
     @pyqtSlot()
     def work(self):
@@ -256,7 +324,7 @@ class Display(QObject):
             thread_name = QThread.currentThread().objectName()
             thread_id = int(QThread.currentThreadId())  # cast to int() is necessary
             raw = self.processingQueue.get()
-            spec = raw[0:2048]
+            spec = raw[0:2048] # First spectrum of the B-scan only is plotted
             self.controller.plotWidget.plot1D(spec)
 
     def abort(self):
