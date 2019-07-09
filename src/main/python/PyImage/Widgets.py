@@ -19,6 +19,9 @@ from pathlib import Path
 
 from src.main.python.PyImage.OCT import *
 
+PyQtG.setConfigOption('background', 'w')
+PyQtG.setConfigOption('foreground', 'k')
+
 class FileGroupBox(QGroupBox):
 
     def __init__(self, name, controller, width=500):
@@ -77,6 +80,8 @@ class ParamsGroupBox(QGroupBox):
 
         self.layout = QFormLayout()
 
+        self.setMinimumHeight(220)
+
         self.entryImagingRate = QComboBox()
         self.entryImagingRate.addItems(["76 kHz","146 kHz"])
         self.entryImagingRate.currentIndexChanged.connect(self.update)
@@ -133,7 +138,7 @@ class Fig8GroupBox(QGroupBox):
 
         self.layout = QFormLayout()
 
-        # self.setFixedWidth(width)
+        self.setMinimumHeight(220)
 
         self.spinALinesPerX = QSpinBox()
         self.spinALinesPerX.setRange(5,200)
@@ -212,7 +217,7 @@ class Fig8GroupBox(QGroupBox):
 
 class plotWidget2D(PyQtG.PlotWidget):
 
-    def __init__(self,type='curve',name=None, xaxis=np.arange(1024), width=400):
+    def __init__(self,type='curve',name=None, xaxis=np.arange(1024),height=100,width=100,aspectLocked=False):
 
         super().__init__(name=name)
 
@@ -224,9 +229,15 @@ class plotWidget2D(PyQtG.PlotWidget):
             raise Exception('Invalid type for PyQtGraph item. Only "curve" and "scatter" are supported.')
 
         self.setTitle(title=name)
+        self.setFixedHeight(height)
+        self.setFixedWidth(width)
+        self.setAspectLocked(aspectLocked)
         self.X = xaxis
         self.showGrid(x=1,y=1)
         self.addItem(self.item)
+
+    def labelAxes(self,xlabel,ylabel):
+        self.setLabels(left=ylabel,bottom=xlabel)
 
     def plot1D(self,Y):
         self.item.clear()
