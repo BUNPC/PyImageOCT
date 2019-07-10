@@ -6,8 +6,8 @@ from PyQt5.QtCore import QObject, QThread, pyqtSlot
 from src.main.python.PyImage.OCT import *
 from copy import deepcopy
 
-TRUE = PySpectralRadar.TRUE
-FALSE = PySpectralRadar.FALSE
+TRUE = True
+FALSE = False
 
 class FigureEight:
 
@@ -25,6 +25,7 @@ class FigureEight:
         # Scan pattern params
         self._scanPatternSize = None
         self._scanPatternAlinesPerCross = None
+        self._scanPatternAlinesPerFlyback = None
         self._scanPatternTotalRepeats = None
 
         # Scan geometry
@@ -67,7 +68,7 @@ class FigureEight:
         self._acquisitionType = PySpectralRadar.AcquisitionType.Acquisition_AsyncContinuous # TODO: figure this out
         PySpectralRadar.setTriggerMode(self._device, self._triggerType)
         PySpectralRadar.setTriggerTimeoutSec(self._device, self._triggerTimeout)
-        self.updateScanPattern() # TODO figure out scan pattern management
+        self.updateScanPattern()  # TODO figure out scan pattern management
         try:
             self._lam = np.load('lam.npy')
         except FileNotFoundError:
@@ -79,11 +80,6 @@ class FigureEight:
         print('Telesto initialized successfully.')
 
     def closeSpectralRadar(self):
-        self.stopMeasurement()
-        for thread in self._threads:
-            thread._is_running = False
-        self._threads = []
-
         PySpectralRadar.clearScanPattern(self._scanPattern)
         PySpectralRadar.closeProcessing(self._proc)
         PySpectralRadar.closeProbe(self._probe)
@@ -107,20 +103,8 @@ class FigureEight:
     def getAcquisitionType(self):
         return self._acquisitionType
 
-    def updateScanPattern(self):
-        n = len(self.scanPatternX) * self._scanPatternTotalRepeats
-        self._scanPattern = PySpectralRadar.createFreeformScanPattern(self._probe,
-                                                                      self.scanPatternPositions,
-                                                                      n,
-                                                                      1,
-                                                                      FALSE)
-        PySpectralRadar.rotateScanPattern(self._scanPattern,np.pi/4)  # TODO implement angle as parameter
-
     def getFilepath(self):
         return self._fileExperimentDirectory + '/' + self._fileExperimentName
-
-    def getScanPattern(self):
-        return self._scanPattern
 
     def getRawQueue(self):
         return self._RawQueue
@@ -135,7 +119,7 @@ class FigureEight:
         return self._imagingRate
 
     def getApodWindow(self):
-        return np.hamming(2048)
+        return np.hamming(2048)  # TODO implement as setting
 
     def setConfig(self, config):
         self._config = config
@@ -221,13 +205,6 @@ class FigureEight:
 
             dim = PySpectralRadar.getRawDataShape(rawDataHandle)
 
-            # prop = PySpectralRadar.RawDataPropertyInt
-            # rawSize1 = PySpectralRadar.getRawDataPropertyInt(rawDataHandle,prop.RawData_Size1)
-            # rawSize2 = PySpectralRadar.getRawDataPropertyInt(rawDataHandle,prop.RawData_Size2)
-            # rawSize3 = PySpectralRadar.getRawDataPropertyInt(rawDataHandle,prop.RawData_Size3)
-            #
-            # dim = [rawSize1,rawSize2,rawSize3]
-
             temp = np.empty(dim, dtype=np.uint16)
 
             PySpectralRadar.copyRawDataContent(rawDataHandle, temp)
@@ -235,7 +212,7 @@ class FigureEight:
             if np.size(temp) > 0:
 
                 if counter % 10 == 0:
-                    print('Put')
+
                     processingQueue.put(deepcopy(temp))
 
             counter += 1
@@ -244,9 +221,14 @@ class FigureEight:
 
         self.stopMeasurement()
         PySpectralRadar.clearRawData(rawDataHandle)
+        self.clearScanPattern
 
     def abort(self):
         print('Abort')
+        self.stopMeasurement()
+        for thread in self._threads:
+            thread._is_running = False
+        self._threads = []
         self.active = False
         self.closeSpectralRadar()
 
@@ -259,6 +241,21 @@ class FigureEight:
     def setDeviceParams(self, rate, config):
         self._imagingRate = rate
         self._config = config
+
+    def clearScanPattern(self):
+        PySpectralRadar.clearScanPattern(self._scanPattern)
+
+    def getScanPattern(self):
+        return self._scanPattern
+
+    def updateScanPattern(self):
+        n = len(self.scanPatternX) * self._scanPatternTotalRepeats
+        self._scanPattern = PySpectralRadar.createFreeformScanPattern(self._probe,
+                                                                      self.scanPatternPositions,
+                                                                      n,
+                                                                      1,
+                                                                      FALSE)
+        PySpectralRadar.rotateScanPattern(self._scanPattern,np.pi/4)  # TODO implement angle as parameter
 
     def setScanPatternParams(self, patternSize, aLinesPerCross, aLinesPerFlyback, repeats):
         self._scanPatternSize = patternSize
@@ -274,8 +271,8 @@ class FigureEight:
          self.scanPatternN,
          self.scanPatternD] = generateIdealFigureEightPositions(patternSize,
                                                                 aLinesPerCross,
-                                                                flyback=aLinesPerFlyback,
-                                                                rpt=repeats)
+                                                                rpt=repeats,
+                                                                flyback=aLinesPerFlyback)
 
     def displayPattern(self):
         self.scatterWidget.plot2D(self.scanPatternX, self.scanPatternY)

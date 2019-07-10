@@ -46,7 +46,7 @@ class FileGroupBox(QGroupBox):
         self.entryFileSize.currentIndexChanged.connect(self.update)
 
         self.entryFileType = QComboBox()
-        self.entryFileType.addItems([".npy", ".csv"])
+        self.entryFileType.addItems([".npy", ".hdf"])
         self.entryFileType.currentIndexChanged.connect(self.update)
 
         self.layout.addRow(QLabel("Experiment name"), self.entryExpName)
@@ -138,12 +138,12 @@ class Fig8GroupBox(QGroupBox):
         self.setMinimumHeight(220)
 
         self.spinALinesPerX = QSpinBox()
-        self.spinALinesPerX.setRange(5,200)
+        self.spinALinesPerX.setRange(5,400)
         self.spinALinesPerX.setValue(10)
         self.spinALinesPerX.valueChanged.connect(self.update)
 
         self.spinFlyback = QSpinBox()
-        self.spinFlyback.setRange(2,100)
+        self.spinFlyback.setRange(2,200)
         self.spinFlyback.setValue(10)
         self.spinFlyback.valueChanged.connect(self.update)
 
@@ -188,8 +188,8 @@ class Fig8GroupBox(QGroupBox):
         self.layout.addRow(QLabel("Figure-8 width"), self.spinFig8Size)
         self.layout.addRow(QLabel("Distance between adjacent A-scans"),self.textDistance)
         self.layout.addRow(QLabel("Total A-scans in each figure-8"),self.textTotal)
-        self.layout.addRow(QLabel("Total Figure-8s to acquire"), self.spinFig8Total)
         self.layout.addRow(QLabel("Rate of figure-8 acquisition"),self.textRate)
+        self.layout.addRow(QLabel("Total Figure-8s to acquire"), self.spinFig8Total)
         self.setLayout(self.layout)
 
         self.update()

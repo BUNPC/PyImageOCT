@@ -9,22 +9,21 @@ from src.main.python.PySpectralRadar import *
 
 #-------------------------------------------------------------------------------
 
-def generateIdealFigureEightPositions(xsize, alinesPerX, rpt=1, flyback=10):
-    '''
+def generateIdealFigureEightPositions(xsize, alinesPerX, rpt=1, flyback=20):
+    """
     Generates figure-8 scan pattern positions with orthogonal cross.
     :param xdistance: Distance between adjacent scans in perpendicular B-scans
     :param alinesPerX: Number of A-lines in each orthogonal B-scan
     :param rpt: Number of times to repeat the pattern in the 1D positions array
-    :return: posRpt: 1D positions array for use with FreeformScanPattern; [x1,y1,x2,y2...]
+    :return: posRpt: 1D positions array for use with FreeformScanPattern; [x1,y1,x2,y2...] format
              X: X coordinates of a single figure-8
              Y: Y coordinates of a single figure-8
              B1: Indices of first B-scan
              B2: Indices of second B-scan
              N: Total number of A-scans in the pattern
-    '''
+             D: Distance between adjacent A-scans in the B-scans
+    """
     if rpt > 0:
-        t = np.linspace(0, 2 * np.pi, flyback, dtype=np.float32)
-
         cross = np.linspace(-xsize, xsize, alinesPerX)
 
         fb1 = np.linspace(-np.pi / 3.4, np.pi / 3.4, flyback, dtype=np.float32)
@@ -45,10 +44,10 @@ def generateIdealFigureEightPositions(xsize, alinesPerX, rpt=1, flyback=10):
 
         b1 = np.concatenate(
             [np.zeros(flyback), np.ones(alinesPerX), np.zeros(flyback), np.zeros(alinesPerX)]).astype(
-            np.bool).astype(np.bool)
+            np.bool)
         b2 = np.concatenate(
             [np.zeros(flyback), np.zeros(alinesPerX), np.zeros(flyback), np.ones(alinesPerX)]).astype(
-            np.bool).astype(np.bool)
+            np.bool)
 
         pos = np.empty(int(2 * len(X)), dtype=np.float32)
 
@@ -101,8 +100,9 @@ TRUE = BOOL(1)
 
 
 
-size = 0.75
-N = 200
+size = 0.003182
+N = 10
+fb=10
 repeats = 1
 intpDk = -0.19
 apod = np.hanning(2048)
@@ -110,7 +110,10 @@ k = np.linspace(1-intpDk/2, 1+intpDk/2, 2048)
 lam = 1/k[::-1]
 interpIndices = np.linspace( min(lam), max(lam), 2048)
 
-fig8pos, X, Y, b1, b2, Na, D = generateIdealFigureEightPositions(size,N,rpt=repeats,flyback=40)
+fig8pos, X, Y, b1, b2, Na, D = generateIdealFigureEightPositions(size,N,rpt=repeats,flyback=fb)
+
+plt.plot(X,Y)
+plt.show()
 
 xsection1 = np.arange(Na)[b1]
 xsection = np.arange(Na)[b2]
