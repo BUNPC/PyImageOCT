@@ -37,7 +37,7 @@ class FigureEight:
 
         # Device config
         self._imagingRate = 76000  # Rate in hz. NOT FUNCTIONAL
-        self._config = "Probe"  # For offline testing ONLY
+        self._config = "ProbeLKM10-LV"  # TODO implement as real parameter from GUI
 
         self.active = False
 
@@ -64,10 +64,9 @@ class FigureEight:
         self._triggerType = PySpectralRadar.Device_TriggerType.Trigger_FreeRunning  # Default
         self._triggerTimeout = 5  # Number from old labVIEW program
         self._acquisitionType = PySpectralRadar.AcquisitionType.Acquisition_AsyncContinuous # TODO: figure this out
-        print(self._acquisitionType)
         PySpectralRadar.setTriggerMode(self._device, self._triggerType)
         PySpectralRadar.setTriggerTimeoutSec(self._device, self._triggerTimeout)
-        self.updateScanPattern()
+        self.updateScanPattern() # TODO figure out scan pattern management
         try:
             self._lam = np.load('lam.npy')
         except FileNotFoundError:
@@ -80,15 +79,16 @@ class FigureEight:
 
     def closeSpectralRadar(self):
         self.stopMeasurement()
-        # for thread in self._threads:
-        #     thread.join()
+        for thread in self._threads:
+            thread._is_running = False
+        self._threads = []
         PySpectralRadar.closeDevice(self._device)
         PySpectralRadar.closeProcessing(self._proc)
         PySpectralRadar.closeProbe(self._probe)
         PySpectralRadar.clearScanPattern(self._scanPattern)
 
     def startMeasurement(self):
-        PySpectralRadar.startMeasurement(self._device, self._scanPattern, PySpectralRadar.AcquisitionType.Acquisition_AsyncContinuous)
+        PySpectralRadar.startMeasurement(self._device, self._scanPattern, self._acquisitionType)
 
     def setComplexDataOutput(self, complexDataHandle):
         PySpectralRadar.setComplexDataOutput(self._proc, complexDataHandle)
@@ -112,6 +112,7 @@ class FigureEight:
                                                                       n,
                                                                       1,
                                                                       FALSE)
+        PySpectralRadar.rotateScanPattern(self._scanPattern,np.pi/4)  # TODO implement angle as parameter
 
     def getFilepath(self):
         return self._fileExperimentDirectory + '/' + self._fileExperimentName
@@ -144,9 +145,9 @@ class FigureEight:
 
         # For scanning, acquisition occurs after each figure-8, so rpt is set to 1
         self.setScanPatternParams(self._scanPatternSize,
-                                             self._scanPatternAlinesPerCross,
-                                             self._scanPatternAlinesPerFlyback,
-                                             1)
+                                  self._scanPatternAlinesPerCross,
+                                  self._scanPatternAlinesPerFlyback,
+                                  1)
 
         self.initializeSpectralRadar()
         scan = threading.Thread(target=self.scanFunc)

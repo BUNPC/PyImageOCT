@@ -2,7 +2,7 @@ import numpy as np
 
 
 def generateIdealFigureEightPositions(xsize, alinesPerX, rpt=1, flyback=20):
-    '''
+    """
     Generates figure-8 scan pattern positions with orthogonal cross.
     :param xdistance: Distance between adjacent scans in perpendicular B-scans
     :param alinesPerX: Number of A-lines in each orthogonal B-scan
@@ -14,10 +14,8 @@ def generateIdealFigureEightPositions(xsize, alinesPerX, rpt=1, flyback=20):
              B2: Indices of second B-scan
              N: Total number of A-scans in the pattern
              D: Distance between adjacent A-scans in the B-scans
-    '''
+    """
     if rpt > 0:
-        t = np.linspace(0, 2 * np.pi, flyback, dtype=np.float32)
-
         cross = np.linspace(-xsize, xsize, alinesPerX)
 
         fb1 = np.linspace(-np.pi / 3.4, np.pi / 3.4, flyback, dtype=np.float32)
@@ -54,7 +52,8 @@ def generateIdealFigureEightPositions(xsize, alinesPerX, rpt=1, flyback=20):
 
         return [posRpt, X, Y, b1, b2, N, D]
 
-def fig8ToBScan(A,N,B,AlinesPerX,apod,ROI=400):
+
+def fig8ToBScan(A, N, B, AlinesPerX, apod, ROI=400):
     """
     Converts a raw array of unsigned 16 bit integer fig-8 data from Telesto to ROI of spatial domain pixels for
     live display ONLY (no lambda-k interpolation)
@@ -67,23 +66,19 @@ def fig8ToBScan(A,N,B,AlinesPerX,apod,ROI=400):
     :return: A 2D array of dB scale quasi-spatial data
     """
     flat = A.flatten()
-    proc = np.empty([1024,AlinesPerX],dtype=np.complex64)
-    fig8 = np.empty([2048,AlinesPerX],dtype=np.uint16)
+    proc = np.empty([1024, AlinesPerX], dtype=np.complex64)
+    fig8 = np.empty([2048, AlinesPerX], dtype=np.uint16)
 
     i = 0
     for n in np.arange(N):
         if B[n]:
-            fig8[:,i] = flat[2048*n:2048*n+2048]
+            fig8[:, i] = flat[2048 * n:2048 * n + 2048]
             i += 1
 
-    dc = np.mean(fig8,axis=1)
+    dc = np.mean(fig8, axis=1)
 
     for n in np.arange(AlinesPerX):
-        c = (fig8[:,n] - dc) * apod
-        proc[:,n] = np.fft.ifft(c)[0:1024].astype(np.complex64)
+        c = (fig8[:, n] - dc) * apod
+        proc[:, n] = np.fft.ifft(c)[0:1024].astype(np.complex64)
 
-    return 20*np.log10(np.abs(proc[0:ROI]))
-
-
-
-
+    return 20 * np.log10(np.abs(proc[0:ROI]))
