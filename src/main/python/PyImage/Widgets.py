@@ -19,9 +19,6 @@ from pathlib import Path
 
 from src.main.python.PyImage.OCT import *
 
-PyQtG.setConfigOption('background', 'w')
-PyQtG.setConfigOption('foreground', 'k')
-
 class FileGroupBox(QGroupBox):
 
     def __init__(self, name, controller, width=500):

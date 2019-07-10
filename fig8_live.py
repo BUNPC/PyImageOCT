@@ -144,7 +144,7 @@ def AcqThread():
     while i > 0:
         setComplexDataOutput(proc,complexDataHandle)
         getRawData(dev,rawDataHandle)
-        executeProcessing(proc,rawDataHandle)
+        # executeProcessing(proc,rawDataHandle)
 
         if i == rpt:
             prop = RawDataPropertyInt

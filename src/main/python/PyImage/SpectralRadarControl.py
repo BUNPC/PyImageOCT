@@ -1,6 +1,8 @@
 from src.main.python import PySpectralRadar
 from queue import Queue
+import threading
 from PyQt5.QtCore import QObject, QThread, pyqtSlot
+
 from src.main.python.PyImage.OCT import *
 
 TRUE = PySpectralRadar.TRUE
@@ -54,34 +56,39 @@ class FigureEight:
 
         self._threads = []
 
-    def initializeSpectralRadar(self):
+    def initializeSpectralRadar(self): # Need to thread this eventually, long hang time for GUI
         self._device = PySpectralRadar.initDevice()
         self._probe = PySpectralRadar.initProbe(self._device, self._config)
         self._proc = PySpectralRadar.createProcessingForDevice(self._device)
         PySpectralRadar.setCameraPreset(self._device, self._probe, self._proc, 0)  # 0 is the main camera
         self._triggerType = PySpectralRadar.Device_TriggerType.Trigger_FreeRunning  # Default
         self._triggerTimeout = 5  # Number from old labVIEW program
-        self._acquisitionType = PySpectralRadar.AcquisitionType.Acquisition_AsyncContinuous
+        self._acquisitionType = PySpectralRadar.AcquisitionType.Acquisition_AsyncContinuous # TODO: figure this out
+        print(self._acquisitionType)
         PySpectralRadar.setTriggerMode(self._device, self._triggerType)
         PySpectralRadar.setTriggerTimeoutSec(self._device, self._triggerTimeout)
         self.updateScanPattern()
         try:
-            self._lam = np.load('configuration/lam.npy')
+            self._lam = np.load('lam.npy')
         except FileNotFoundError:
             self._lam = np.empty(2048)
             for y in np.arange(2048):
                 self._lam[y] = PySpectralRadar.getWavelengthAtPixel(self._device,y)
+            np.save('lam', self._lam)
 
         print('Telesto initialized successfully.')
 
     def closeSpectralRadar(self):
+        self.stopMeasurement()
+        # for thread in self._threads:
+        #     thread.join()
         PySpectralRadar.closeDevice(self._device)
         PySpectralRadar.closeProcessing(self._proc)
         PySpectralRadar.closeProbe(self._probe)
         PySpectralRadar.clearScanPattern(self._scanPattern)
 
     def startMeasurement(self):
-        PySpectralRadar.startMeasurement(self._device, self._scanPattern, self._acquisitionType)
+        PySpectralRadar.startMeasurement(self._device, self._scanPattern, PySpectralRadar.AcquisitionType.Acquisition_AsyncContinuous)
 
     def setComplexDataOutput(self, complexDataHandle):
         PySpectralRadar.setComplexDataOutput(self._proc, complexDataHandle)
@@ -141,23 +148,36 @@ class FigureEight:
                                              self._scanPatternAlinesPerFlyback,
                                              1)
 
-        acquisitionThread = AcquisitionThread(self)
-        displayThread = DisplayThread(self)
-
-        acq = ScanEight(self, 0)
-        disp = Display(self, 1)
-
-        acq.moveToThread(acquisitionThread)
-        disp.moveToThread(displayThread)
-
-        acquisitionThread.started.connect(acq.work)
-        displayThread.started.connect(disp.work)
-
-        self._threads.append(acquisitionThread)
-        self._threads.append(displayThread)
+        self.initializeSpectralRadar()
+        scan = threading.Thread(target=self.scanFunc)
+        disp = threading.Thread(target=self.displayFunc)
+        self._threads.append(scan)
+        self._threads.append(disp)
 
         for thread in self._threads:
             thread.start()
+
+
+        print('Started threads')
+
+        # acquisitionThread = AcquisitionThread(self)
+        # displayThread = DisplayThread(self)
+        #
+        # acq = ScanEight(self, 0)
+        # disp = Display(self, 1)
+        #
+        # acq.moveToThread(acquisitionThread)
+        # disp.moveToThread(displayThread)
+        #
+        # acquisitionThread.started.connect(acq.work)
+        # displayThread.started.connect(disp.work)
+        #
+        # self._threads.append(acquisitionThread)
+        # self._threads.append(displayThread)
+        #
+        # for thread in self._threads:
+        #     print('Starting '+str(thread))
+        #     thread.start()
 
     def initAcq(self):
         print('Init acq')
@@ -182,10 +202,65 @@ class FigureEight:
         for thread in self._threads:
             thread.start()
 
+    def displayFunc(self):
+
+        running = True
+        processingQueue = self.getProcessingQueue()
+
+        print('displayFunc initialized')
+
+        while running and self.active:
+
+            raw = processingQueue.get()
+            spec = raw.flatten()[0:2048]  # First spectrum of the B-scan only is plotted
+
+            # bscan = fig8ToBScan(raw,
+            #                     self.scanPatternN,
+            #                     self.scanPatternB1,
+            #                     self._scanPatternAlinesPerCross,
+            #                     self.getApodWindow())
+
+            self.plotWidget.plot1D(spec)
+
+    def scanFunc(self):
+
+        running = True
+        processingQueue = self.getProcessingQueue()
+        counter = 0
+
+        rawDataHandle = PySpectralRadar.createRawData()
+
+        self.getRawData(rawDataHandle)
+
+        while running and self.active:
+
+            self.startMeasurement()
+            self.getRawData(rawDataHandle)
+            dim = PySpectralRadar.getRawDataShape(rawDataHandle)
+
+            # prop = PySpectralRadar.RawDataPropertyInt
+            # rawSize1 = PySpectralRadar.getRawDataPropertyInt(rawDataHandle,prop.RawData_Size1)
+            # rawSize2 = PySpectralRadar.getRawDataPropertyInt(rawDataHandle,prop.RawData_Size2)
+            # rawSize3 = PySpectralRadar.getRawDataPropertyInt(rawDataHandle,prop.RawData_Size3)
+            #
+            # dim = [rawSize1,rawSize2,rawSize3]
+
+            temp = np.empty(dim, dtype=np.uint16)
+
+            PySpectralRadar.copyRawDataContent(rawDataHandle, temp)
+            if np.size(temp) > 0:
+
+                if counter % 10 == 0:
+                    processingQueue.put(temp)
+
+            counter += 1
+
+        self.stopMeasurement()
+
     def abort(self):
         print('Abort')
         self.active = False
-        self.abortSpectralRadar()
+        self.closeSpectralRadar()
 
     def setFileParams(self, experimentDirectory, experimentName, maxSize, fileType):
         self._fileExperimentDirectory = experimentDirectory
@@ -261,6 +336,7 @@ class AcquisitionThread(QThread):
         QThread.__init__(self)
         self.controller = controller
         self.controller.initializeSpectralRadar()
+        print('Scan thread initialized')
 
     def __del__(self):
         self.wait()
@@ -275,15 +351,19 @@ class ScanEight(QObject):
         self.controller = controller
         self.processingQueue = controller.getProcessingQueue()
         self.counter = 0
+        print('QObject initialized.')
 
     @pyqtSlot()
     def work(self):
+
+        print('ScanEight: working')
 
         while self.controller.active:
 
             thread_name = QThread.currentThread().objectName()
             thread_id = int(QThread.currentThreadId())  # cast to int() is necessary
 
+            print('Measurement starting.')
             self.controller.startMeasurement()
 
             rawDataHandle = PySpectralRadar.createRawData()
@@ -312,7 +392,7 @@ class AcqEight(QObject):
         self.controller = controller
         self.rawQueue = controller.getRawQueue()
         self.counter = 0
-        self.mode = mode
+        print('QObject initialized.')
 
     @pyqtSlot()
     def work(self):
@@ -348,6 +428,7 @@ class DisplayThread(QThread):
     def __init__(self, controller):
         QThread.__init__(self)
         self.controller = controller
+        print('Display thread initialized')
 
     def __del__(self):
         self.wait()
@@ -384,3 +465,7 @@ class Display(QObject):
 
     def abort(self):
         self.__abort = True
+
+
+
+
