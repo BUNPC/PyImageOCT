@@ -53,7 +53,7 @@ def generateIdealFigureEightPositions(xsize, alinesPerX, rpt=1, flyback=20):
         return [posRpt, X, Y, b1, b2, N, D]
 
 
-def fig8ToBScan(A, N, B, AlinesPerX, apod, ROI=400):
+def fig8ToBScan(A, N, B, AlinesPerX, apod, ROI=200):
     """
     Converts a raw array of unsigned 16 bit integer fig-8 data from Telesto to ROI of spatial domain pixels for
     live display ONLY (no lambda-k interpolation)

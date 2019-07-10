@@ -42,11 +42,11 @@ class Main(QTabWidget):
         self.windowTitle = 'PyOCT V.0.0.1'
         self.setWindowTitle(self.windowTitle)
 
-        self.setMaximumHeight(800)
-        self.setMaximumWidth(600)
-
-        self.setMinimumHeight(600)
-        self.setMinimumWidth(400)
+        # self.setMaximumHeight(800)
+        # self.setMaximumWidth(600)
+        #
+        # self.setMinimumHeight(600)
+        # self.setMinimumWidth(400)
 
 
 class TabFigEight(QWidget):
@@ -63,19 +63,18 @@ class TabFigEight(QWidget):
 
         # Real-time plot widget for display of raw spectral data
         self.plotSpectrum = Widgets.plotWidget2D(name="Raw Spectrum", type='curve')
-        self.mainGrid.addWidget(self.plotSpectrum, 0, 1, 2, 2)
+        self.mainGrid.addWidget(self.plotSpectrum, 0, 2, 2, 1)
         self.plotSpectrum.setXRange(0, 2048)
         self.plotSpectrum.setYRange(0, 4000)
 
         # Real-time scatter plot widget for display of scan pattern
         self.plotPattern = Widgets.plotWidget2D(name="Scan Pattern Preview", type='scatter', aspectLocked=True)
-        self.mainGrid.addWidget(self.plotPattern, 3, 2, 1, 1)
+        self.mainGrid.addWidget(self.plotPattern, 0, 3, 2, 1)
         self.plotPattern.labelAxes('mm', '')
 
         # Real-time image display for B-scan
         self.plotBScan = Widgets.BScanView()
-        self.mainGrid.addWidget(self.plotBScan, 0, 0, 2, 1)
-        self.plotPattern.labelAxes('px', 'px')
+        self.mainGrid.addWidget(self.plotBScan, 0, 0, 5, 2)
 
         # Thorlabs SpectralRadar SDK is wrapped with PySpectralRadar module.
         # Interfaces corresponding to scanning modes are defined PyImage.SpectralRadarControl
@@ -88,19 +87,19 @@ class TabFigEight(QWidget):
 
         # File I/O properties interface
         self.file = Widgets.FileGroupBox('File', self.controller)
-        self.mainGrid.addWidget(self.file, 2, 0, 1, 2)
+        self.mainGrid.addWidget(self.file, 2, 2, 1, 1)
 
         # Main OCT device settings
         self.params = Widgets.ParamsGroupBox('OCT Imaging Parameters', self.controller)
-        self.mainGrid.addWidget(self.params, 2, 2, 1, 1)
+        self.mainGrid.addWidget(self.params, 3, 2, 1, 1)
 
         # Fig 8 scan pattern parameters
         self.scanParameters = Widgets.Fig8GroupBox('Scan Pattern', self.controller)
-        self.mainGrid.addWidget(self.scanParameters, 3, 0, 1, 2)
+        self.mainGrid.addWidget(self.scanParameters, 2, 3, 2, 1)
 
         # Master scan/acquire/stop buttons
         self.controlButtons = Widgets.ControlGroupBox('Control', self.controller)
-        self.mainGrid.addWidget(self.controlButtons, 4, 0, 1, 1)
+        self.mainGrid.addWidget(self.controlButtons, 5, 0, 1, 2)
 
 
 # Qt main loop
