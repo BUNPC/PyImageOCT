@@ -61,6 +61,8 @@ class TabFigEight(QWidget):
         # Real-time plot widget for display of raw spectral data
         self.plotSpectrum = Widgets.plotWidget2D(name="Raw Spectrum", type='curve', height=300, width=300)
         self.mainGrid.addWidget(self.plotSpectrum, 0, 0, 2, 2)
+        self.plotSpectrum.setXRange(0, 2048)
+        self.plotSpectrum.setYRange(0, 4000)
 
         # Real-time scatter plot widget for display of scan pattern
         self.plotPattern = Widgets.plotWidget2D(name="Scan Pattern Preview", type='scatter', height=250, width=300,

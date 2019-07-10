@@ -4,6 +4,7 @@ import threading
 from PyQt5.QtCore import QObject, QThread, pyqtSlot
 
 from src.main.python.PyImage.OCT import *
+from copy import deepcopy
 
 TRUE = PySpectralRadar.TRUE
 FALSE = PySpectralRadar.FALSE
@@ -82,10 +83,11 @@ class FigureEight:
         for thread in self._threads:
             thread._is_running = False
         self._threads = []
-        PySpectralRadar.closeDevice(self._device)
+
+        PySpectralRadar.clearScanPattern(self._scanPattern)
         PySpectralRadar.closeProcessing(self._proc)
         PySpectralRadar.closeProbe(self._probe)
-        PySpectralRadar.clearScanPattern(self._scanPattern)
+        PySpectralRadar.closeDevice(self._device)
 
     def startMeasurement(self):
         PySpectralRadar.startMeasurement(self._device, self._scanPattern, self._acquisitionType)
@@ -158,28 +160,6 @@ class FigureEight:
         for thread in self._threads:
             thread.start()
 
-
-        print('Started threads')
-
-        # acquisitionThread = AcquisitionThread(self)
-        # displayThread = DisplayThread(self)
-        #
-        # acq = ScanEight(self, 0)
-        # disp = Display(self, 1)
-        #
-        # acq.moveToThread(acquisitionThread)
-        # disp.moveToThread(displayThread)
-        #
-        # acquisitionThread.started.connect(acq.work)
-        # displayThread.started.connect(disp.work)
-        #
-        # self._threads.append(acquisitionThread)
-        # self._threads.append(displayThread)
-        #
-        # for thread in self._threads:
-        #     print('Starting '+str(thread))
-        #     thread.start()
-
     def initAcq(self):
         print('Init acq')
 
@@ -215,11 +195,11 @@ class FigureEight:
             raw = processingQueue.get()
             spec = raw.flatten()[0:2048]  # First spectrum of the B-scan only is plotted
 
-            # bscan = fig8ToBScan(raw,
-            #                     self.scanPatternN,
-            #                     self.scanPatternB1,
-            #                     self._scanPatternAlinesPerCross,
-            #                     self.getApodWindow())
+            bscan = fig8ToBScan(raw,
+                                self.scanPatternN,
+                                self.scanPatternB1,
+                                self._scanPatternAlinesPerCross,
+                                self.getApodWindow())
 
             self.plotWidget.plot1D(spec)
 
@@ -233,10 +213,12 @@ class FigureEight:
 
         self.getRawData(rawDataHandle)
 
+        self.startMeasurement()
+
         while running and self.active:
 
-            self.startMeasurement()
             self.getRawData(rawDataHandle)
+
             dim = PySpectralRadar.getRawDataShape(rawDataHandle)
 
             # prop = PySpectralRadar.RawDataPropertyInt
@@ -249,14 +231,19 @@ class FigureEight:
             temp = np.empty(dim, dtype=np.uint16)
 
             PySpectralRadar.copyRawDataContent(rawDataHandle, temp)
+
             if np.size(temp) > 0:
 
                 if counter % 10 == 0:
-                    processingQueue.put(temp)
+                    print('Put')
+                    processingQueue.put(deepcopy(temp))
 
             counter += 1
 
+            del temp
+
         self.stopMeasurement()
+        PySpectralRadar.clearRawData(rawDataHandle)
 
     def abort(self):
         print('Abort')
