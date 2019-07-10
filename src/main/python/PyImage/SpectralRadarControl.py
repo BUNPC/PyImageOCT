@@ -50,6 +50,7 @@ class FigureEight:
         self._triggerType = None
         self._acquisitionType = None
         self._triggerTimeout = None
+        self._lam = None
 
         self._threads = []
 
@@ -64,6 +65,13 @@ class FigureEight:
         PySpectralRadar.setTriggerMode(self._device, self._triggerType)
         PySpectralRadar.setTriggerTimeoutSec(self._device, self._triggerTimeout)
         self.updateScanPattern()
+        try:
+            self._lam = np.load('configuration/lam.npy')
+        except FileNotFoundError:
+            self._lam = np.empty(2048)
+            for y in np.arange(2048):
+                self._lam[y] = PySpectralRadar.getWavelengthAtPixel(self._device,y)
+
         print('Telesto initialized successfully.')
 
     def closeSpectralRadar(self):
@@ -267,7 +275,6 @@ class ScanEight(QObject):
         self.controller = controller
         self.processingQueue = controller.getProcessingQueue()
         self.counter = 0
-        self.mode = mode
 
     @pyqtSlot()
     def work(self):
