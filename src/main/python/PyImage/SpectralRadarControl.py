@@ -9,12 +9,14 @@ from copy import deepcopy
 TRUE = True
 FALSE = False
 
+
 class FigureEight:
 
     def __init__(self, plotWidget=None, scatterWidget=None, imageWidget=None, infoWidget=None):
         # Arguments
         self.plotWidget = plotWidget
         self.scatterWidget = scatterWidget
+        self.imageWidget = imageWidget
 
         # File params
         self._fileExperimentName = None
@@ -58,14 +60,14 @@ class FigureEight:
 
         self._threads = []
 
-    def initializeSpectralRadar(self): # Need to thread this eventually, long hang time for GUI
+    def initializeSpectralRadar(self):  # Need to thread this eventually, long hang time for GUI
         self._device = PySpectralRadar.initDevice()
         self._probe = PySpectralRadar.initProbe(self._device, self._config)
         self._proc = PySpectralRadar.createProcessingForDevice(self._device)
         PySpectralRadar.setCameraPreset(self._device, self._probe, self._proc, 0)  # 0 is the main camera
         self._triggerType = PySpectralRadar.Device_TriggerType.Trigger_FreeRunning  # Default
         self._triggerTimeout = 5  # Number from old labVIEW program
-        self._acquisitionType = PySpectralRadar.AcquisitionType.Acquisition_AsyncContinuous # TODO: figure this out
+        self._acquisitionType = PySpectralRadar.AcquisitionType.Acquisition_AsyncContinuous  # TODO: figure this out
         PySpectralRadar.setTriggerMode(self._device, self._triggerType)
         PySpectralRadar.setTriggerTimeoutSec(self._device, self._triggerTimeout)
         self.updateScanPattern()  # TODO figure out scan pattern management
@@ -74,7 +76,7 @@ class FigureEight:
         except FileNotFoundError:
             self._lam = np.empty(2048)
             for y in np.arange(2048):
-                self._lam[y] = PySpectralRadar.getWavelengthAtPixel(self._device,y)
+                self._lam[y] = PySpectralRadar.getWavelengthAtPixel(self._device, y)
             np.save('lam', self._lam)
 
         print('Telesto initialized successfully.')
@@ -175,7 +177,6 @@ class FigureEight:
         print('displayFunc initialized')
 
         while running and self.active:
-
             raw = processingQueue.get()
             spec = raw.flatten()[0:2048]  # First spectrum of the B-scan only is plotted
 
@@ -186,6 +187,7 @@ class FigureEight:
                                 self.getApodWindow())
 
             self.plotWidget.plot1D(spec)
+            self.imageWidget.update(np.transpose(bscan))
 
     def scanFunc(self):
 
@@ -212,7 +214,6 @@ class FigureEight:
             if np.size(temp) > 0:
 
                 if counter % 10 == 0:
-
                     processingQueue.put(deepcopy(temp))
 
             counter += 1
@@ -255,7 +256,7 @@ class FigureEight:
                                                                       n,
                                                                       1,
                                                                       FALSE)
-        PySpectralRadar.rotateScanPattern(self._scanPattern,np.pi/4)  # TODO implement angle as parameter
+        PySpectralRadar.rotateScanPattern(self._scanPattern, np.pi / 4)  # TODO implement angle as parameter
 
     def setScanPatternParams(self, patternSize, aLinesPerCross, aLinesPerFlyback, repeats):
         self._scanPatternSize = patternSize

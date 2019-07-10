@@ -19,16 +19,15 @@ from pathlib import Path
 
 from src.main.python.PyImage.OCT import *
 
+
 class FileGroupBox(QGroupBox):
 
-    def __init__(self, name, controller, width=500):
+    def __init__(self, name, controller):
         super().__init__(name)
 
         self.controller = controller
 
         self.layout = QFormLayout()
-
-        # self.setFixedWidth(width)
 
         self.entryExpName = QLineEdit()
         now = time.strftime("%y-%m-%d")
@@ -59,13 +58,12 @@ class FileGroupBox(QGroupBox):
         self.update()
 
     def update(self):
-
         experimentName = self.entryExpName.text()
         experimentDirectory = self.entryExpDir.text()
         maxFileSize = str(self.entryFileSize.currentText())
         fileType = str(self.entryFileType.currentText())
 
-        self.controller.setFileParams(experimentName,experimentDirectory,maxFileSize,fileType)
+        self.controller.setFileParams(experimentName, experimentDirectory, maxFileSize, fileType)
 
 
 class ParamsGroupBox(QGroupBox):
@@ -77,10 +75,8 @@ class ParamsGroupBox(QGroupBox):
 
         self.layout = QFormLayout()
 
-        self.setMinimumHeight(220)
-
         self.entryImagingRate = QComboBox()
-        self.entryImagingRate.addItems(["76 kHz","146 kHz"])
+        self.entryImagingRate.addItems(["76 kHz", "146 kHz"])
         self.entryImagingRate.currentIndexChanged.connect(self.update)
 
         self.entryConfig = QComboBox()
@@ -93,9 +89,7 @@ class ParamsGroupBox(QGroupBox):
         self.setLayout(self.layout)
 
     def update(self):
-
         pass
-
 
 
 class ControlGroupBox(QGroupBox):
@@ -121,34 +115,32 @@ class ControlGroupBox(QGroupBox):
 
         self.setLayout(self.layout)
 
-    def disabled(self,bool):
+    def disabled(self, bool):
         self.scanButton.setEnabled(bool)
         self.acqButton.setEnabled(bool)
 
 
 class Fig8GroupBox(QGroupBox):
 
-    def __init__(self, name, controller, width=500):
+    def __init__(self, name, controller):
         super().__init__(name)
 
         self.controller = controller
 
         self.layout = QFormLayout()
 
-        self.setMinimumHeight(220)
-
         self.spinALinesPerX = QSpinBox()
-        self.spinALinesPerX.setRange(5,400)
+        self.spinALinesPerX.setRange(5, 400)
         self.spinALinesPerX.setValue(10)
         self.spinALinesPerX.valueChanged.connect(self.update)
 
         self.spinFlyback = QSpinBox()
-        self.spinFlyback.setRange(2,200)
+        self.spinFlyback.setRange(2, 200)
         self.spinFlyback.setValue(10)
         self.spinFlyback.valueChanged.connect(self.update)
 
         self.spinFig8Size = QDoubleSpinBox()
-        self.spinFig8Size.setRange(0.00001,3)
+        self.spinFig8Size.setRange(0.00001, 3)
         self.spinFig8Size.setSuffix(' mm')
         self.spinFig8Size.setDecimals(6)
         self.spinFig8Size.setSingleStep(0.00001)
@@ -156,12 +148,12 @@ class Fig8GroupBox(QGroupBox):
         self.spinFig8Size.valueChanged.connect(self.update)
 
         self.spinFig8Total = QSpinBox()
-        self.spinFig8Total.setRange(1,5000)
+        self.spinFig8Total.setRange(1, 5000)
         self.spinFig8Total.setValue(500)
         self.spinFig8Total.valueChanged.connect(self.update)
 
         self.spinAcqTime = QSpinBox()
-        self.spinAcqTime.setRange(10,20000)
+        self.spinAcqTime.setRange(10, 20000)
         self.spinAcqTime.setValue(1000)
         self.spinAcqTime.valueChanged.connect(self.update)
 
@@ -186,35 +178,35 @@ class Fig8GroupBox(QGroupBox):
         self.layout.addRow(QLabel("A-lines per B-scan"), self.spinALinesPerX)
         self.layout.addRow(QLabel("A-lines per flyback"), self.spinFlyback)
         self.layout.addRow(QLabel("Figure-8 width"), self.spinFig8Size)
-        self.layout.addRow(QLabel("Distance between adjacent A-scans"),self.textDistance)
-        self.layout.addRow(QLabel("Total A-scans in each figure-8"),self.textTotal)
-        self.layout.addRow(QLabel("Rate of figure-8 acquisition"),self.textRate)
+        self.layout.addRow(QLabel("Distance between adjacent A-scans"), self.textDistance)
+        self.layout.addRow(QLabel("Total A-scans in each figure-8"), self.textTotal)
+        self.layout.addRow(QLabel("Rate of figure-8 acquisition"), self.textRate)
         self.layout.addRow(QLabel("Total Figure-8s to acquire"), self.spinFig8Total)
         self.setLayout(self.layout)
 
         self.update()
 
     def update(self):
-
         self.controller.setScanPatternParams(self.spinFig8Size.value(),
                                              self.spinALinesPerX.value(),
                                              self.spinFlyback.value(),
                                              self.spinFig8Total.value())
 
-        self.textDistance.setText(str(self.controller.scanPatternD*10**6)[0:8]+' nm')
+        self.textDistance.setText(str(self.controller.scanPatternD * 10 ** 6)[0:8] + ' nm')
         self.textTotal.setText(str(self.controller.scanPatternN))
 
-        w = 1/(1/self.controller.getRate() * self.controller.scanPatternN)
-        self.textRate.setText(str(w)[0:10]+' hz ')
+        w = 1 / (1 / self.controller.getRate() * self.controller.scanPatternN)
+        self.textRate.setText(str(w)[0:10] + ' hz ')
         self.controller.displayPattern()
 
-    def disabled(self,bool):
+    def disabled(self, bool):
         self.spinALinesPerX.setDisabled(bool)
         self.spinFig8Size.setDisabled(bool)
 
+
 class plotWidget2D(PyQtG.PlotWidget):
 
-    def __init__(self,type='curve',name=None, xaxis=np.arange(2048),height=100,width=100,aspectLocked=False):
+    def __init__(self, type='curve', name=None, xaxis=np.arange(2048), aspectLocked=False):
 
         super().__init__(name=name)
 
@@ -226,23 +218,37 @@ class plotWidget2D(PyQtG.PlotWidget):
             raise Exception('Invalid type for PyQtGraph item. Only "curve" and "scatter" are supported.')
 
         self.setTitle(title=name)
-        self.setFixedHeight(height)
-        self.setFixedWidth(width)
         self.setAspectLocked(aspectLocked)
         self.X = xaxis
-        self.showGrid(x=1,y=1)
+        self.showGrid(x=1, y=1)
         self.addItem(self.item)
 
-    def labelAxes(self,xlabel,ylabel):
-        self.setLabels(left=ylabel,bottom=xlabel)
+    def labelAxes(self, xlabel, ylabel):
+        self.setLabels(left=ylabel, bottom=xlabel)
 
-    def plot1D(self,Y):
+    def plot1D(self, Y):
         self.item.clear()
-        self.item.setData(x=self.X,y=Y)
+        self.item.setData(x=self.X, y=Y)
         QtGui.QApplication.processEvents()
 
-    def plot2D(self,X,Y):
+    def plot2D(self, X, Y):
         self.item.clear()
-        self.item.setData(x=X,y=Y)
+        self.item.setData(x=X, y=Y)
         QtGui.QGuiApplication.processEvents()
 
+
+class BScanView(PyQtG.GraphicsView):
+
+    def __init__(self, hist=None):
+        super().__init__()
+
+        self.layout = PyQtG.GraphicsLayout()
+        self.setCentralItem(self.layout)
+        self.viewbox = self.layout.addViewBox()
+        self.image = PyQtG.ImageItem()
+        self.viewbox.addItem(self.image)
+
+    def update(self, data):
+        self.image.clear()
+        self.image.setImage(data, autoLevels=False, levels=(-100, -2))
+        QtGui.QGuiApplication.processEvents()
