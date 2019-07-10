@@ -1,4 +1,6 @@
 import numpy as np
+import numba
+from scipy.interpolate import interp1d
 
 
 def generateIdealFigureEightPositions(xsize, alinesPerX, rpt=1, flyback=20):
@@ -53,32 +55,45 @@ def generateIdealFigureEightPositions(xsize, alinesPerX, rpt=1, flyback=20):
         return [posRpt, X, Y, b1, b2, N, D]
 
 
-def fig8ToBScan(A, N, B, AlinesPerX, apod, ROI=200):
+def fig8ToBScan(A, N, B, AlinesPerX, apod, ROI=200, lam=None):
     """
     Converts a raw array of unsigned 16 bit integer fig-8 data from Telesto to ROI of spatial domain pixels for
-    live display ONLY (no lambda-k interpolation)
+    live display
     :param A: Raw figure-8 data
     :param N: The total number of A-lines in the figure-8 pattern
     :param B: Boolean-type array representing indices in N-length A which make up a B-scan
     :param AlinesPerX: Number of A-lines in each B-scan
     :param apod: Apodization window. Must be 2048 in length
     :param ROI: number of pixels from the top of the B-scan to return
+    :param lam: linear interpolation vector
     :return: A 2D array of dB scale quasi-spatial data
     """
     flat = A.flatten()
     proc = np.empty([1024, AlinesPerX], dtype=np.complex64)
-    fig8 = np.empty([2048, AlinesPerX], dtype=np.uint16)
+    interpolated = np.empty([2048,AlinesPerX])
 
+    preprocessed = preprocess8(flat,N,B,AlinesPerX,apod)
+
+    for n in np.arange(AlinesPerX):
+        k = interp1d(lam,preprocessed[:,n])
+        interpolated[:,n] = k(np.linspace(min(lam),max(lam),2048))
+        proc[:, n] = np.fft.ifft(interpolated[:,n])[0:1024].astype(np.complex64)
+
+    return 20 * np.log10(np.abs(proc[0:ROI]))
+
+@numba.jit
+def preprocess8(flattened,N,B,AlinesPerX,apod):
+    pp = np.empty([2048,AlinesPerX])
     i = 0
     for n in np.arange(N):
         if B[n]:
-            fig8[:, i] = flat[2048 * n:2048 * n + 2048]
+            pp[:, i] = flattened[2048 * n:2048 * n + 2048]
             i += 1
 
-    dc = np.mean(fig8, axis=1)
+    dc = np.mean(pp, axis=1)
+    window = apod / dc
 
     for n in np.arange(AlinesPerX):
-        c = (fig8[:, n] - dc) * apod
-        proc[:, n] = np.fft.ifft(c)[0:1024].astype(np.complex64)
+        pp[:,n] = pp[:, n] * window
 
-    return 20 * np.log10(np.abs(proc[0:ROI]))
+    return pp

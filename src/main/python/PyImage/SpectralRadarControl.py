@@ -123,6 +123,9 @@ class FigureEight:
     def getApodWindow(self):
         return np.hamming(2048)  # TODO implement as setting
 
+    def getLambda(self):
+        return self._lam
+
     def setConfig(self, config):
         self._config = config
 
@@ -173,6 +176,9 @@ class FigureEight:
 
         running = True
         processingQueue = self.getProcessingQueue()
+        N = self.scanPatternN
+        B = self.scanPatternB1
+        AperX = self._scanPatternAlinesPerCross
 
         print('displayFunc initialized')
 
@@ -181,19 +187,23 @@ class FigureEight:
             spec = raw.flatten()[0:2048]  # First spectrum of the B-scan only is plotted
 
             bscan = fig8ToBScan(raw,
-                                self.scanPatternN,
-                                self.scanPatternB1,
-                                self._scanPatternAlinesPerCross,
-                                self.getApodWindow())
+                                N,
+                                B,
+                                AperX,
+                                self.getApodWindow(),
+                                ROI = 400,
+                                lam=self.getLambda())
 
             self.plotWidget.plot1D(spec)
-            self.imageWidget.update(np.transpose(bscan))
+            self.imageWidget.update(np.flip(np.transpose(bscan),axis=1))
 
     def scanFunc(self):
 
         running = True
         processingQueue = self.getProcessingQueue()
         counter = 0
+
+        every = int(self.scanPatternN/10)
 
         rawDataHandle = PySpectralRadar.createRawData()
 
@@ -213,7 +223,7 @@ class FigureEight:
 
             if np.size(temp) > 0:
 
-                if counter % 10 == 0:
+                if counter % every == 0:
                     processingQueue.put(deepcopy(temp))
 
             counter += 1

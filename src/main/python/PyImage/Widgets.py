@@ -241,13 +241,15 @@ class BScanView(PyQtG.GraphicsView):
 
     def __init__(self, hist=None, aspect=0.5):
         super().__init__()
+        self.hist = hist
+        self.aspect = aspect
 
         self.layout = PyQtG.GraphicsLayout()
         self.setCentralItem(self.layout)
         self.viewbox = self.layout.addViewBox()
         self.image = PyQtG.ImageItem()
         self.viewbox.addItem(self.image)
-        self.viewbox.setAspectLocked(aspect)
+        self.viewbox.setAspectLocked(self.aspect)
 
     def update(self, data):
         self.image.clear()
