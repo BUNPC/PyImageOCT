@@ -83,13 +83,28 @@ class ParamsGroupBox(QGroupBox):
         self.entryConfig.addItems(["10X"])
         self.entryConfig.currentIndexChanged.connect(self.update)
 
+        self.entryWindow = QComboBox()
+        self.entryWindow.addItems(["Hann","Hamming","Blackman","None"])
+        self.entryWindow.currentIndexChanged.connect(self.update)
+
         self.layout.addRow(QLabel("Imaging rate"), self.entryImagingRate)
         self.layout.addRow(QLabel("Objective configuration"), self.entryConfig)
+        self.layout.addRow(QLabel("Apodization window"), self.entryWindow)
 
         self.setLayout(self.layout)
 
+        self.update()
+
     def update(self):
-        pass
+
+        windowLUT = {
+            "Hann" : np.hanning(2048),
+            "Hamming" : np.hamming(2048),
+            "Blackman" : np.blackman(2048),
+            "None" : np.ones(2048)
+        }
+        window = windowLUT[str(self.entryWindow.currentText())]
+        self.controller.setApodWindow(window)
 
 
 class ControlGroupBox(QGroupBox):
@@ -139,6 +154,12 @@ class Fig8GroupBox(QGroupBox):
         self.spinFlyback.setValue(20)
         self.spinFlyback.valueChanged.connect(self.update)
 
+        self.spinAngle = QSpinBox()
+        self.spinAngle.setRange(0, 360)
+        self.spinAngle.setValue(45)
+        self.spinAngle.setSuffix('°')
+        self.spinAngle.valueChanged.connect(self.update)
+
         self.spinFig8Size = QDoubleSpinBox()
         self.spinFig8Size.setRange(0.00001, 3)
         self.spinFig8Size.setSuffix(' mm')
@@ -177,6 +198,7 @@ class Fig8GroupBox(QGroupBox):
 
         self.layout.addRow(QLabel("A-lines per B-scan"), self.spinALinesPerX)
         self.layout.addRow(QLabel("A-lines per flyback"), self.spinFlyback)
+        self.layout.addRow(QLabel("Scan-pattern angle"), self.spinAngle)
         self.layout.addRow(QLabel("Figure-8 width"), self.spinFig8Size)
         self.layout.addRow(QLabel("Distance between adjacent A-scans"), self.textDistance)
         self.layout.addRow(QLabel("Total A-scans in each figure-8"), self.textTotal)
@@ -190,7 +212,8 @@ class Fig8GroupBox(QGroupBox):
         self.controller.setScanPatternParams(self.spinFig8Size.value(),
                                              self.spinALinesPerX.value(),
                                              self.spinFlyback.value(),
-                                             self.spinFig8Total.value())
+                                             self.spinFig8Total.value(),
+                                             self.spinAngle.value()*(np.pi/180)) # Conversion to rad happens here!
 
         self.textDistance.setText(str(self.controller.scanPatternD * 10 ** 6)[0:8] + ' nm')
         self.textTotal.setText(str(self.controller.scanPatternN))

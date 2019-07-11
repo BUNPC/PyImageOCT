@@ -42,6 +42,7 @@ class FigureEight:
         # Device config
         self._imagingRate = 76000  # Rate in hz. NOT FUNCTIONAL
         self._config = "ProbeLKM10-LV"  # TODO implement as real parameter from GUI
+        self._apodWindow = None
 
         self.active = False
 
@@ -67,10 +68,10 @@ class FigureEight:
         PySpectralRadar.setCameraPreset(self._device, self._probe, self._proc, 0)  # 0 is the main camera
         self._triggerType = PySpectralRadar.Device_TriggerType.Trigger_FreeRunning  # Default
         self._triggerTimeout = 5  # Number from old labVIEW program
-        self._acquisitionType = PySpectralRadar.AcquisitionType.Acquisition_AsyncContinuous  # TODO: figure this out
+        self._acquisitionType = PySpectralRadar.AcquisitionType.Acquisition_AsyncContinuous
         PySpectralRadar.setTriggerMode(self._device, self._triggerType)
         PySpectralRadar.setTriggerTimeoutSec(self._device, self._triggerTimeout)
-        self.updateScanPattern()  # TODO figure out scan pattern management
+        self.updateScanPattern()
         try:
             self._lam = np.load('lam.npy')
         except FileNotFoundError:
@@ -120,8 +121,11 @@ class FigureEight:
     def getRate(self):
         return self._imagingRate
 
+    def setApodWindow(self,window):
+        self._apodWindow = window
+
     def getApodWindow(self):
-        return np.hamming(2048)  # TODO implement as setting
+        return self._apodWindow
 
     def getLambda(self):
         return self._lam
@@ -138,7 +142,8 @@ class FigureEight:
         self.setScanPatternParams(self._scanPatternSize,
                                   self._scanPatternAlinesPerCross,
                                   self._scanPatternAlinesPerFlyback,
-                                  1)
+                                  1,
+                                  self._scanPatternAngle)
 
         self.initializeSpectralRadar()
         scan = threading.Thread(target=self.scanFunc)
@@ -176,6 +181,7 @@ class FigureEight:
 
         running = True
         processingQueue = self.getProcessingQueue()
+        # Loads necessary scan pattern properties for data processing
         N = self.scanPatternN
         B = self.scanPatternB1
         AperX = self._scanPatternAlinesPerCross
@@ -203,7 +209,13 @@ class FigureEight:
         processingQueue = self.getProcessingQueue()
         counter = 0
 
-        every = int(self.scanPatternN/10)
+        # Set number of frames to process based on predicted speed
+        if self._scanPatternAlinesPerCross > 100:
+            interval = 30
+        elif self._scanPatternAlinesPerCross < 50:
+            interval = 5
+        else:
+            interval = 10
 
         rawDataHandle = PySpectralRadar.createRawData()
 
@@ -223,7 +235,7 @@ class FigureEight:
 
             if np.size(temp) > 0:
 
-                if counter % every == 0:
+                if counter % interval == 0:
                     processingQueue.put(deepcopy(temp))
 
             counter += 1
@@ -266,13 +278,15 @@ class FigureEight:
                                                                       n,
                                                                       1,
                                                                       FALSE)
-        PySpectralRadar.rotateScanPattern(self._scanPattern, np.pi / 4)  # TODO implement angle as parameter
 
-    def setScanPatternParams(self, patternSize, aLinesPerCross, aLinesPerFlyback, repeats):
+        PySpectralRadar.rotateScanPattern(self._scanPattern, self._scanPatternAngle)
+
+    def setScanPatternParams(self, patternSize, aLinesPerCross, aLinesPerFlyback, repeats, angle):
         self._scanPatternSize = patternSize
         self._scanPatternAlinesPerCross = aLinesPerCross
         self._scanPatternAlinesPerFlyback = aLinesPerFlyback
         self._scanPatternTotalRepeats = repeats
+        self._scanPatternAngle = angle
 
         [self.scanPatternPositions,
          self.scanPatternX,
