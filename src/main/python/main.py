@@ -39,7 +39,7 @@ class Main(QTabWidget):
 
         self.addTab(self.tabFigEight, 'Figure-8 Motion Quantification')
 
-        self.windowTitle = 'PyOCT V.0.0.1'
+        self.windowTitle = 'PyOCT V.0.1.0'
         self.setWindowTitle(self.windowTitle)
 
         # self.setMaximumHeight(800)

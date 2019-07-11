@@ -113,6 +113,7 @@ class ControlGroupBox(QGroupBox):
         super().__init__(name)
 
         self.controller = controller
+        self.controller.setControlWidget(self)
 
         self.layout = QGridLayout()
 
@@ -133,15 +134,10 @@ class ControlGroupBox(QGroupBox):
 
         self.setLayout(self.layout)
 
-    def enable(self, bool):
+    def enabled(self, bool):
         self.scanButton.setEnabled(bool)
         self.acqButton.setEnabled(bool)
 
-    def update(self):  # TODO make the disable of these buttons a function of controller in a clean way
-        if self.controller.active:
-            self.enable(False)
-        else:
-            self.enable(True)
 
 
 class Fig8GroupBox(QGroupBox):

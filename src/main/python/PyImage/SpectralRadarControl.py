@@ -15,10 +15,13 @@ FALSE = False
 class FigureEight:
 
     def __init__(self, plotWidget=None, scatterWidget=None, imageWidget=None, infoWidget=None):
-        # Arguments
+        # Arguments/child widgets
         self.plotWidget = plotWidget
         self.scatterWidget = scatterWidget
         self.imageWidget = imageWidget
+
+        # Control widgets
+        self.controlWidget = None
 
         # File params
         self._fileExperimentName = None
@@ -63,7 +66,7 @@ class FigureEight:
 
         self._threads = []
 
-    def initializeSpectralRadar(self):  # Need to thread this eventually, long hang time for GUI
+    def initializeSpectralRadar(self):  # TODO Need to thread this eventually, long hang time for GUI
         self._device = PySpectralRadar.initDevice()
         self._probe = PySpectralRadar.initProbe(self._device, self._config)
         self._proc = PySpectralRadar.createProcessingForDevice(self._device)
@@ -135,10 +138,20 @@ class FigureEight:
     def setConfig(self, config):
         self._config = config
 
+    def setControlWidget(self, controlWidget):
+        self.controlWidget = controlWidget
+
+    def disableControlWidget(self):
+        self.controlWidget.enabled(False)
+
+    def enableControlWidget(self):
+        self.controlWidget.enabled(True)
+
     def initScan(self):
         print('Init scan')
 
         self.active = True
+        self.disableControlWidget()
 
         # For scanning, acquisition occurs after each figure-8, so rpt is set to 1
         self.setScanPatternParams(self._scanPatternSize,
@@ -160,15 +173,16 @@ class FigureEight:
         print('Init acq')
 
         self.active = True
+        self.disableControlWidget()
 
-        # For now, the limit on fig-8s to be acquired is hard-coded, so rpt is set to 1
+        # For now, the limit on fig-8s to be acquired is hard-coded, so rpt is set to 1 #TODO make not hard-coded to 500
         self.setScanPatternParams(self._scanPatternSize,
                                   self._scanPatternAlinesPerCross,
                                   self._scanPatternAlinesPerFlyback,
                                   1,
                                   self._scanPatternAngle)
 
-        self.initializeSpectralRadar()
+        self.initializeSpectralRadar()  # TODO: consider preloading Telesto for more responsive scanning and acq
         acq = threading.Thread(target=self.acquire)
         exp = threading.Thread(target=self.export_npy)
         self._threads.append(acq)
@@ -244,7 +258,6 @@ class FigureEight:
 
         self.stopMeasurement()
         PySpectralRadar.clearRawData(rawDataHandle)
-        self.clearScanPattern
 
     def acquire(self):
 
@@ -271,7 +284,7 @@ class FigureEight:
 
         self.stopMeasurement()
         PySpectralRadar.clearRawData(rawDataHandle)
-        self.clearScanPattern
+
         print('Acquisition complete')
 
     def export_hdf(self):  # TODO fix this
@@ -322,14 +335,16 @@ class FigureEight:
 
         np.save(root,out)
         print('Saving .npy complete')
+        self.abort()
 
     def abort(self):
-        print('Abort')
+        print('Abort') # TODO different function for mid-acq abort vs end of acquisition
         self.stopMeasurement()
         for thread in self._threads:
             thread._is_running = False
         self._threads = []
         self.active = False
+        self.enableControlWidget()
         self.closeSpectralRadar()
 
     def setFileParams(self, experimentDirectory, experimentName, maxSize, fileType):
