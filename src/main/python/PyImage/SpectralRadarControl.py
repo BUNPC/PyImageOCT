@@ -226,10 +226,10 @@ class FigureEight:
         # Set number of frames to process based on predicted speed
         if self._scanPatternAlinesPerCross > 80:
             interval = 30
-        elif self._scanPatternAlinesPerCross < 40:
+        elif self._scanPatternAlinesPerCross < 10:
             interval = 5
         else:
-            interval = 10
+            interval = 20
 
         rawDataHandle = PySpectralRadar.createRawData()
 

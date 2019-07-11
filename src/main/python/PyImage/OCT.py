@@ -20,8 +20,8 @@ def generateIdealFigureEightPositions(xsize, alinesPerX, rpt=1, flyback=20):
     if rpt > 0:
         cross = np.linspace(-xsize, xsize, alinesPerX)
 
-        fb1 = np.linspace(-np.pi / 3.4, np.pi / 3.4, flyback, dtype=np.float32)
-        fb2 = np.linspace(-np.pi / 3.4 + np.pi, np.pi / 3.4 + np.pi, flyback, dtype=np.float32)
+        fb1 = np.linspace(-np.pi / 3.2, np.pi / 3.2, flyback, dtype=np.float32)
+        fb2 = np.linspace(-np.pi / 3.2 + np.pi, np.pi / 3.2 + np.pi, flyback, dtype=np.float32)
 
         B1 = np.array([cross[::-1], cross[::-1]])
         B2 = np.array([cross, -cross])
@@ -29,9 +29,9 @@ def generateIdealFigureEightPositions(xsize, alinesPerX, rpt=1, flyback=20):
         D = np.sqrt((B1[0][0] - B1[0][1]) ** 2 + (B1[1][0] - B1[1][1]) ** 2)
 
         x1 = 2 * xsize * np.cos(fb1)
-        y1 = ((2 * xsize) / 1.7) * np.sin(2 * fb1)
+        y1 = (1.18 * xsize) * np.sin(2 * fb1)
         x2 = 2 * xsize * np.cos(fb2)
-        y2 = ((2 * xsize) / 1.7) * np.sin(2 * fb2)
+        y2 = (1.18 * xsize) * np.sin(2 * fb2)
 
         X = np.concatenate([x1, B1[0], x2, B2[0]])
         Y = np.concatenate([y1, B1[1], y2, B2[1]])

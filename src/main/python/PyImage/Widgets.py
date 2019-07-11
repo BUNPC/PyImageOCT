@@ -265,7 +265,7 @@ class plotWidget2D(PyQtG.PlotWidget):
         QtGui.QGuiApplication.processEvents()
 
 
-class BScanView(PyQtG.GraphicsView):
+class BScanView(PyQtG.GraphicsView):  # TODO fix bug in display after changing size of Bscan
 
     def __init__(self, hist=None, aspect=0.5):
         super().__init__()
