@@ -55,7 +55,7 @@ def generateIdealFigureEightPositions(xsize, alinesPerX, rpt=1, flyback=20):
         return [posRpt, X, Y, b1, b2, N, D]
 
 
-def fig8ToBScan(A, N, B, AlinesPerX, apod, ROI=200, lam=None):
+def fig8ToBScan(A, N, B, AlinesPerX, apod, ROI=200, lam=None, start=14):
     """
     Converts a raw array of unsigned 16 bit integer fig-8 data from Telesto to ROI of spatial domain pixels for
     live display
@@ -66,6 +66,7 @@ def fig8ToBScan(A, N, B, AlinesPerX, apod, ROI=200, lam=None):
     :param apod: Apodization window. Must be 2048 in length
     :param ROI: number of pixels from the top of the B-scan to return
     :param lam: linear interpolation vector
+    :param start: start of ROI, used to exclude ringing from edge of window
     :return: A 2D array of dB scale quasi-spatial data
     """
     flat = A.flatten()
@@ -79,7 +80,7 @@ def fig8ToBScan(A, N, B, AlinesPerX, apod, ROI=200, lam=None):
         interpolated[:,n] = k(np.linspace(min(lam),max(lam),2048))
         proc[:, n] = np.fft.ifft(interpolated[:,n])[0:1024].astype(np.complex64)
 
-    return 20 * np.log10(np.abs(proc[0:ROI]))
+    return 20 * np.log10(np.abs(proc[start:ROI]))
 
 @numba.jit
 def preprocess8(flattened,N,B,AlinesPerX,apod):

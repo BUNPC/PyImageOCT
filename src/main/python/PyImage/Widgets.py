@@ -123,6 +123,9 @@ class ControlGroupBox(QGroupBox):
         self.scanButton.clicked.connect(self.controller.initScan)
         self.acqButton.clicked.connect(self.controller.initAcq)
         self.abortButton.clicked.connect(self.controller.abort)
+        self.scanButton.clicked.connect(self.update)
+        self.acqButton.clicked.connect(self.update)
+        self.abortButton.clicked.connect(self.update)
 
         self.layout.addWidget(self.scanButton, 0, 0)
         self.layout.addWidget(self.acqButton, 0, 1)
@@ -130,9 +133,16 @@ class ControlGroupBox(QGroupBox):
 
         self.setLayout(self.layout)
 
-    def disabled(self, bool):
+    def enable(self, bool):
         self.scanButton.setEnabled(bool)
         self.acqButton.setEnabled(bool)
+
+    def update(self):
+        if self.controller.active:
+            self.enable(False)
+        else:
+            self.enable(True)
+
 
 
 class Fig8GroupBox(QGroupBox):

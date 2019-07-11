@@ -210,9 +210,9 @@ class FigureEight:
         counter = 0
 
         # Set number of frames to process based on predicted speed
-        if self._scanPatternAlinesPerCross > 100:
+        if self._scanPatternAlinesPerCross > 80:
             interval = 30
-        elif self._scanPatternAlinesPerCross < 50:
+        elif self._scanPatternAlinesPerCross < 40:
             interval = 5
         else:
             interval = 10
