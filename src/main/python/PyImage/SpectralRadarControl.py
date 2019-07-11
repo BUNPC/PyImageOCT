@@ -123,7 +123,7 @@ class FigureEight:
     def getRate(self):
         return self._imagingRate
 
-    def setApodWindow(self,window):
+    def setApodWindow(self, window):
         self._apodWindow = window
 
     def getApodWindow(self):
@@ -197,11 +197,11 @@ class FigureEight:
                                 B,
                                 AperX,
                                 self.getApodWindow(),
-                                ROI = 400,
+                                ROI=400,
                                 lam=self.getLambda())
 
             self.plotWidget.plot1D(spec)
-            self.imageWidget.update(np.flip(np.transpose(bscan),axis=1))
+            self.imageWidget.update(np.flip(np.transpose(bscan), axis=1))
 
     def scan(self):
 
@@ -256,8 +256,7 @@ class FigureEight:
 
         self.startMeasurement()
 
-        for i in np.arange(self._scanPatternTotalRepeats):
-
+        for i in np.arange(500):
             self.getRawData(rawDataHandle)
 
             dim = PySpectralRadar.getRawDataShape(rawDataHandle)
@@ -282,7 +281,7 @@ class FigureEight:
         root = h5py.File(self.getFilepath(), 'w')
 
         root.create_group("scan")
-        root.create_dataset("scan/positions", data=np.concatenate([self.scanPatternX,self.scanPatternY]))
+        root.create_dataset("scan/positions", data=np.concatenate([self.scanPatternX, self.scanPatternY]))
         root.create_dataset("scan/N", data=self.scanPatternN)
         root.create_dataset("scan/D", data=self.scanPatternD)
 
@@ -292,14 +291,13 @@ class FigureEight:
         while not q.empty():
 
             for i in np.arange(self._scanPatternTotalRepeats):
-
                 temp = q.get()
 
-                raw[:,:,:,i] = reshape8(temp,
-                                        self.scanPatternN,
-                                        self._scanPatternAlinesPerCross,
-                                        self.scanPatternB1,
-                                        self.scanPatternB2)
+                raw[:, :, :, i] = reshape8(temp,
+                                           self.scanPatternN,
+                                           self._scanPatternAlinesPerCross,
+                                           self.scanPatternB1,
+                                           self.scanPatternB2)
 
         root.close()
         print('Saving complete')
@@ -307,25 +305,23 @@ class FigureEight:
     def export_npy(self):
 
         q = self.getRawQueue()
-        p = Path(self.getFilepath()+'.npy')
+        root = self.getFilepath() + '.npy'
+        out = np.empty([2048,self._scanPatternAlinesPerCross,2,500],dtype=np.uint16)  # TODO: implement max file size
 
-        with p.open('ab') as root:
+        for i in np.arange(500):
 
-            for i in np.arange(self._scanPatternTotalRepeats):
+            temp = q.get()
 
-                temp = q.get()
+            reshaped = reshape8(temp,
+                                self.scanPatternN,
+                                self._scanPatternAlinesPerCross,
+                                self.scanPatternB1,
+                                self.scanPatternB2)
 
-                # TODO implement reshaping or even analysis at acq time
-                reshaped = reshape8(temp,
-                                    self.scanPatternN,
-                                    self._scanPatternAlinesPerCross,
-                                    self.scanPatternB1,
-                                    self.scanPatternB2)
+            out[:,:,:,i] = reshaped
 
-                np.save(root,reshaped)
-
-            root.close()
-            print('Saving .npy complete')
+        np.save(root,out)
+        print('Saving .npy complete')
 
     def abort(self):
         print('Abort')
