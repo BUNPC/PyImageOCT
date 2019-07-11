@@ -99,17 +99,21 @@ def preprocess8(flattened,N,B,AlinesPerX,apod):
 
     return pp
 
-@numba.jit
+
 def reshape8(A,N,AlinesPerX,B1,B2):
 
     reshaped = np.empty([2048,AlinesPerX,2])
 
     flattened = A.flatten()
 
+    b1 = 0
+    b2 = 0
     for n in np.arange(N):
         if B1[n]:
-            reshaped[:,n,0] = flattened[2048*n:2048*n+2048]
+            reshaped[:,b1,0] = flattened[2048*n:2048*n+2048]
+            b1 += 1
         elif B2[n]:
-            reshaped[:,n,1] = flattened[2048*n:2048*n+2048]
+            reshaped[:,b2,1] = flattened[2048*n:2048*n+2048]
+            b2 += 1
 
     return reshaped

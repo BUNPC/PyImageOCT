@@ -6,6 +6,7 @@ from PyQt5.QtCore import QObject, QThread, pyqtSlot
 from src.main.python.PyImage.OCT import *
 from copy import deepcopy
 import h5py
+from pathlib import Path
 
 TRUE = True
 FALSE = False
@@ -160,9 +161,16 @@ class FigureEight:
 
         self.active = True
 
+        # For now, the limit on fig-8s to be acquired is hard-coded, so rpt is set to 1
+        self.setScanPatternParams(self._scanPatternSize,
+                                  self._scanPatternAlinesPerCross,
+                                  self._scanPatternAlinesPerFlyback,
+                                  1,
+                                  self._scanPatternAngle)
+
         self.initializeSpectralRadar()
         acq = threading.Thread(target=self.acquire)
-        exp = threading.Thread(target=self.export_hdf)
+        exp = threading.Thread(target=self.export_npy)
         self._threads.append(acq)
         self._threads.append(exp)
 
@@ -240,9 +248,7 @@ class FigureEight:
 
     def acquire(self):
 
-        running = True
         rawQueue = self.getRawQueue()
-        counter = 0
 
         rawDataHandle = PySpectralRadar.createRawData()
 
@@ -250,7 +256,7 @@ class FigureEight:
 
         self.startMeasurement()
 
-        while running and self.active and counter < self._scanPatternTotalRepeats:
+        for i in np.arange(self._scanPatternTotalRepeats):
 
             self.getRawData(rawDataHandle)
 
@@ -262,13 +268,12 @@ class FigureEight:
 
             rawQueue.put(temp)
 
-            counter += 1
-
             del temp
 
         self.stopMeasurement()
         PySpectralRadar.clearRawData(rawDataHandle)
         self.clearScanPattern
+        print('Acquisition complete')
 
     def export_hdf(self):  # TODO fix this
 
@@ -298,6 +303,29 @@ class FigureEight:
 
         root.close()
         print('Saving complete')
+
+    def export_npy(self):
+
+        q = self.getRawQueue()
+        p = Path(self.getFilepath()+'.npy')
+
+        with p.open('ab') as root:
+
+            for i in np.arange(self._scanPatternTotalRepeats):
+
+                temp = q.get()
+
+                # TODO implement reshaping or even analysis at acq time
+                reshaped = reshape8(temp,
+                                    self.scanPatternN,
+                                    self._scanPatternAlinesPerCross,
+                                    self.scanPatternB1,
+                                    self.scanPatternB2)
+
+                np.save(root,reshaped)
+
+            root.close()
+            print('Saving .npy complete')
 
     def abort(self):
         print('Abort')

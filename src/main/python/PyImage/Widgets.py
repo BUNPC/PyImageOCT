@@ -30,7 +30,7 @@ class FileGroupBox(QGroupBox):
         self.layout = QFormLayout()
 
         self.entryExpName = QLineEdit()
-        now = time.strftime("%y-%m-%d")
+        now = time.strftime("%d-%m-%y")
         default = now + '-PyImageOCT-exp'
         self.entryExpName.setText(default)
         self.entryExpName.editingFinished.connect(self.update)
@@ -137,7 +137,7 @@ class ControlGroupBox(QGroupBox):
         self.scanButton.setEnabled(bool)
         self.acqButton.setEnabled(bool)
 
-    def update(self):
+    def update(self):  # TODO make the disable of these buttons a function of controller in a clean way
         if self.controller.active:
             self.enable(False)
         else:
