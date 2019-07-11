@@ -131,12 +131,12 @@ class Fig8GroupBox(QGroupBox):
 
         self.spinALinesPerX = QSpinBox()
         self.spinALinesPerX.setRange(5, 400)
-        self.spinALinesPerX.setValue(10)
+        self.spinALinesPerX.setValue(100)
         self.spinALinesPerX.valueChanged.connect(self.update)
 
         self.spinFlyback = QSpinBox()
         self.spinFlyback.setRange(2, 200)
-        self.spinFlyback.setValue(10)
+        self.spinFlyback.setValue(20)
         self.spinFlyback.valueChanged.connect(self.update)
 
         self.spinFig8Size = QDoubleSpinBox()
@@ -144,7 +144,7 @@ class Fig8GroupBox(QGroupBox):
         self.spinFig8Size.setSuffix(' mm')
         self.spinFig8Size.setDecimals(6)
         self.spinFig8Size.setSingleStep(0.00001)
-        self.spinFig8Size.setValue(0.003182)
+        self.spinFig8Size.setValue(0.08)
         self.spinFig8Size.valueChanged.connect(self.update)
 
         self.spinFig8Total = QSpinBox()
