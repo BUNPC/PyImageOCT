@@ -144,7 +144,6 @@ class ControlGroupBox(QGroupBox):
             self.enable(True)
 
 
-
 class Fig8GroupBox(QGroupBox):
 
     def __init__(self, name, controller):

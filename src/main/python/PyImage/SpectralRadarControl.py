@@ -5,6 +5,7 @@ from PyQt5.QtCore import QObject, QThread, pyqtSlot
 
 from src.main.python.PyImage.OCT import *
 from copy import deepcopy
+import h5py
 
 TRUE = True
 FALSE = False
@@ -107,7 +108,7 @@ class FigureEight:
         return self._acquisitionType
 
     def getFilepath(self):
-        return self._fileExperimentDirectory + '/' + self._fileExperimentName
+        return self._fileExperimentDirectory
 
     def getRawQueue(self):
         return self._RawQueue
@@ -146,8 +147,8 @@ class FigureEight:
                                   self._scanPatternAngle)
 
         self.initializeSpectralRadar()
-        scan = threading.Thread(target=self.scanFunc)
-        disp = threading.Thread(target=self.displayFunc)
+        scan = threading.Thread(target=self.scan)
+        disp = threading.Thread(target=self.display)
         self._threads.append(scan)
         self._threads.append(disp)
 
@@ -159,25 +160,16 @@ class FigureEight:
 
         self.active = True
 
-        acquisitionThread = AcquisitionThread(self)
-        exportThread = ExportThread(self)
-
-        acq = AcqEight(self, 0)
-        exp = ExportEight(self, 1)
-
-        acq.moveToThread(acquisitionThread)
-        exp.moveToThread(exportThread)
-
-        acquisitionThread.started.connect(acq.work)
-        exportThread.started.connect(exp.work)
-
-        self._threads.append(acquisitionThread)
-        self._threads.append(exportThread)
+        self.initializeSpectralRadar()
+        acq = threading.Thread(target=self.acquire)
+        exp = threading.Thread(target=self.export_hdf)
+        self._threads.append(acq)
+        self._threads.append(exp)
 
         for thread in self._threads:
             thread.start()
 
-    def displayFunc(self):
+    def display(self):
 
         running = True
         processingQueue = self.getProcessingQueue()
@@ -203,7 +195,7 @@ class FigureEight:
             self.plotWidget.plot1D(spec)
             self.imageWidget.update(np.flip(np.transpose(bscan),axis=1))
 
-    def scanFunc(self):
+    def scan(self):
 
         running = True
         processingQueue = self.getProcessingQueue()
@@ -245,6 +237,67 @@ class FigureEight:
         self.stopMeasurement()
         PySpectralRadar.clearRawData(rawDataHandle)
         self.clearScanPattern
+
+    def acquire(self):
+
+        running = True
+        rawQueue = self.getRawQueue()
+        counter = 0
+
+        rawDataHandle = PySpectralRadar.createRawData()
+
+        self.getRawData(rawDataHandle)
+
+        self.startMeasurement()
+
+        while running and self.active and counter < self._scanPatternTotalRepeats:
+
+            self.getRawData(rawDataHandle)
+
+            dim = PySpectralRadar.getRawDataShape(rawDataHandle)
+
+            temp = np.empty(dim, dtype=np.uint16)
+
+            PySpectralRadar.copyRawDataContent(rawDataHandle, temp)
+
+            rawQueue.put(temp)
+
+            counter += 1
+
+            del temp
+
+        self.stopMeasurement()
+        PySpectralRadar.clearRawData(rawDataHandle)
+        self.clearScanPattern
+
+    def export_hdf(self):  # TODO fix this
+
+        q = self.getRawQueue()
+
+        root = h5py.File(self.getFilepath(), 'w')
+
+        root.create_group("scan")
+        root.create_dataset("scan/positions", data=np.concatenate([self.scanPatternX,self.scanPatternY]))
+        root.create_dataset("scan/N", data=self.scanPatternN)
+        root.create_dataset("scan/D", data=self.scanPatternD)
+
+        rawshape = [2048, self._scanPatternAlinesPerCross, 2, self._scanPatternTotalRepeats]
+        raw = root.create_dataset("raw", rawshape, dtype=np.uint16)
+
+        while not q.empty():
+
+            for i in np.arange(self._scanPatternTotalRepeats):
+
+                temp = q.get()
+
+                raw[:,:,:,i] = reshape8(temp,
+                                        self.scanPatternN,
+                                        self._scanPatternAlinesPerCross,
+                                        self.scanPatternB1,
+                                        self.scanPatternB2)
+
+        root.close()
+        print('Saving complete')
 
     def abort(self):
         print('Abort')
