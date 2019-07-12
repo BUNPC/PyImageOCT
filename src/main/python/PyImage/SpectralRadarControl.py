@@ -215,7 +215,7 @@ class FigureEight:
                                 lam=self.getLambda())
 
             self.plotWidget.plot1D(spec)
-            self.imageWidget.update(np.flip(np.transpose(bscan), axis=1))
+            self.imageWidget.update(np.flip(np.transpose(20*np.log10(np.abs(bscan))), axis=1))
 
     def scan(self):
 

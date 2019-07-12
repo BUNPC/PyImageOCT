@@ -55,10 +55,9 @@ def generateIdealFigureEightPositions(xsize, alinesPerX, rpt=1, flyback=20):
         return [posRpt, X, Y, b1, b2, N, D]
 
 
-def fig8ToBScan(A, N, B, AlinesPerX, apod, ROI=200, lam=None, start=14):
+def fig8ToBScan(A, N, B, AlinesPerX, apod, ROI=400, lam=None, start=14):
     """
-    Converts a raw array of unsigned 16 bit integer fig-8 data from Telesto to ROI of spatial domain pixels for
-    live display
+    Converts a raw array of unsigned 16 bit integer fig-8 data from Telesto to ROI of complex spatial domain
     :param A: Raw figure-8 data
     :param N: The total number of A-lines in the figure-8 pattern
     :param B: Boolean-type array representing indices in N-length A which make up a B-scan
@@ -67,7 +66,7 @@ def fig8ToBScan(A, N, B, AlinesPerX, apod, ROI=200, lam=None, start=14):
     :param ROI: number of pixels from the top of the B-scan to return
     :param lam: linear interpolation vector
     :param start: start of ROI, used to exclude ringing from edge of window
-    :return: A 2D array of dB scale quasi-spatial data
+    :return: A 2D array of complex data
     """
     flat = A.flatten()
     proc = np.empty([1024, AlinesPerX], dtype=np.complex64)
@@ -80,7 +79,7 @@ def fig8ToBScan(A, N, B, AlinesPerX, apod, ROI=200, lam=None, start=14):
         interpolated[:,n] = k(np.linspace(min(lam),max(lam),2048))
         proc[:, n] = np.fft.ifft(interpolated[:,n])[0:1024].astype(np.complex64)
 
-    return 20 * np.log10(np.abs(proc[start:ROI]))
+    return proc[start:ROI]
 
 @numba.jit
 def preprocess8(flattened,N,B,AlinesPerX,apod):
