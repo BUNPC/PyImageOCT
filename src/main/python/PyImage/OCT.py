@@ -68,11 +68,11 @@ def fig8ToBScan(A, N, B, AlinesPerX, apod, ROI=400, lam=None, start=14):
     :param start: start of ROI, used to exclude ringing from edge of window
     :return: A 2D array of complex data
     """
-    flat = A.flatten()
+
     proc = np.empty([1024, AlinesPerX], dtype=np.complex64)
     interpolated = np.empty([2048,AlinesPerX])
 
-    preprocessed = preprocess8(flat,N,B,AlinesPerX,apod)
+    preprocessed = preprocess8(A,N,B,AlinesPerX,apod)
 
     for n in np.arange(AlinesPerX):
         k = interp1d(lam,preprocessed[:,n])
@@ -82,37 +82,25 @@ def fig8ToBScan(A, N, B, AlinesPerX, apod, ROI=400, lam=None, start=14):
     return proc[start:ROI]
 
 @numba.jit
-def preprocess8(flattened,N,B,AlinesPerX,apod):
+def preprocess8(A,N,B,AlinesPerX,apod):
+    """
+    Compiled w numba. Reshapes raw figure-8 OCT data into a B scan
+    :param A: Raw uint16 OCT spectral data
+    :param N: The total number of A-scans in each figure-8
+    :param B: Boolean array of indices size N indicating B-scan
+    :param AlinesPerX: Number of A-scans in the B-scan
+    :param apod: Apodization window
+    :return: 2D Preprocessed data, [z,n] where z is axial dimension, n is lateral A-scans
+    """
+    flattened = A.flatten()
     pp = np.empty([2048,AlinesPerX])
     i = 0
     for n in np.arange(N):
         if B[n]:
             pp[:, i] = flattened[2048 * n:2048 * n + 2048]
             i += 1
-
     dc = np.mean(pp, axis=1)
     window = apod / dc
-
     for n in np.arange(AlinesPerX):
         pp[:,n] = pp[:, n] * window
-
     return pp
-
-
-def reshape8(A,N,AlinesPerX,B1,B2):
-
-    reshaped = np.empty([2048,AlinesPerX,2])
-
-    flattened = A.flatten()
-
-    b1 = 0
-    b2 = 0
-    for n in np.arange(N):
-        if B1[n]:
-            reshaped[:,b1,0] = flattened[2048*n:2048*n+2048]
-            b1 += 1
-        elif B2[n]:
-            reshaped[:,b2,1] = flattened[2048*n:2048*n+2048]
-            b2 += 1
-
-    return reshaped

@@ -191,31 +191,67 @@ class FigureEight:
         for thread in self._threads:
             thread.start()
 
+    def process8(self, A, B1, B2=None, ROI=np.arange(14:400)):
+
+        Nx = self._scanPatternAlinesPerCross
+        N = self.scanPatternN
+        interpIndices = np.linspace(min(self._lam),max(self._lam),2048)
+
+        if B2 != None:
+
+            processed = np.empty([1024,Nx,2], dtype=np.complex64)
+            Bs = [B1,B2]
+
+            for b in range(len(Bs)):
+                B = Bs[b]
+                interpolated = np.empty([2048, Nx])
+                preprocessed = preprocess8(A,N,B,Nx,self.getApodWindow())
+
+                for n in np.arange(Nx):
+
+                    k = interp1d(self._lam,preprocessed)
+                    interpolated[:,n] = k(interpIndices)
+                    processed[:,n,b] = np.fft.ifft(interpolated[:,n])[0:1024].astype(np.complex64)
+
+        else:
+
+            processed = np.empty([1024,Nx], dtype=np.complex64)
+
+            interpolated = np.empty([2048, Nx])
+            preprocessed = preprocess8(A, N, B1, Nx, self.getApodWindow())
+
+            for n in np.arange(Nx):
+                k = interp1d(self._lam, preprocessed)
+                interpolated[:, n] = k(interpIndices)
+                processed[:, n] = np.fft.ifft(interpolated[:, n])[0:1024].astype(np.complex64)
+
+        return processed
+
     def display(self):
 
-        running = True
-        processingQueue = self.getProcessingQueue()
-        # Loads necessary scan pattern properties for data processing
-        N = self.scanPatternN
-        B = self.scanPatternB1
-        AperX = self._scanPatternAlinesPerCross
+            running = True
+            processingQueue = self.getProcessingQueue()
+            # Loads necessary scan pattern properties for data processing
+            N = self.scanPatternN
+            B = self.scanPatternB1
+            AperX = self._scanPatternAlinesPerCross
 
-        print('displayFunc initialized')
+            print('displayFunc initialized')
 
-        while running and self.active:
-            raw = processingQueue.get()
-            spec = raw.flatten()[0:2048]  # First spectrum of the B-scan only is plotted
+            while running and self.active:
+                raw = processingQueue.get()
+                spec = raw.flatten()[0:2048]  # First spectrum of the B-scan only is plotted
 
-            bscan = fig8ToBScan(raw,
-                                N,
-                                B,
-                                AperX,
-                                self.getApodWindow(),
-                                ROI=400,
-                                lam=self.getLambda())
+                bscan = fig8ToBScan(raw,
+                                    N,
+                                    B,
+                                    AperX,
+                                    self.getApodWindow(),
+                                    ROI=400,
+                                    lam=self.getLambda())
 
-            self.plotWidget.plot1D(spec)
-            self.imageWidget.update(np.flip(np.transpose(20*np.log10(np.abs(bscan))), axis=1))
+                self.plotWidget.plot1D(spec)
+                self.imageWidget.update(20*np.log10(np.abs(bscan)))
 
     def scan(self):
 
