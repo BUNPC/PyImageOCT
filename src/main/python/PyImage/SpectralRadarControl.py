@@ -48,6 +48,7 @@ class FigureEight:
         self._imagingRate = 76000  # Rate in hz. NOT FUNCTIONAL
         self._config = "ProbeLKM10-LV"  # TODO implement as real parameter from GUI
         self._apodWindow = None
+        self._displayAxis = 0
 
         self.active = False
 
@@ -120,6 +121,9 @@ class FigureEight:
     def getProcessingQueue(self):
         return self._ProcQueue
 
+    def setDisplayAxis(self,axis):
+        self._displayAxis = axis
+
     def setRate(self, rate):
         self._imagingRate = rate
 
@@ -175,13 +179,6 @@ class FigureEight:
         self.active = True
         self.disableControlWidget()
 
-        # For now, the limit on fig-8s to be acquired is hard-coded, so rpt is set to 1 #TODO make not hard-coded to 500
-        self.setScanPatternParams(self._scanPatternSize,
-                                  self._scanPatternAlinesPerCross,
-                                  self._scanPatternAlinesPerFlyback,
-                                  1,
-                                  self._scanPatternAngle)
-
         self.initializeSpectralRadar()  # TODO: consider preloading Telesto for more responsive scanning and acq
         acq = threading.Thread(target=self.acquire)
         exp = threading.Thread(target=self.export_npy)
@@ -236,8 +233,6 @@ class FigureEight:
             B = self.scanPatternB1
             AperX = self._scanPatternAlinesPerCross
 
-            print('displayFunc initialized')
-
             while running and self.active:
                 raw = processingQueue.get()
                 spec = raw.flatten()[0:2048]  # First spectrum of the B-scan only is plotted
@@ -290,8 +285,6 @@ class FigureEight:
 
             counter += 1
 
-            del temp
-
         self.stopMeasurement()
         PySpectralRadar.clearRawData(rawDataHandle)
 
@@ -305,7 +298,7 @@ class FigureEight:
 
         self.startMeasurement()
 
-        for i in np.arange(500):
+        for i in np.arange(self._scanPatternTotalRepeats):
             self.getRawData(rawDataHandle)
 
             dim = PySpectralRadar.getRawDataShape(rawDataHandle)
@@ -349,15 +342,15 @@ class FigureEight:
                                            self.scanPatternB2)
 
         root.close()
-        print('Saving complete')
+        print('Saving .hdf complete')
 
     def export_npy(self):
 
         q = self.getRawQueue()
         root = self.getFilepath() + '.npy'
-        out = np.empty([2048,self._scanPatternAlinesPerCross,2,500],dtype=np.uint16)  # TODO: implement max file size
+        out = np.empty([2048,self._scanPatternAlinesPerCross,2,self._scanPatternTotalRepeats],dtype=np.uint16)  # TODO: implement max file size
 
-        for i in np.arange(500):
+        for i in np.arange(self._scanPatternTotalRepeats):
 
             temp = q.get()
 
@@ -400,12 +393,11 @@ class FigureEight:
         return self._scanPattern
 
     def updateScanPattern(self):
-        n = len(self.scanPatternX) * self._scanPatternTotalRepeats
         self._scanPattern = PySpectralRadar.createFreeformScanPattern(self._probe,
                                                                       self.scanPatternPositions,
-                                                                      n,
-                                                                      1,
-                                                                      FALSE)
+                                                                      self.scanPatternN,
+                                                                      1,  # All repeating patterns handled with loops!
+                                                                      False)
 
         PySpectralRadar.rotateScanPattern(self._scanPattern, self._scanPatternAngle)
 
@@ -424,7 +416,7 @@ class FigureEight:
          self.scanPatternN,
          self.scanPatternD] = generateIdealFigureEightPositions(patternSize,
                                                                 aLinesPerCross,
-                                                                rpt=repeats,
+                                                                rpt=1,  # All repeating patterns handled with loops!
                                                                 flyback=aLinesPerFlyback)
 
     def displayPattern(self):

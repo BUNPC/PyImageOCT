@@ -8,6 +8,9 @@ from PyQt5.QtWidgets import QGroupBox
 from PyQt5.QtWidgets import QGridLayout
 from PyQt5.QtWidgets import QFormLayout
 from PyQt5.QtWidgets import QTextEdit
+from PyQt5.QtWidgets import QWidget
+from PyQt5.QtWidgets import QRadioButton
+from PyQt5.QtWidgets import QHBoxLayout
 
 import pyqtgraph as PyQtG
 from pyqtgraph.Qt import QtGui
@@ -87,9 +90,21 @@ class ParamsGroupBox(QGroupBox):
         self.entryWindow.addItems(["Hann","Hamming","Blackman","None"])
         self.entryWindow.currentIndexChanged.connect(self.update)
 
+        self.radioBoxB = QWidget(parent=self)
+        self.radioBoxBLayout = QHBoxLayout()
+        self.B1 = QRadioButton('X')
+        self.B2 = QRadioButton('Y')
+        self.B1.setChecked(True)
+        self.B1.toggled.connect(self.update)
+        self.B2.toggled.connect(self.update)
+        self.radioBoxBLayout.addWidget(self.B1)
+        self.radioBoxBLayout.addWidget(self.B2)
+        self.radioBoxB.setLayout(self.radioBoxBLayout)
+
         self.layout.addRow(QLabel("Imaging rate"), self.entryImagingRate)
         self.layout.addRow(QLabel("Objective configuration"), self.entryConfig)
         self.layout.addRow(QLabel("Apodization window"), self.entryWindow)
+        self.layout.addRow(QLabel("B-Scan display"), self.radioBoxB)
 
         self.setLayout(self.layout)
 
@@ -105,6 +120,14 @@ class ParamsGroupBox(QGroupBox):
         }
         window = windowLUT[str(self.entryWindow.currentText())]
         self.controller.setApodWindow(window)
+
+        if self.B1.isChecked():
+            self.controller.setDisplayAxis(0)
+        else:
+            self.controller.setDisplayAxis(1)
+
+
+
 
 
 class ControlGroupBox(QGroupBox):
