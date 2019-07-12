@@ -404,12 +404,13 @@ class FigureEight:
 
         PySpectralRadar.rotateScanPattern(self._scanPattern, self._scanPatternAngle)
 
-    def setScanPatternParams(self, patternSize, aLinesPerCross, aLinesPerFlyback, repeats, angle):
+    def setScanPatternParams(self, patternSize, aLinesPerCross, aLinesPerFlyback, repeats, angle, flybackAngle):
         self._scanPatternSize = patternSize
         self._scanPatternAlinesPerCross = aLinesPerCross
         self._scanPatternAlinesPerFlyback = aLinesPerFlyback
         self._scanPatternTotalRepeats = repeats
         self._scanPatternAngle = angle
+        self._scanPatternFlybackAngle = flybackAngle
 
         [self.scanPatternPositions,
          self.scanPatternX,
@@ -420,7 +421,8 @@ class FigureEight:
          self.scanPatternD] = generateIdealFigureEightPositions(patternSize,
                                                                 aLinesPerCross,
                                                                 rpt=1,  # All repeating patterns handled with loops!
-                                                                flyback=aLinesPerFlyback)
+                                                                flyback=aLinesPerFlyback,
+                                                                flybackAngle=flybackAngle)
 
     def displayPattern(self):
         self.scatterWidget.plot2D(self.scanPatternX, self.scanPatternY)
