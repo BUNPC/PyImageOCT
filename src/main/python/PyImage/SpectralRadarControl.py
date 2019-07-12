@@ -34,6 +34,8 @@ class FigureEight:
         self._scanPatternAlinesPerCross = None
         self._scanPatternAlinesPerFlyback = None
         self._scanPatternTotalRepeats = None
+        self._scanPatternAngle = None
+        self._scanPatternFlybackAngle = None
 
         # Scan geometry
         self.scanPatternPositions = None
@@ -167,6 +169,7 @@ class FigureEight:
                                   self._scanPatternAlinesPerCross,
                                   self._scanPatternAlinesPerFlyback,
                                   1,
+                                  self._scanPatternFlybackAngle,
                                   self._scanPatternAngle)
 
         self.initializeSpectralRadar()
@@ -361,13 +364,14 @@ class FigureEight:
 
     def abort(self):
         print('Abort') # TODO different function for mid-acq abort vs end of acquisition. Also write a safer one
-        for thread in self._threads:
-            thread._is_running = False
-        self._threads = []
-        self.stopMeasurement()
-        self.active = False
-        self.enableControlWidgets()
-        self.closeSpectralRadar()
+        if self.active:
+            self.active = False
+            for thread in self._threads:
+                thread._is_running = False
+            self._threads = []
+            self.stopMeasurement()
+            self.enableControlWidgets()
+            self.closeSpectralRadar()
 
     def setFileParams(self, experimentDirectory, experimentName, maxSize, fileType):
         self._fileExperimentDirectory = experimentDirectory
@@ -394,12 +398,13 @@ class FigureEight:
 
         PySpectralRadar.rotateScanPattern(self._scanPattern, self._scanPatternAngle)
 
-    def setScanPatternParams(self, patternSize, aLinesPerCross, aLinesPerFlyback, repeats, angle):
+    def setScanPatternParams(self, patternSize, aLinesPerCross, aLinesPerFlyback, repeats, angle, flybackAngle):
         self._scanPatternSize = patternSize
         self._scanPatternAlinesPerCross = aLinesPerCross
         self._scanPatternAlinesPerFlyback = aLinesPerFlyback
         self._scanPatternTotalRepeats = repeats
         self._scanPatternAngle = angle
+        self._scanPatternFlybackAngle = flybackAngle
 
         [self.scanPatternPositions,
          self.scanPatternX,
@@ -410,7 +415,8 @@ class FigureEight:
          self.scanPatternD] = generateIdealFigureEightPositions(patternSize,
                                                                 aLinesPerCross,
                                                                 rpt=1,  # All repeating patterns handled with loops!
-                                                                flyback=aLinesPerFlyback)
+                                                                flyback=aLinesPerFlyback,
+                                                                flybackAngle=flybackAngle)
 
     def displayPattern(self):
         self.scatterWidget.plot2D(self.scanPatternX, self.scanPatternY)

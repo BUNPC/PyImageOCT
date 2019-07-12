@@ -3,12 +3,14 @@ import numba
 from scipy.interpolate import interp1d
 
 
-def generateIdealFigureEightPositions(xsize, alinesPerX, rpt=1, flyback=20):
+def generateIdealFigureEightPositions(xsize, alinesPerX, rpt=1, flyback=20, flybackAngle=np.pi/2.58):
     """
     Generates figure-8 scan pattern positions with orthogonal cross.
     :param xdistance: Distance between adjacent scans in perpendicular B-scans
     :param alinesPerX: Number of A-lines in each orthogonal B-scan
     :param rpt: Number of times to repeat the pattern in the 1D positions array
+    :param flyback: Number of A-lines in each flyback loop
+    :param flybackAngle: Range over which to sweep flyback loops in radians
     :return: posRpt: 1D positions array for use with FreeformScanPattern; [x1,y1,x2,y2...] format
              X: X coordinates of a single figure-8
              Y: Y coordinates of a single figure-8
@@ -20,18 +22,18 @@ def generateIdealFigureEightPositions(xsize, alinesPerX, rpt=1, flyback=20):
     if rpt > 0:
         cross = np.linspace(-xsize, xsize, alinesPerX)
 
-        fb1 = np.linspace(-np.pi / 3.2, np.pi / 3.2, flyback, dtype=np.float32)
-        fb2 = np.linspace(-np.pi / 3.2 + np.pi, np.pi / 3.2 + np.pi, flyback, dtype=np.float32)
+        fb1 = np.linspace(-flybackAngle, flybackAngle, flyback, dtype=np.float32)
+        fb2 = np.linspace(-flybackAngle + np.pi, flybackAngle + np.pi, flyback, dtype=np.float32)
 
         B1 = np.array([cross[::-1], cross[::-1]])
         B2 = np.array([cross, -cross])
 
         D = np.sqrt((B1[0][0] - B1[0][1]) ** 2 + (B1[1][0] - B1[1][1]) ** 2)
 
-        x1 = 2 * xsize * np.cos(fb1)
-        y1 = (1.18 * xsize) * np.sin(2 * fb1)
-        x2 = 2 * xsize * np.cos(fb2)
-        y2 = (1.18 * xsize) * np.sin(2 * fb2)
+        x1 = 2.95 * xsize * np.cos(fb1)
+        y1 = (1.572 * xsize) * np.sin(2 * fb1)
+        x2 = 2.95 * xsize * np.cos(fb2)
+        y2 = (1.572 * xsize) * np.sin(2 * fb2)
 
         X = np.concatenate([x1, B1[0], x2, B2[0]])
         Y = np.concatenate([y1, B1[1], y2, B2[1]])
