@@ -191,7 +191,7 @@ class FigureEight:
         for thread in self._threads:
             thread.start()
 
-    def process8(self, A, B1, B2=None, ROI=np.arange(14:400)):
+    def process8(self, A, B1, B2=None, ROI=np.arange(14,400)):
 
         Nx = self._scanPatternAlinesPerCross
         N = self.scanPatternN
@@ -263,7 +263,7 @@ class FigureEight:
         if self._scanPatternAlinesPerCross > 80:
             interval = 30
         elif self._scanPatternAlinesPerCross < 10:
-            interval = 5
+            interval = 10
         else:
             interval = 20
 
