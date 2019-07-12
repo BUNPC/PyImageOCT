@@ -258,7 +258,7 @@ class FigureEight:
         counter = 0
 
         # Set number of frames to process based on predicted speed
-        interval = 20
+        interval = 30
 
         rawDataHandle = PySpectralRadar.createRawData()
 
@@ -371,6 +371,8 @@ class FigureEight:
             for thread in self._threads:
                 thread._is_running = False
             self._threads = []
+            self._RawQueue = Queue(maxsize=1000)
+            self._ProcQueue = Queue(maxsize=1000)
             self.stopMeasurement()
             self.enableControlWidgets()
             self.closeSpectralRadar()

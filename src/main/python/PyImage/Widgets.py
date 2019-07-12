@@ -323,6 +323,7 @@ class BScanView(PyQtG.GraphicsView):  # TODO fix crashing!!!! get desired reset 
         self.viewbox.addItem(self.image)
 
     def update(self, data):
-        # self.image.clear()
+        print('updating')
+        self.image.clear()
         self.image.setImage(data, autoLevels=False, levels=(-100, -2))
         QtGui.QGuiApplication.processEvents()
