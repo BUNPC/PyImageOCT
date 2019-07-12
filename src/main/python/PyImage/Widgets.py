@@ -288,7 +288,7 @@ class plotWidget2D(PyQtG.PlotWidget):
         QtGui.QGuiApplication.processEvents()
 
 
-class BScanView(PyQtG.GraphicsView):  # TODO fix bug in display after changing size of Bscan
+class BScanView(PyQtG.GraphicsView):
 
     def __init__(self, hist=None, aspect=0.5):
         super().__init__()
@@ -298,9 +298,12 @@ class BScanView(PyQtG.GraphicsView):  # TODO fix bug in display after changing s
         self.layout = PyQtG.GraphicsLayout()
         self.setCentralItem(self.layout)
         self.viewbox = self.layout.addViewBox()
+        self.viewbox.setAspectLocked(self.aspect)
+
+    def initialize(self):
+        self.viewbox.clear()
         self.image = PyQtG.ImageItem()
         self.viewbox.addItem(self.image)
-        self.viewbox.setAspectLocked(self.aspect)
 
     def update(self, data):
         self.image.clear()

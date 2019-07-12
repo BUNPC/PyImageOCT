@@ -227,6 +227,7 @@ class FigureEight:
     def display(self):
 
             running = True
+            self.imageWidget.initialize()
             processingQueue = self.getProcessingQueue()
             # Loads necessary scan pattern properties for data processing
             N = self.scanPatternN
