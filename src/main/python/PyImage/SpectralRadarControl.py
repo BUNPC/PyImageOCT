@@ -231,7 +231,9 @@ class FigureEight:
             processingQueue = self.getProcessingQueue()
             # Loads necessary scan pattern properties for data processing
             N = self.scanPatternN
-            B = self.scanPatternB1
+            Bs = [self.scanPatternB1,self.scanPatternB2]
+            B = Bs[self._displayAxis]
+
             AperX = self._scanPatternAlinesPerCross
 
             while running and self.active:
