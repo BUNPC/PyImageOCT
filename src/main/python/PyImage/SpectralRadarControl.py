@@ -6,6 +6,7 @@ from PyQt5.QtCore import QObject, QThread, pyqtSlot
 from src.main.python.PyImage.OCT import *
 from copy import deepcopy
 import h5py
+import os
 from pathlib import Path
 
 TRUE = True
@@ -113,9 +114,6 @@ class FigureEight:
 
     def getAcquisitionType(self):
         return self._acquisitionType
-
-    def getFilepath(self):
-        return self._fileExperimentDirectory
 
     def getRawQueue(self):
         return self._RawQueue
@@ -260,7 +258,7 @@ class FigureEight:
         counter = 0
 
         # Set number of frames to process based on predicted speed
-        interval = 40
+        interval = 20
 
         rawDataHandle = PySpectralRadar.createRawData()
 
@@ -347,6 +345,10 @@ class FigureEight:
     def export_npy(self):
 
         q = self.getRawQueue()
+        try:
+            os.mkdir(self._fileExperimentDirectory)
+        except FileExistsError:
+            pass
         root = self.getFilepath() + '.npy'
         out = np.empty([1024,self._scanPatternAlinesPerCross,2,self._scanPatternTotalRepeats],dtype=np.complex64)  # TODO: implement max file size
 
@@ -378,6 +380,10 @@ class FigureEight:
         self._fileExperimentName = experimentName
         self._fileMaxSize = maxSize
         self._fileType = fileType
+
+    def getFilepath(self):
+        return self._fileExperimentDirectory+'/'+self._fileExperimentName
+
 
     def setDeviceParams(self, rate, config):
         self._imagingRate = rate

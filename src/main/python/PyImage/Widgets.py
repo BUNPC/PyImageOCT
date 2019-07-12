@@ -32,14 +32,15 @@ class FileGroupBox(QGroupBox):
 
         self.layout = QFormLayout()
 
+        defaultName = 'fig8_0'
         self.entryExpName = QLineEdit()
-        now = time.strftime("%d-%m-%y")
-        default = now + '-PyImageOCT-exp'
-        self.entryExpName.setText(default)
+        self.entryExpName.setText(defaultName)
         self.entryExpName.editingFinished.connect(self.update)
 
         self.entryExpDir = QLineEdit()
-        here = str(Path.home()) + '\\PyImageOCT\\Experiments\\' + default
+        now = time.strftime("%d-%m-%y")
+        default = now + '-PyImageOCT-exp'
+        here = 'E:/PyImageOCT/Experiments/'+default
         self.entryExpDir.setText(here)
         self.entryExpDir.editingFinished.connect(self.update)
 
@@ -66,7 +67,7 @@ class FileGroupBox(QGroupBox):
         maxFileSize = str(self.entryFileSize.currentText())
         fileType = str(self.entryFileType.currentText())
 
-        self.controller.setFileParams(experimentName, experimentDirectory, maxFileSize, fileType)
+        self.controller.setFileParams(experimentDirectory, experimentName, maxFileSize, fileType)
 
 
 class ParamsGroupBox(QGroupBox):
@@ -302,7 +303,7 @@ class plotWidget2D(PyQtG.PlotWidget):
         QtGui.QGuiApplication.processEvents()
 
 
-class BScanView(PyQtG.GraphicsView):
+class BScanView(PyQtG.GraphicsView):  # TODO fix crashing!!!! get desired reset behavior
 
     def __init__(self, hist=None, aspect=0.5):
         super().__init__()

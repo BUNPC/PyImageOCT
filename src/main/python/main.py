@@ -25,7 +25,6 @@ QtInstance = QtCore.QCoreApplication.instance()
 if QtInstance is None:
     QtInstance = QApplication(sys.argv)
 
-
 class Main(QTabWidget):
     '''
     At the highest level, the GUI consists of tabs which organize various scanning/acquisition modes, similar to the
@@ -49,6 +48,8 @@ class Main(QTabWidget):
         self.setMaximumHeight(550)
         self.setMaximumWidth(1200)
 
+    def closeEvent(self, event):
+        self.tabFigEight.controller.abort()  # TODO make not-hardcoded
 
 class TabFigEight(QWidget):
     '''
