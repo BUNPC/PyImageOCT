@@ -182,7 +182,7 @@ class FigureEight:
         print('Init acq')
 
         self.active = True
-        self.disableControlWidget()
+        self.disableControlWidgets()
 
         self.initializeSpectralRadar()
         acq = threading.Thread(target=self.acquire)
@@ -193,13 +193,13 @@ class FigureEight:
         for thread in self._threads:
             thread.start()
 
-    def process8(self, A, B1, B2=None, ROI=np.arange(14,400)):
+    def process8(self, A, B1, ROI, B2=np.zeros(1)):
 
         Nx = self._scanPatternAlinesPerCross
         N = self.scanPatternN
         interpIndices = np.linspace(min(self._lam),max(self._lam),2048)
 
-        if B2 != None:
+        if B2.any() != 0:
 
             processed = np.empty([1024,Nx,2], dtype=np.complex64)
             Bs = [B1,B2]
@@ -244,7 +244,7 @@ class FigureEight:
                 raw = processingQueue.get()
                 spec = raw.flatten()[0:2048]  # First spectrum of the B-scan only is plotted
 
-                bscan = self.process8(raw,B)
+                bscan = self.process8(raw,B,ROI=np.arange(40,400))
 
                 self.plotWidget.plot1D(spec)
                 if bscan.size is not 0:
@@ -345,19 +345,15 @@ class FigureEight:
 
         q = self.getRawQueue()
         root = self.getFilepath() + '.npy'
-        out = np.empty([2048,self._scanPatternAlinesPerCross,2,self._scanPatternTotalRepeats],dtype=np.uint16)  # TODO: implement max file size
+        out = np.empty([1024,self._scanPatternAlinesPerCross,2,self._scanPatternTotalRepeats],dtype=np.complex64)  # TODO: implement max file size
 
         for i in np.arange(self._scanPatternTotalRepeats):
 
             temp = q.get()
 
-            reshaped = reshape8(temp,
-                                self.scanPatternN,
-                                self._scanPatternAlinesPerCross,
-                                self.scanPatternB1,
-                                self.scanPatternB2)
+            bscan = self.process8(temp, self.scanPatternB1, ROI=np.arange(0,1024), B2=self.scanPatternB2)
 
-            out[:,:,:,i] = reshaped
+            out[:,:,:,i] = bscan
 
         np.save(root,out)
         print('Saving .npy complete')
