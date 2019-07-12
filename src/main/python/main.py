@@ -42,11 +42,12 @@ class Main(QTabWidget):
         self.windowTitle = 'PyOCT V.0.1.0'
         self.setWindowTitle(self.windowTitle)
 
-        # self.setMaximumHeight(800)
-        # self.setMaximumWidth(600)
-        #
-        # self.setMinimumHeight(600)
-        # self.setMinimumWidth(400)
+
+        self.setMinimumHeight(500)
+        self.setMinimumWidth(800)
+
+        self.setMaximumHeight(500)
+        self.setMaximumWidth(1200)
 
 
 class TabFigEight(QWidget):
@@ -63,12 +64,14 @@ class TabFigEight(QWidget):
 
         # Real-time plot widget for display of raw spectral data
         self.plotSpectrum = Widgets.plotWidget2D(name="Raw Spectrum", type='curve')
+        self.plotSpectrum.setMaximumHeight(200)
         self.mainGrid.addWidget(self.plotSpectrum, 0, 2, 2, 1)
         self.plotSpectrum.setXRange(0, 2048)
         self.plotSpectrum.setYRange(0, 6000)
 
         # Real-time scatter plot widget for display of scan pattern
         self.plotPattern = Widgets.plotWidget2D(name="Scan Pattern Preview", type='scatter', aspectLocked=True)
+        self.plotPattern.setMaximumHeight(200)
         self.mainGrid.addWidget(self.plotPattern, 0, 3, 2, 1)
         self.plotPattern.labelAxes('mm', '')
 

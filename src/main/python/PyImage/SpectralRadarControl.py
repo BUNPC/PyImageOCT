@@ -179,7 +179,7 @@ class FigureEight:
         self.active = True
         self.disableControlWidget()
 
-        self.initializeSpectralRadar()  # TODO: consider preloading Telesto for more responsive scanning and acq
+        self.initializeSpectralRadar()
         acq = threading.Thread(target=self.acquire)
         exp = threading.Thread(target=self.export_npy)
         self._threads.append(acq)

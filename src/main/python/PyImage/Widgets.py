@@ -91,6 +91,7 @@ class ParamsGroupBox(QGroupBox):
         self.entryWindow.currentIndexChanged.connect(self.update)
 
         self.radioBoxB = QWidget(parent=self)
+        self.radioBoxB.setFixedWidth(80)
         self.radioBoxBLayout = QHBoxLayout()
         self.B1 = QRadioButton('X')
         self.B2 = QRadioButton('Y')
