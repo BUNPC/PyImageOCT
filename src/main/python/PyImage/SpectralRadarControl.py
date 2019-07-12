@@ -21,7 +21,7 @@ class FigureEight:
         self.imageWidget = imageWidget
 
         # Control widgets
-        self.controlWidget = None
+        self.controlWidgets = []
 
         # File params
         self._fileExperimentName = None
@@ -52,8 +52,8 @@ class FigureEight:
 
         self.active = False
 
-        self._RawQueue = Queue()
-        self._ProcQueue = Queue()
+        self._RawQueue = Queue(maxsize=1000)
+        self._ProcQueue = Queue(maxsize=1000)
 
         # SpectralRadar handles
         self._device = None
@@ -143,19 +143,24 @@ class FigureEight:
         self._config = config
 
     def setControlWidget(self, controlWidget):
-        self.controlWidget = controlWidget
+        self.controlWidgets.append(controlWidget)
 
-    def disableControlWidget(self):
-        self.controlWidget.enabled(False)
+    def resetControlWidgets(self):
+        self.controlWidgets = []
 
-    def enableControlWidget(self):
-        self.controlWidget.enabled(True)
+    def disableControlWidgets(self):
+        for widget in self.controlWidgets:
+            widget.enabled(False)
+
+    def enableControlWidgets(self):
+        for widget in self.controlWidgets:
+            widget.enabled(True)
 
     def initScan(self):
         print('Init scan')
 
         self.active = True
-        self.disableControlWidget()
+        self.disableControlWidgets()
 
         # For scanning, acquisition occurs after each figure-8, so rpt is set to 1
         self.setScanPatternParams(self._scanPatternSize,
@@ -206,7 +211,7 @@ class FigureEight:
 
                 for n in np.arange(Nx):
 
-                    k = interp1d(self._lam,preprocessed)
+                    k = interp1d(self._lam, preprocessed[:,n])
                     interpolated[:,n] = k(interpIndices)
                     processed[:,n,b] = np.fft.ifft(interpolated[:,n])[0:1024].astype(np.complex64)
 
@@ -218,38 +223,32 @@ class FigureEight:
             preprocessed = preprocess8(A, N, B1, Nx, self.getApodWindow())
 
             for n in np.arange(Nx):
-                k = interp1d(self._lam, preprocessed)
+                k = interp1d(self._lam, preprocessed[:,n])
                 interpolated[:, n] = k(interpIndices)
-                processed[:, n] = np.fft.ifft(interpolated[:, n])[0:1024].astype(np.complex64)
+                processed[:, n] = np.fft.ifft(interpolated[:, n])[1024:2048].astype(np.complex64)
 
         return processed
 
     def display(self):
 
             running = True
-            self.imageWidget.initialize()
             processingQueue = self.getProcessingQueue()
             # Loads necessary scan pattern properties for data processing
             N = self.scanPatternN
             Bs = [self.scanPatternB1,self.scanPatternB2]
-            B = Bs[self._displayAxis]
 
             AperX = self._scanPatternAlinesPerCross
 
             while running and self.active:
+                B = Bs[self._displayAxis]
                 raw = processingQueue.get()
                 spec = raw.flatten()[0:2048]  # First spectrum of the B-scan only is plotted
 
-                bscan = fig8ToBScan(raw,
-                                    N,
-                                    B,
-                                    AperX,
-                                    self.getApodWindow(),
-                                    ROI=400,
-                                    lam=self.getLambda())
+                bscan = self.process8(raw,B)
 
                 self.plotWidget.plot1D(spec)
-                self.imageWidget.update(20*np.log10(np.abs(bscan)))
+                if bscan.size is not 0:
+                    self.imageWidget.update(20*np.log10(np.abs(np.transpose(bscan))))
 
     def scan(self):
 
@@ -258,12 +257,7 @@ class FigureEight:
         counter = 0
 
         # Set number of frames to process based on predicted speed
-        if self._scanPatternAlinesPerCross > 80:
-            interval = 30
-        elif self._scanPatternAlinesPerCross < 10:
-            interval = 10
-        else:
-            interval = 20
+        interval = 40
 
         rawDataHandle = PySpectralRadar.createRawData()
 
@@ -370,13 +364,13 @@ class FigureEight:
         self.abort()
 
     def abort(self):
-        print('Abort') # TODO different function for mid-acq abort vs end of acquisition
-        self.stopMeasurement()
+        print('Abort') # TODO different function for mid-acq abort vs end of acquisition. Also write a safer one
         for thread in self._threads:
             thread._is_running = False
         self._threads = []
+        self.stopMeasurement()
         self.active = False
-        self.enableControlWidget()
+        self.enableControlWidgets()
         self.closeSpectralRadar()
 
     def setFileParams(self, experimentDirectory, experimentName, maxSize, fileType):

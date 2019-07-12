@@ -93,13 +93,13 @@ class ParamsGroupBox(QGroupBox):
         self.radioBoxB = QWidget(parent=self)
         self.radioBoxB.setFixedWidth(80)
         self.radioBoxBLayout = QHBoxLayout()
-        self.B1 = QRadioButton('X')
-        self.B2 = QRadioButton('Y')
-        self.B1.setChecked(True)
+        self.B1 = QRadioButton('Y')
+        self.B2 = QRadioButton('X')
+        self.B2.setChecked(True)
         self.B1.toggled.connect(self.update)
         self.B2.toggled.connect(self.update)
-        self.radioBoxBLayout.addWidget(self.B1)
         self.radioBoxBLayout.addWidget(self.B2)
+        self.radioBoxBLayout.addWidget(self.B1)
         self.radioBoxB.setLayout(self.radioBoxBLayout)
 
         self.layout.addRow(QLabel("Imaging rate"), self.entryImagingRate)
@@ -235,6 +235,8 @@ class Fig8GroupBox(QGroupBox):
         self.layout.addRow(QLabel("Total Figure-8s to acquire"), self.spinFig8Total)
         self.setLayout(self.layout)
 
+
+        self.controller.setControlWidget(self)
         self.update()
 
     def update(self):
@@ -251,9 +253,12 @@ class Fig8GroupBox(QGroupBox):
         self.textRate.setText(str(w)[0:10] + ' hz ')
         self.controller.displayPattern()
 
-    def disabled(self, bool):
-        self.spinALinesPerX.setDisabled(bool)
-        self.spinFig8Size.setDisabled(bool)
+    def enabled(self, bool):
+        self.spinALinesPerX.setEnabled(bool)
+        self.spinFlyback.setEnabled(bool)
+        self.spinFig8Size.setEnabled(bool)
+        self.spinAngle.setEnabled(bool)
+        self.spinAcqTime.setEnabled(bool)
 
 
 class plotWidget2D(PyQtG.PlotWidget):
@@ -299,14 +304,16 @@ class BScanView(PyQtG.GraphicsView):
         self.layout = PyQtG.GraphicsLayout()
         self.setCentralItem(self.layout)
         self.viewbox = self.layout.addViewBox()
-        self.viewbox.setAspectLocked(self.aspect)
+        self.viewbox.setAspectLocked()
+        self.image = PyQtG.ImageItem()
+        self.viewbox.addItem(self.image)
 
-    def initialize(self):
+    def reset(self):
         self.viewbox.clear()
         self.image = PyQtG.ImageItem()
         self.viewbox.addItem(self.image)
 
     def update(self, data):
-        self.image.clear()
+        # self.image.clear()
         self.image.setImage(data, autoLevels=False, levels=(-100, -2))
         QtGui.QGuiApplication.processEvents()
