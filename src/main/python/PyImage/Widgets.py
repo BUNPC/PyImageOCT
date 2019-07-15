@@ -11,6 +11,7 @@ from PyQt5.QtWidgets import QTextEdit
 from PyQt5.QtWidgets import QWidget
 from PyQt5.QtWidgets import QRadioButton
 from PyQt5.QtWidgets import QHBoxLayout
+from PyQt5.QtWidgets import QProgressBar
 
 import pyqtgraph as PyQtG
 from pyqtgraph.Qt import QtGui
@@ -143,6 +144,8 @@ class ControlGroupBox(QGroupBox):
         self.acqButton = QPushButton('ACQUIRE')
         self.abortButton = QPushButton('STOP')
 
+        self.progress = QtGui.QProgressBar()
+
         self.scanButton.clicked.connect(self.controller.initScan)
         self.acqButton.clicked.connect(self.controller.initAcq)
         self.abortButton.clicked.connect(self.controller.abort)
@@ -153,6 +156,7 @@ class ControlGroupBox(QGroupBox):
         self.layout.addWidget(self.scanButton, 0, 0)
         self.layout.addWidget(self.acqButton, 0, 1)
         self.layout.addWidget(self.abortButton, 0, 2)
+        self.layout.addWidget(self.progress, 1, 0, 1, 3)
 
         self.setLayout(self.layout)
 
@@ -303,7 +307,7 @@ class plotWidget2D(PyQtG.PlotWidget):
         QtGui.QGuiApplication.processEvents()
 
 
-class BScanView(PyQtG.GraphicsLayoutWidget):  # TODO fix crashing!!!! get desired reset behavior
+class BScanView(PyQtG.GraphicsLayoutWidget):
 
     def __init__(self, aspect=0.5):
         super().__init__()
@@ -314,13 +318,7 @@ class BScanView(PyQtG.GraphicsLayoutWidget):  # TODO fix crashing!!!! get desire
         self.image = PyQtG.ImageItem()
         self.viewbox.addItem(self.image)
 
-    def reset(self):
-        self.viewbox.clear()
-        self.image = PyQtG.ImageItem()
-        self.viewbox.addItem(self.image)
-
     def update(self, data):
-        print('updating')
         self.image.clear()
         self.image.setImage(data, autoLevels=False, levels=(-100, -2))
         QtGui.QGuiApplication.processEvents()
