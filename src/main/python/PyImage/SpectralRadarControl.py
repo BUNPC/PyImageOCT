@@ -248,8 +248,8 @@ class FigureEight:
                 bscan = self.process8(raw,B,ROI=np.arange(40,400))
 
                 self.plotWidget.plot1D(spec)
-                if bscan.size is not 0:
-                    self.imageWidget.update(20*np.log10(np.abs(np.transpose(bscan))))
+                self.imageWidget.update(20*np.log10(np.abs(np.transpose(bscan))))
+                # self.imageWidget.update(np.random.randint(-100,-2,[100,400]))
 
     def scan(self):
 
@@ -258,7 +258,7 @@ class FigureEight:
         counter = 0
 
         # Set number of frames to process based on predicted speed
-        interval = 30
+        interval = 50
 
         rawDataHandle = PySpectralRadar.createRawData()
 

@@ -303,16 +303,13 @@ class plotWidget2D(PyQtG.PlotWidget):
         QtGui.QGuiApplication.processEvents()
 
 
-class BScanView(PyQtG.GraphicsView):  # TODO fix crashing!!!! get desired reset behavior
+class BScanView(PyQtG.GraphicsLayoutWidget):  # TODO fix crashing!!!! get desired reset behavior
 
-    def __init__(self, hist=None, aspect=0.5):
+    def __init__(self, aspect=0.5):
         super().__init__()
-        self.hist = hist
         self.aspect = aspect
 
-        self.layout = PyQtG.GraphicsLayout()
-        self.setCentralItem(self.layout)
-        self.viewbox = self.layout.addViewBox()
+        self.viewbox = self.addViewBox(row=1,col=1)
         self.viewbox.setAspectLocked()
         self.image = PyQtG.ImageItem()
         self.viewbox.addItem(self.image)
