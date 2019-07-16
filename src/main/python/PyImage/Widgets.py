@@ -299,18 +299,19 @@ class plotWidget2D(PyQtG.PlotWidget):
     def plot1D(self, Y):
         self.item.clear()
         self.item.setData(x=self.X, y=Y)
-        QtGui.QApplication.processEvents()
 
     def plot2D(self, X, Y):
         self.item.clear()
         self.item.setData(x=X, y=Y)
-        QtGui.QGuiApplication.processEvents()
 
 
-class BScanView(PyQtG.GraphicsLayoutWidget):
+
+class BScanView(PyQtG.GraphicsLayoutWidget):  # Doesn't work for some reason. TODO fix
 
     def __init__(self, aspect=0.5):
+
         super().__init__()
+
         self.aspect = aspect
 
         self.viewbox = self.addViewBox(row=1,col=1)
@@ -321,4 +322,18 @@ class BScanView(PyQtG.GraphicsLayoutWidget):
     def update(self, data):
         self.image.clear()
         self.image.setImage(data, autoLevels=False, levels=(-100, -2))
-        QtGui.QGuiApplication.processEvents()
+
+
+class BScanViewer(PyQtG.ImageView):
+
+    def __init__(self):
+
+        super().__init__()
+
+        self.ui.histogram.hide()
+        self.ui.roiBtn.hide()
+        self.ui.menuBtn.hide()
+
+    def update(self,data):
+        self.setImage(np.flip(data,axis=1), autoLevels=False, levels=(-100, -2))
+

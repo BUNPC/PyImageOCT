@@ -1,7 +1,8 @@
 from src.main.python import PySpectralRadar
-from queue import Queue
+from queue import Queue, Full, Empty
 import threading
 from PyQt5.QtCore import QObject, QThread, pyqtSlot
+from pyqtgraph.Qt import QtGui
 
 from src.main.python.PyImage.OCT import *
 from copy import deepcopy
@@ -177,6 +178,7 @@ class FigureEight:
         self._threads.append(disp)
 
         for thread in self._threads:
+            thread.daemon = True
             thread.start()
 
     def initAcq(self):
@@ -218,7 +220,7 @@ class FigureEight:
 
         else:
 
-            processed = np.empty([1024,Nx], dtype=np.complex64)
+            processed = np.zeros([1024,Nx], dtype=np.complex64)
 
             interpolated = np.empty([2048, Nx])
             preprocessed = preprocess8(A, N, B1, Nx, self.getApodWindow())
@@ -228,28 +230,28 @@ class FigureEight:
                 interpolated[:, n] = k(interpIndices)
                 processed[:, n] = np.fft.ifft(interpolated[:, n])[1024:2048].astype(np.complex64)
 
-        return processed
+        return processed[ROI[0]:ROI[1],:]
 
     def display(self):
 
             running = True
             processingQueue = self.getProcessingQueue()
-            # Loads necessary scan pattern properties for data processing
-            N = self.scanPatternN
             Bs = [self.scanPatternB1,self.scanPatternB2]
-
-            AperX = self._scanPatternAlinesPerCross
 
             while running and self.active:
                 B = Bs[self._displayAxis]
-                raw = processingQueue.get()
-                spec = raw.flatten()[0:2048]  # First spectrum of the B-scan only is plotted
+                try:
+                    raw = processingQueue.get()
+                    spec = raw.flatten()[0:2048]  # First spectrum of the B-scan only is plotted
 
-                bscan = self.process8(raw,B,ROI=np.arange(40,400))
+                    bscan = self.process8(raw,B,ROI=(620,1020))
 
-                self.plotWidget.plot1D(spec)
-                self.imageWidget.update(20*np.log10(np.abs(np.transpose(bscan))))
-                # self.imageWidget.update(np.random.randint(-100,-2,[100,400]))
+                    self.plotWidget.plot1D(spec)
+                    self.imageWidget.update(20*np.log10(np.abs(np.transpose(bscan))))
+                    QtGui.QGuiApplication.processEvents()
+
+                except Full:
+                    pass
 
     def scan(self):
 
@@ -258,7 +260,7 @@ class FigureEight:
         counter = 0
 
         # Set number of frames to process based on predicted speed
-        interval = 50
+        interval = 30
 
         rawDataHandle = PySpectralRadar.createRawData()
 
@@ -279,7 +281,16 @@ class FigureEight:
             if np.size(temp) > 0:
 
                 if counter % interval == 0:
-                    processingQueue.put(deepcopy(temp))
+
+                    new = deepcopy(temp)
+
+                    try:
+
+                        processingQueue.put(new)
+
+                    except Full:
+
+                        pass
 
             counter += 1
 
@@ -297,6 +308,7 @@ class FigureEight:
         self.startMeasurement()
 
         for i in np.arange(self._scanPatternTotalRepeats):
+
             self.getRawData(rawDataHandle)
 
             dim = PySpectralRadar.getRawDataShape(rawDataHandle)
@@ -305,9 +317,15 @@ class FigureEight:
 
             PySpectralRadar.copyRawDataContent(rawDataHandle, temp)
 
-            rawQueue.put(temp)
+            new = deepcopy(temp)
 
-            del temp
+            try:
+
+                rawQueue.put(new)
+
+            except Full:
+
+                pass
 
         self.stopMeasurement()
         PySpectralRadar.clearRawData(rawDataHandle)
@@ -356,7 +374,7 @@ class FigureEight:
 
             temp = q.get()
 
-            bscan = self.process8(temp, self.scanPatternB1, ROI=np.arange(0,1024), B2=self.scanPatternB2)
+            bscan = self.process8(temp, self.scanPatternB1, ROI=(0,1024), B2=self.scanPatternB2)
 
             out[:,:,:,i] = bscan
 
@@ -371,8 +389,8 @@ class FigureEight:
             for thread in self._threads:
                 thread._is_running = False
             self._threads = []
-            self._RawQueue = Queue(maxsize=1000)
-            self._ProcQueue = Queue(maxsize=1000)
+            self._RawQueue = Queue()
+            self._ProcQueue = Queue()
             self.stopMeasurement()
             self.enableControlWidgets()
             self.closeSpectralRadar()

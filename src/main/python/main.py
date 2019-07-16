@@ -77,7 +77,7 @@ class TabFigEight(QWidget):
         self.plotPattern.labelAxes('mm', '')
 
         # Real-time image display for B-scan
-        self.plotBScan = Widgets.BScanView()
+        self.plotBScan = Widgets.BScanViewer()
         self.mainGrid.addWidget(self.plotBScan, 0, 0, 3, 2)
 
         # Thorlabs SpectralRadar SDK is wrapped with PySpectralRadar module.
