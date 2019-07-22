@@ -187,9 +187,9 @@ class Fig8GroupBox(QGroupBox):
         self.spinAngle.valueChanged.connect(self.update)
 
         self.spinFlybackAngle = QDoubleSpinBox()
-        self.spinFlybackAngle.setRange(40, 120)
+        self.spinFlybackAngle.setRange(60, 70.1)
         self.spinFlybackAngle.setValue(70)
-        self.spinFlybackAngle.setSingleStep(0.5)
+        self.spinFlybackAngle.setSingleStep(0.1)
         self.spinFlybackAngle.setDecimals(1)
         self.spinFlybackAngle.setSuffix('°')
         self.spinFlybackAngle.valueChanged.connect(self.update)
