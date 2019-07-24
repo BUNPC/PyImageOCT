@@ -1,4 +1,4 @@
-## PyImageOCT V 0.1.0
+# PyImageOCT V 0.1.0
 Control applications for Thorlabs Telesto SD-OCT system
 Developed for BOAS Lab at Boston University
 
@@ -6,7 +6,7 @@ Currently, only Figure-8 scanning application which acquires two perpendicular B
 
 The project is dependent on fbs but will run without it
 
-# Dependencies:
+## Dependencies:
 - Python > 3.5 (fbs build is finnicky for > 3.6)
 - NumPy
 - Numba
