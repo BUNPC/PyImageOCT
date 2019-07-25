@@ -25,7 +25,6 @@ QtInstance = QtCore.QCoreApplication.instance()
 if QtInstance is None:
     QtInstance = QApplication(sys.argv)
 
-
 class Main(QTabWidget):
     '''
     At the highest level, the GUI consists of tabs which organize various scanning/acquisition modes, similar to the
@@ -43,12 +42,14 @@ class Main(QTabWidget):
         self.setWindowTitle(self.windowTitle)
 
 
-        self.setMinimumHeight(550)
-        self.setMinimumWidth(800)
+        # self.setMinimumHeight(550)
+        # self.setMinimumWidth(800)
+        #
+        # self.setMaximumHeight(550)
+        # self.setMaximumWidth(1200)
 
-        self.setMaximumHeight(550)
-        self.setMaximumWidth(1200)
-
+    def closeEvent(self, event):
+        self.tabFigEight.controller.abort()  # TODO make not-hardcoded
 
 class TabFigEight(QWidget):
     '''
@@ -63,20 +64,20 @@ class TabFigEight(QWidget):
         self.setLayout(self.mainGrid)
 
         # Real-time plot widget for display of raw spectral data
-        self.plotSpectrum = Widgets.plotWidget2D(name="Raw Spectrum", type='curve')
+        self.plotSpectrum = Widgets.PlotWidget2D(name="Raw Spectrum", type='curve')
         self.plotSpectrum.setMaximumHeight(250)
         self.mainGrid.addWidget(self.plotSpectrum, 0, 2, 2, 1)
         self.plotSpectrum.setXRange(0, 2048)
         self.plotSpectrum.setYRange(0, 6000)
 
         # Real-time scatter plot widget for display of scan pattern
-        self.plotPattern = Widgets.plotWidget2D(name="Scan Pattern Preview", type='scatter', aspectLocked=True)
+        self.plotPattern = Widgets.PlotWidget2D(name="Scan Pattern Preview", type='scatter', aspectLocked=True)
         self.plotPattern.setMaximumHeight(250)
         self.mainGrid.addWidget(self.plotPattern, 0, 3, 2, 1)
         self.plotPattern.labelAxes('mm', '')
 
         # Real-time image display for B-scan
-        self.plotBScan = Widgets.BScanView()
+        self.plotBScan = Widgets.BScanViewer()
         self.mainGrid.addWidget(self.plotBScan, 0, 0, 3, 2)
 
         # Thorlabs SpectralRadar SDK is wrapped with PySpectralRadar module.
@@ -99,6 +100,10 @@ class TabFigEight(QWidget):
         # Fig 8 scan pattern parameters
         self.scanParameters = Widgets.Fig8GroupBox('Scan Pattern', self.controller)
         self.mainGrid.addWidget(self.scanParameters, 2, 3, 3, 1)
+
+        # Motion Quant Parameters
+        self.quantParameters = Widgets.QuantGroupBox('Motion Quantification', self.controller)
+        self.mainGrid.addWidget(self.quantParameters,3,4,3,1)
 
         # Master scan/acquire/stop buttons
         self.controlButtons = Widgets.ControlGroupBox('Control', self.controller)

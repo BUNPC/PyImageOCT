@@ -1,11 +1,13 @@
 from src.main.python import PySpectralRadar
-from queue import Queue
+from queue import Queue, Full, Empty
 import threading
 from PyQt5.QtCore import QObject, QThread, pyqtSlot
+from pyqtgraph.Qt import QtGui
 
 from src.main.python.PyImage.OCT import *
 from copy import deepcopy
 import h5py
+import os
 from pathlib import Path
 
 TRUE = True
@@ -21,7 +23,7 @@ class FigureEight:
         self.imageWidget = imageWidget
 
         # Control widgets
-        self.controlWidget = None
+        self.controlWidgets = []
 
         # File params
         self._fileExperimentName = None
@@ -34,6 +36,8 @@ class FigureEight:
         self._scanPatternAlinesPerCross = None
         self._scanPatternAlinesPerFlyback = None
         self._scanPatternTotalRepeats = None
+        self._scanPatternAngle = None
+        self._scanPatternFlybackAngle = None
 
         # Scan geometry
         self.scanPatternPositions = None
@@ -52,8 +56,8 @@ class FigureEight:
 
         self.active = False
 
-        self._RawQueue = Queue()
-        self._ProcQueue = Queue()
+        self._RawQueue = Queue(maxsize=10)
+        self._ProcQueue = Queue(maxsize=1000)
 
         # SpectralRadar handles
         self._device = None
@@ -112,9 +116,6 @@ class FigureEight:
     def getAcquisitionType(self):
         return self._acquisitionType
 
-    def getFilepath(self):
-        return self._fileExperimentDirectory
-
     def getRawQueue(self):
         return self._RawQueue
 
@@ -143,25 +144,31 @@ class FigureEight:
         self._config = config
 
     def setControlWidget(self, controlWidget):
-        self.controlWidget = controlWidget
+        self.controlWidgets.append(controlWidget)
 
-    def disableControlWidget(self):
-        self.controlWidget.enabled(False)
+    def resetControlWidgets(self):
+        self.controlWidgets = []
 
-    def enableControlWidget(self):
-        self.controlWidget.enabled(True)
+    def disableControlWidgets(self):
+        for widget in self.controlWidgets:
+            widget.enabled(False)
+
+    def enableControlWidgets(self):
+        for widget in self.controlWidgets:
+            widget.enabled(True)
 
     def initScan(self):
         print('Init scan')
 
         self.active = True
-        self.disableControlWidget()
+        self.disableControlWidgets()
 
         # For scanning, acquisition occurs after each figure-8, so rpt is set to 1
         self.setScanPatternParams(self._scanPatternSize,
                                   self._scanPatternAlinesPerCross,
                                   self._scanPatternAlinesPerFlyback,
                                   1,
+                                  self._scanPatternFlybackAngle,
                                   self._scanPatternAngle)
 
         self.initializeSpectralRadar()
@@ -171,13 +178,14 @@ class FigureEight:
         self._threads.append(disp)
 
         for thread in self._threads:
+            thread.daemon = True
             thread.start()
 
     def initAcq(self):
         print('Init acq')
 
         self.active = True
-        self.disableControlWidget()
+        self.disableControlWidgets()
 
         self.initializeSpectralRadar()
         acq = threading.Thread(target=self.acquire)
@@ -188,13 +196,13 @@ class FigureEight:
         for thread in self._threads:
             thread.start()
 
-    def process8(self, A, B1, B2=None, ROI=np.arange(14,400)):
+    def process8(self, A, B1, ROI, B2=np.zeros(1)):
 
         Nx = self._scanPatternAlinesPerCross
         N = self.scanPatternN
         interpIndices = np.linspace(min(self._lam),max(self._lam),2048)
 
-        if B2 != None:
+        if B2.any() != 0:
 
             processed = np.empty([1024,Nx,2], dtype=np.complex64)
             Bs = [B1,B2]
@@ -206,50 +214,44 @@ class FigureEight:
 
                 for n in np.arange(Nx):
 
-                    k = interp1d(self._lam,preprocessed)
+                    k = interp1d(self._lam, preprocessed[:,n])
                     interpolated[:,n] = k(interpIndices)
                     processed[:,n,b] = np.fft.ifft(interpolated[:,n])[0:1024].astype(np.complex64)
 
         else:
 
-            processed = np.empty([1024,Nx], dtype=np.complex64)
+            processed = np.zeros([1024,Nx], dtype=np.complex64)
 
             interpolated = np.empty([2048, Nx])
             preprocessed = preprocess8(A, N, B1, Nx, self.getApodWindow())
 
             for n in np.arange(Nx):
-                k = interp1d(self._lam, preprocessed)
+                k = interp1d(self._lam, preprocessed[:,n])
                 interpolated[:, n] = k(interpIndices)
-                processed[:, n] = np.fft.ifft(interpolated[:, n])[0:1024].astype(np.complex64)
+                processed[:, n] = np.fft.ifft(interpolated[:, n])[1024:2048].astype(np.complex64)
 
-        return processed
+        return processed[ROI[0]:ROI[1],:]
 
     def display(self):
 
             running = True
-            self.imageWidget.initialize()
             processingQueue = self.getProcessingQueue()
-            # Loads necessary scan pattern properties for data processing
-            N = self.scanPatternN
             Bs = [self.scanPatternB1,self.scanPatternB2]
-            B = Bs[self._displayAxis]
-
-            AperX = self._scanPatternAlinesPerCross
 
             while running and self.active:
-                raw = processingQueue.get()
-                spec = raw.flatten()[0:2048]  # First spectrum of the B-scan only is plotted
+                B = Bs[self._displayAxis]
+                try:
+                    raw = processingQueue.get()
+                    spec = raw.flatten()[0:2048]  # First spectrum of the B-scan only is plotted
 
-                bscan = fig8ToBScan(raw,
-                                    N,
-                                    B,
-                                    AperX,
-                                    self.getApodWindow(),
-                                    ROI=400,
-                                    lam=self.getLambda())
+                    bscan = self.process8(raw,B,ROI=(620,1020))
 
-                self.plotWidget.plot1D(spec)
-                self.imageWidget.update(20*np.log10(np.abs(bscan)))
+                    self.plotWidget.plot1D(spec)
+                    self.imageWidget.update(20*np.log10(np.abs(np.transpose(bscan))))
+                    QtGui.QGuiApplication.processEvents()
+
+                except Full:
+                    pass
 
     def scan(self):
 
@@ -258,12 +260,7 @@ class FigureEight:
         counter = 0
 
         # Set number of frames to process based on predicted speed
-        if self._scanPatternAlinesPerCross > 80:
-            interval = 30
-        elif self._scanPatternAlinesPerCross < 10:
-            interval = 10
-        else:
-            interval = 20
+        interval = 30
 
         rawDataHandle = PySpectralRadar.createRawData()
 
@@ -284,7 +281,16 @@ class FigureEight:
             if np.size(temp) > 0:
 
                 if counter % interval == 0:
-                    processingQueue.put(deepcopy(temp))
+
+                    new = deepcopy(temp)
+
+                    try:
+
+                        processingQueue.put(new)
+
+                    except Full:
+
+                        pass
 
             counter += 1
 
@@ -302,6 +308,7 @@ class FigureEight:
         self.startMeasurement()
 
         for i in np.arange(self._scanPatternTotalRepeats):
+
             self.getRawData(rawDataHandle)
 
             dim = PySpectralRadar.getRawDataShape(rawDataHandle)
@@ -310,9 +317,15 @@ class FigureEight:
 
             PySpectralRadar.copyRawDataContent(rawDataHandle, temp)
 
-            rawQueue.put(temp)
+            new = deepcopy(temp)
 
-            del temp
+            try:
+
+                rawQueue.put(new)
+
+            except Full:
+
+                pass
 
         self.stopMeasurement()
         PySpectralRadar.clearRawData(rawDataHandle)
@@ -350,40 +363,47 @@ class FigureEight:
     def export_npy(self):
 
         q = self.getRawQueue()
+        try:
+            os.mkdir(self._fileExperimentDirectory)
+        except FileExistsError:
+            pass
         root = self.getFilepath() + '.npy'
-        out = np.empty([2048,self._scanPatternAlinesPerCross,2,self._scanPatternTotalRepeats],dtype=np.uint16)  # TODO: implement max file size
+        out = np.empty([1024,self._scanPatternAlinesPerCross,2,self._scanPatternTotalRepeats],dtype=np.complex64)  # TODO: implement max file size
 
         for i in np.arange(self._scanPatternTotalRepeats):
 
             temp = q.get()
 
-            reshaped = reshape8(temp,
-                                self.scanPatternN,
-                                self._scanPatternAlinesPerCross,
-                                self.scanPatternB1,
-                                self.scanPatternB2)
+            bscan = self.process8(temp, self.scanPatternB1, ROI=(0,1024), B2=self.scanPatternB2)
 
-            out[:,:,:,i] = reshaped
+            out[:,:,:,i] = bscan
 
         np.save(root,out)
         print('Saving .npy complete')
         self.abort()
 
     def abort(self):
-        print('Abort') # TODO different function for mid-acq abort vs end of acquisition
-        self.stopMeasurement()
-        for thread in self._threads:
-            thread._is_running = False
-        self._threads = []
-        self.active = False
-        self.enableControlWidget()
-        self.closeSpectralRadar()
+        print('Abort') # TODO different function for mid-acq abort vs end of acquisition. Also write a safer one
+        if self.active:
+            self.active = False
+            for thread in self._threads:
+                thread._is_running = False
+            self._threads = []
+            self._RawQueue = Queue()
+            self._ProcQueue = Queue()
+            self.stopMeasurement()
+            self.enableControlWidgets()
+            self.closeSpectralRadar()
 
     def setFileParams(self, experimentDirectory, experimentName, maxSize, fileType):
         self._fileExperimentDirectory = experimentDirectory
         self._fileExperimentName = experimentName
         self._fileMaxSize = maxSize
         self._fileType = fileType
+
+    def getFilepath(self):
+        return self._fileExperimentDirectory+'/'+self._fileExperimentName
+
 
     def setDeviceParams(self, rate, config):
         self._imagingRate = rate
@@ -394,6 +414,9 @@ class FigureEight:
 
     def getScanPattern(self):
         return self._scanPattern
+
+    def getAlinesPerX(self):
+        return self._scanPatternAlinesPerCross
 
     def updateScanPattern(self):
         self._scanPattern = PySpectralRadar.createFreeformScanPattern(self._probe,

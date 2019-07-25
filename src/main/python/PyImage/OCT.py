@@ -95,7 +95,7 @@ def preprocess8(A,N,B,AlinesPerX,apod):
     :return: 2D Preprocessed data, [z,n] where z is axial dimension, n is lateral A-scans
     """
     flattened = A.flatten()
-    pp = np.empty([2048,AlinesPerX])
+    pp = np.empty([2048,AlinesPerX],dtype=np.double)
     i = 0
     for n in np.arange(N):
         if B[n]:

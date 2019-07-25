@@ -11,6 +11,7 @@ from PyQt5.QtWidgets import QTextEdit
 from PyQt5.QtWidgets import QWidget
 from PyQt5.QtWidgets import QRadioButton
 from PyQt5.QtWidgets import QHBoxLayout
+from PyQt5.QtWidgets import QProgressBar
 
 import pyqtgraph as PyQtG
 from pyqtgraph.Qt import QtGui
@@ -32,14 +33,15 @@ class FileGroupBox(QGroupBox):
 
         self.layout = QFormLayout()
 
+        defaultName = 'fig8_0'
         self.entryExpName = QLineEdit()
-        now = time.strftime("%d-%m-%y")
-        default = now + '-PyImageOCT-exp'
-        self.entryExpName.setText(default)
+        self.entryExpName.setText(defaultName)
         self.entryExpName.editingFinished.connect(self.update)
 
         self.entryExpDir = QLineEdit()
-        here = str(Path.home()) + '\\PyImageOCT\\Experiments\\' + default
+        now = time.strftime("%d-%m-%y")
+        default = now + '-PyImageOCT-exp'
+        here = 'E:/PyImageOCT/Experiments/'+default
         self.entryExpDir.setText(here)
         self.entryExpDir.editingFinished.connect(self.update)
 
@@ -66,7 +68,7 @@ class FileGroupBox(QGroupBox):
         maxFileSize = str(self.entryFileSize.currentText())
         fileType = str(self.entryFileType.currentText())
 
-        self.controller.setFileParams(experimentName, experimentDirectory, maxFileSize, fileType)
+        self.controller.setFileParams(experimentDirectory, experimentName, maxFileSize, fileType)
 
 
 class ParamsGroupBox(QGroupBox):
@@ -93,13 +95,13 @@ class ParamsGroupBox(QGroupBox):
         self.radioBoxB = QWidget(parent=self)
         self.radioBoxB.setFixedWidth(80)
         self.radioBoxBLayout = QHBoxLayout()
-        self.B1 = QRadioButton('X')
-        self.B2 = QRadioButton('Y')
-        self.B1.setChecked(True)
+        self.B1 = QRadioButton('Y')
+        self.B2 = QRadioButton('X')
+        self.B2.setChecked(True)
         self.B1.toggled.connect(self.update)
         self.B2.toggled.connect(self.update)
-        self.radioBoxBLayout.addWidget(self.B1)
         self.radioBoxBLayout.addWidget(self.B2)
+        self.radioBoxBLayout.addWidget(self.B1)
         self.radioBoxB.setLayout(self.radioBoxBLayout)
 
         self.layout.addRow(QLabel("Imaging rate"), self.entryImagingRate)
@@ -142,6 +144,8 @@ class ControlGroupBox(QGroupBox):
         self.acqButton = QPushButton('ACQUIRE')
         self.abortButton = QPushButton('STOP')
 
+        self.progress = QtGui.QProgressBar()
+
         self.scanButton.clicked.connect(self.controller.initScan)
         self.acqButton.clicked.connect(self.controller.initAcq)
         self.abortButton.clicked.connect(self.controller.abort)
@@ -152,6 +156,7 @@ class ControlGroupBox(QGroupBox):
         self.layout.addWidget(self.scanButton, 0, 0)
         self.layout.addWidget(self.acqButton, 0, 1)
         self.layout.addWidget(self.abortButton, 0, 2)
+        self.layout.addWidget(self.progress, 1, 0, 1, 3)
 
         self.setLayout(self.layout)
 
@@ -176,7 +181,7 @@ class Fig8GroupBox(QGroupBox):
         self.spinALinesPerX.valueChanged.connect(self.update)
 
         self.spinFlyback = QSpinBox()
-        self.spinFlyback.setRange(2, 200)
+        self.spinFlyback.setRange(2, 600)
         self.spinFlyback.setValue(20)
         self.spinFlyback.valueChanged.connect(self.update)
 
@@ -187,9 +192,9 @@ class Fig8GroupBox(QGroupBox):
         self.spinAngle.valueChanged.connect(self.update)
 
         self.spinFlybackAngle = QDoubleSpinBox()
-        self.spinFlybackAngle.setRange(60, 70.1)
-        self.spinFlybackAngle.setValue(70)
-        self.spinFlybackAngle.setSingleStep(0.1)
+        self.spinFlybackAngle.setRange(40, 120)
+        self.spinFlybackAngle.setValue(69.5)
+        self.spinFlybackAngle.setSingleStep(0.5)
         self.spinFlybackAngle.setDecimals(1)
         self.spinFlybackAngle.setSuffix('°')
         self.spinFlybackAngle.valueChanged.connect(self.update)
@@ -241,6 +246,8 @@ class Fig8GroupBox(QGroupBox):
         self.layout.addRow(QLabel("Total Figure-8s to acquire"), self.spinFig8Total)
         self.setLayout(self.layout)
 
+
+        self.controller.setControlWidget(self)
         self.update()
 
     def update(self):
@@ -258,12 +265,38 @@ class Fig8GroupBox(QGroupBox):
         self.textRate.setText(str(w)[0:10] + ' hz ')
         self.controller.displayPattern()
 
-    def disabled(self, bool):
-        self.spinALinesPerX.setDisabled(bool)
-        self.spinFig8Size.setDisabled(bool)
+    def enabled(self, bool):
+        self.spinALinesPerX.setEnabled(bool)
+        self.spinFlyback.setEnabled(bool)
+        self.spinFig8Size.setEnabled(bool)
+        self.spinAngle.setEnabled(bool)
+        self.spinFlybackAngle.setEnabled(bool)
+        self.spinAcqTime.setEnabled(bool)
 
 
-class plotWidget2D(PyQtG.PlotWidget):
+class QuantGroupBox(QGroupBox):
+
+    def __init__(self,name,controller):
+        super().__init__()
+
+        self.controller = controller
+
+        self.layout = QFormLayout()
+
+        self.spinLateralROI = QSpinBox()
+        self.spinLateralROI.setRange(2,self.controller.getAlinesPerX)
+
+        self.setLayout(self.layout)
+
+    def update(self):
+
+        pass
+
+
+
+
+
+class PlotWidget2D(PyQtG.PlotWidget):
 
     def __init__(self, type='curve', name=None, xaxis=np.arange(2048), aspectLocked=False):
 
@@ -288,32 +321,41 @@ class plotWidget2D(PyQtG.PlotWidget):
     def plot1D(self, Y):
         self.item.clear()
         self.item.setData(x=self.X, y=Y)
-        QtGui.QApplication.processEvents()
 
     def plot2D(self, X, Y):
         self.item.clear()
         self.item.setData(x=X, y=Y)
-        QtGui.QGuiApplication.processEvents()
 
 
-class BScanView(PyQtG.GraphicsView):
 
-    def __init__(self, hist=None, aspect=0.5):
+class BScanView(PyQtG.GraphicsLayoutWidget):  # Doesn't work for some reason. TODO fix
+
+    def __init__(self, aspect=0.5):
+
         super().__init__()
-        self.hist = hist
+
         self.aspect = aspect
 
-        self.layout = PyQtG.GraphicsLayout()
-        self.setCentralItem(self.layout)
-        self.viewbox = self.layout.addViewBox()
-        self.viewbox.setAspectLocked(self.aspect)
-
-    def initialize(self):
-        self.viewbox.clear()
+        self.viewbox = self.addViewBox(row=1,col=1)
+        self.viewbox.setAspectLocked()
         self.image = PyQtG.ImageItem()
         self.viewbox.addItem(self.image)
 
     def update(self, data):
         self.image.clear()
         self.image.setImage(data, autoLevels=False, levels=(-100, -2))
-        QtGui.QGuiApplication.processEvents()
+
+
+class BScanViewer(PyQtG.ImageView):
+
+    def __init__(self):
+
+        super().__init__()
+
+        self.ui.histogram.hide()
+        self.ui.roiBtn.hide()
+        self.ui.menuBtn.hide()
+
+    def update(self,data):
+        self.setImage(np.flip(data,axis=1), autoLevels=False, levels=(-100, -2))
+
