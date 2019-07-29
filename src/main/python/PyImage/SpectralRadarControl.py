@@ -1,4 +1,5 @@
 import os
+import time
 import threading
 from copy import deepcopy
 from queue import Queue, Full
@@ -44,11 +45,6 @@ class FigureEight:
         self._apodWindow = None
         self._displayAxis = 0
 
-        self.active = False
-
-        self._RawQueue = Queue(maxsize=10)
-        self._ProcQueue = Queue(maxsize=1000)
-
         # SpectralRadar handles
         self._device = None
         self._probe = None
@@ -59,7 +55,14 @@ class FigureEight:
         self._triggerTimeout = None
         self._lam = None
 
+        # OS
         self._threads = []
+        self.active = False
+        self._RawQueue = Queue(maxsize=10)
+        self._ProcQueue = Queue(maxsize=1000)
+
+        # Qt
+        self._widgets = []
 
         # --------------------------------------------------------------------------------------------------------------
 
@@ -72,6 +75,7 @@ class FigureEight:
         self.plotSpectrum = Widgets.PlotWidget2D(name="Raw Spectrum", type='curve')
         self.plotSpectrum.setMaximumHeight(250)
         self.tabGrid.addWidget(self.plotSpectrum, 0, 2, 2, 1)
+        self._widgets.append(self.plotSpectrum)
         self.plotSpectrum.setXRange(0, 2048)
         self.plotSpectrum.setYRange(0, 6000)
 
@@ -79,54 +83,86 @@ class FigureEight:
         self.plotPattern = Widgets.PlotWidget2D(name="Scan Pattern Preview", type='scatter', aspectLocked=True)
         self.plotPattern.setMaximumHeight(250)
         self.tabGrid.addWidget(self.plotPattern, 0, 3, 2, 1)
+        self._widgets.append(self.plotPattern)
         self.plotPattern.labelAxes('mm', '')
 
         # Real-time image display for B-scan
         self.plotBScan = Widgets.BScanViewer()
         self.tabGrid.addWidget(self.plotBScan, 0, 0, 3, 2)
+        self._widgets.append(self.plotBScan)
 
         # File I/O properties interface
-        self.file = Widgets.FileGroupBox('File', self)
-        self.tabGrid.addWidget(self.file, 2, 2, 1, 1)
+        self.groupFile = Widgets.FileGroupBox('File', self)
+        self.tabGrid.addWidget(self.groupFile, 2, 2, 1, 1)
+        self._widgets.append(self.groupFile)
 
         # Main OCT device settings
-        self.params = Widgets.ParamsGroupBox('OCT Imaging Parameters', self)
-        self.tabGrid.addWidget(self.params, 3, 2, 2, 1)
+        self.groupParams = Widgets.ParamsGroupBox('OCT Imaging Parameters', self)
+        self.tabGrid.addWidget(self.groupParams, 3, 2, 2, 1)
+        self._widgets.append(self.groupParams)
 
         # Fig 8 scan pattern parameters
-        self.scanParameters = Widgets.Fig8GroupBox('Scan Pattern', self)
-        self.tabGrid.addWidget(self.scanParameters, 2, 3, 3, 1)
+        self.groupScanParams = Widgets.Fig8GroupBox('Scan Pattern', self)
+        self.tabGrid.addWidget(self.groupScanParams, 2, 3, 3, 1)
+        self._widgets.append(self.groupScanParams)
 
         # Motion quant parameters
-        self.quantParameters = Widgets.QuantGroupBox('Motion Quantification', self)
-        self.tabGrid.addWidget(self.quantParameters, 5, 2, 2, 1)
+        self.groupQuantParams = Widgets.QuantGroupBox('Motion Quantification', self)
+        self.tabGrid.addWidget(self.groupQuantParams, 5, 2, 2, 1)
+        self._widgets.append(self.groupQuantParams)
+
+        # Progress bar
+        self.progress = Widgets.ProgressWidget(self)
+        self.tabGrid.addWidget(self.progress, 3, 0, 1, 2)
 
         # Master scan/acquire/stop buttons
         self.controlButtons = Widgets.ControlGroupBox('Control', self)
-        self.tabGrid.addWidget(self.controlButtons, 3, 0, 2, 2)
+        self.tabGrid.addWidget(self.controlButtons, 4, 0, 2, 2)
+        self._widgets.append(self.controlButtons)
 
         # --------------------------------------------------------------------------------------------------------------
 
+        # Setup
+
+        for widget in self._widgets:
+            widget.enabled(False)
+
+        init = threading.Thread(target=self.initializeSpectralRadar(),timeout=2)
+        init.start()
+
     def initializeSpectralRadar(self):  # TODO Need to thread this eventually, long hang time for GUI
+        self.progress.setText('Init device')
         self._device = PySpectralRadar.initDevice()
+        self.progress.setProgress(2)
+        self.progress.setText('Init probe')
         self._probe = PySpectralRadar.initProbe(self._device, self._config)
+        self.progress.setProgress(4)
         self._proc = PySpectralRadar.createProcessingForDevice(self._device)
+        self.progress.setText('Init camera')
         PySpectralRadar.setCameraPreset(self._device, self._probe, self._proc, 0)  # 0 is the main camera
         self._triggerType = PySpectralRadar.Device_TriggerType.Trigger_FreeRunning  # Default
         self._triggerTimeout = 5  # Number from old labVIEW program
+        self.progress.setProgress(6)
         self._acquisitionType = PySpectralRadar.AcquisitionType.Acquisition_AsyncContinuous
         PySpectralRadar.setTriggerMode(self._device, self._triggerType)
         PySpectralRadar.setTriggerTimeoutSec(self._device, self._triggerTimeout)
         self.updateScanPattern()
+        self.progress.setProgress(7)
+        self.progress.setText('Loading chirp')
         try:
             self._lam = np.load('lam.npy')
         except FileNotFoundError:
+            self.progress.setText('Chirp not found')
             self._lam = np.empty(2048)
             for y in np.arange(2048):
                 self._lam[y] = PySpectralRadar.getWavelengthAtPixel(self._device, y)
             np.save('lam', self._lam)
-
+        self.progress.setProgress(10)
+        self.progress.setText('Done!')
         print('Telesto initialized successfully.')
+        for widget in self._widgets:
+            widget.enabled(True)
+
 
     def closeSpectralRadar(self):
         PySpectralRadar.clearScanPattern(self._scanPattern)
@@ -184,15 +220,15 @@ class FigureEight:
 
         self.active = True
 
-        # For scanning, acquisition occurs after each figure-8, so rpt is set to 1
+        # For scanning, acquisition occurs after each figure-8, so rpt is set to 1 TODO make this simpler
         self.setScanPatternParams(self._scanPatternSize,
                                   self._scanPatternAlinesPerCross,
                                   self._scanPatternAlinesPerFlyback,
                                   1,
                                   self._scanPatternFlybackAngle,
                                   self._scanPatternAngle)
+        self.updateScanPattern()
 
-        self.initializeSpectralRadar()
         scan = threading.Thread(target=self.scan)
         disp = threading.Thread(target=self.display)
         self._threads.append(scan)

@@ -41,7 +41,7 @@ class FileGroupBox(QGroupBox):
         self.entryExpDir = QLineEdit()
         now = time.strftime("%d-%m-%y")
         default = now + '-PyImageOCT-exp'
-        here = 'E:/PyImageOCT/Experiments/'+default
+        here = 'E:/PyImageOCT/Experiments/'+default  # TODO make not hardcoded
         self.entryExpDir.setText(here)
         self.entryExpDir.editingFinished.connect(self.update)
 
@@ -70,6 +70,8 @@ class FileGroupBox(QGroupBox):
 
         self.controller.setFileParams(experimentDirectory, experimentName, maxFileSize, fileType)
 
+    def enabled(self, bool):
+        pass
 
 class ParamsGroupBox(QGroupBox):
 
@@ -129,6 +131,13 @@ class ParamsGroupBox(QGroupBox):
         else:
             self.controller.setDisplayAxis(1)
 
+    def enabled(self, bool):
+        self.entryImagingRate.setEnabled(bool)
+        self.entryConfig.setEnabled(bool)
+        self.entryWindow.setEnabled(bool)
+        self.B1.setEnabled(bool)
+        self.B2.setEnabled(bool)
+
 
 class ControlGroupBox(QGroupBox):
 
@@ -143,8 +152,6 @@ class ControlGroupBox(QGroupBox):
         self.acqButton = QPushButton('ACQUIRE')
         self.abortButton = QPushButton('STOP')
 
-        self.progress = QtGui.QProgressBar()
-
         self.scanButton.clicked.connect(self.controller.initScan)
         self.acqButton.clicked.connect(self.controller.initAcq)
         self.abortButton.clicked.connect(self.controller.abort)
@@ -155,7 +162,6 @@ class ControlGroupBox(QGroupBox):
         self.layout.addWidget(self.scanButton, 0, 0)
         self.layout.addWidget(self.acqButton, 0, 1)
         self.layout.addWidget(self.abortButton, 0, 2)
-        self.layout.addWidget(self.progress, 1, 0, 1, 3)
 
         self.setLayout(self.layout)
 
@@ -163,6 +169,33 @@ class ControlGroupBox(QGroupBox):
         self.scanButton.setEnabled(bool)
         self.acqButton.setEnabled(bool)
 
+
+class ProgressWidget(QWidget):
+
+    def __init__(self, controller):
+        super().__init__()
+
+        self.controller = controller
+
+        self.layout = QHBoxLayout()
+
+        self.bar = QtGui.QProgressBar()
+        self.bar.setMinimum(0)
+        self.bar.setMaximum(10)
+        self.bar.setValue(0)
+
+        self.label = QLabel('')
+
+        self.layout.addWidget(self.label)
+        self.layout.addWidget(self.bar)
+
+        self.setLayout(self.layout)
+
+    def setText(self,s):
+        self.label.setText(s)
+
+    def setProgress(self,v):
+        self.bar.setValue(v)
 
 
 class Fig8GroupBox(QGroupBox):
@@ -311,7 +344,8 @@ class QuantGroupBox(QGroupBox):
         self.spinLateralMax.setRange(2, self.controller.getAlinesPerX())
         self.spinLateralMin.setRange(0, self.spinLateralMax.value())
 
-
+    def enabled(self, bool):
+        pass
 
 
 
@@ -345,7 +379,8 @@ class PlotWidget2D(PyQtG.PlotWidget):
         self.item.clear()
         self.item.setData(x=X, y=Y)
 
-
+    def enabled(self, bool):
+        pass
 
 class BScanView(PyQtG.GraphicsLayoutWidget):  # Doesn't work for some reason. TODO fix
 
@@ -378,3 +413,5 @@ class BScanViewer(PyQtG.ImageView):
     def update(self,data):
         self.setImage(np.flip(data,axis=1), autoLevels=False, levels=(-100, -2))
 
+    def enabled(self, bool):
+        pass
