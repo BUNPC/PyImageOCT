@@ -307,7 +307,7 @@ class Fig8GroupBox(QGroupBox):
 class QuantGroupBox(QGroupBox):
 
     def __init__(self,name,controller):
-        super().__init__()
+        super().__init__(name)
 
         self.controller = controller
 
@@ -345,8 +345,39 @@ class QuantGroupBox(QGroupBox):
         self.spinLateralMin.setRange(0, self.spinLateralMax.value())
 
     def enabled(self, bool):
-        pass
+        self.spinLateralMax.setEnabled(bool)
+        self.spinLateralMin.setEnabled(bool)
 
+
+class PlotPatternWidget(PyQtG.PlotWidget):
+
+    def __init__(self, name, aspectLocked=True):
+
+        super().__init__(name=name)
+
+        self.setTitle(title=name)
+        self.setAspectLocked(aspectLocked)
+        self.showGrid(x=1, y=1)
+        fbBrush = PyQtG.mkBrush(color=(255,255,255))
+        roiBrush = PyQtG.mkBrush(color=(150,150,200))
+        fbPen = PyQtG.mkPen(color=(255,255,255,0))
+        roiPen = PyQtG.mkPen(color=(255,255,255,0))
+        self.flyback = PyQtG.ScatterPlotItem(pen=fbPen, brush=fbBrush, symbol='+')
+        self.roi = PyQtG.ScatterPlotItem(pen=roiPen, brush=roiBrush)
+        self.addItem(self.flyback)
+        self.addItem(self.roi)
+
+    def labelAxes(self, xlabel, ylabel):
+        self.setLabels(left=ylabel, bottom=xlabel)
+
+    def plotFigEight(self,fbx,fby,roix=None,roiy=None):
+        self.flyback.clear()
+        self.roi.clear()
+        self.flyback.setData(fbx,fby)
+        self.roi.setData(roix,roiy)
+
+    def enabled(self, bool):
+        pass
 
 
 class PlotWidget2D(PyQtG.PlotWidget):
@@ -381,6 +412,7 @@ class PlotWidget2D(PyQtG.PlotWidget):
 
     def enabled(self, bool):
         pass
+
 
 class BScanView(PyQtG.GraphicsLayoutWidget):  # Doesn't work for some reason. TODO fix
 

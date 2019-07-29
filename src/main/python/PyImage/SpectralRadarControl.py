@@ -64,7 +64,7 @@ class FigureEight:
         # Qt
         self._widgets = []
 
-        # --------------------------------------------------------------------------------------------------------------
+    # ------------------------------------------------------------------------------------------------------------------
 
         # QWidget for GUI tab
         self.tab = QWidget(parent=parent)
@@ -80,7 +80,7 @@ class FigureEight:
         self.plotSpectrum.setYRange(0, 6000)
 
         # Real-time scatter plot widget for display of scan pattern
-        self.plotPattern = Widgets.PlotWidget2D(name="Scan Pattern Preview", type='scatter', aspectLocked=True)
+        self.plotPattern = Widgets.PlotPatternWidget(name="Scan Pattern")
         self.plotPattern.setMaximumHeight(250)
         self.tabGrid.addWidget(self.plotPattern, 0, 3, 2, 1)
         self._widgets.append(self.plotPattern)
@@ -108,7 +108,7 @@ class FigureEight:
 
         # Motion quant parameters
         self.groupQuantParams = Widgets.QuantGroupBox('Motion Quantification', self)
-        self.tabGrid.addWidget(self.groupQuantParams, 5, 2, 2, 1)
+        self.tabGrid.addWidget(self.groupQuantParams, 5, 3, 2, 1)
         self._widgets.append(self.groupQuantParams)
 
         # Progress bar
@@ -120,15 +120,15 @@ class FigureEight:
         self.tabGrid.addWidget(self.controlButtons, 4, 0, 2, 2)
         self._widgets.append(self.controlButtons)
 
-        # --------------------------------------------------------------------------------------------------------------
+    # ------------------------------------------------------------------------------------------------------------------
 
         # Setup
 
-        for widget in self._widgets:
-            widget.enabled(False)
-
-        init = threading.Thread(target=self.initializeSpectralRadar(),timeout=2)
-        init.start()
+        # for widget in self._widgets:
+        #     widget.enabled(False)
+        #
+        # init = threading.Thread(target=self.initializeSpectralRadar())
+        # init.start()
 
     def initializeSpectralRadar(self):  # TODO Need to thread this eventually, long hang time for GUI
         self.progress.setText('Init device')
@@ -162,7 +162,6 @@ class FigureEight:
         print('Telesto initialized successfully.')
         for widget in self._widgets:
             widget.enabled(True)
-
 
     def closeSpectralRadar(self):
         PySpectralRadar.clearScanPattern(self._scanPattern)
@@ -501,4 +500,7 @@ class FigureEight:
                                                                 flybackAngle=flybackAngle)
 
     def displayPattern(self):
-        self.plotPattern.plot2D(self.scanPatternX, self.scanPatternY)
+        self.plotPattern.plotFigEight(self.scanPatternX[np.invert(self.scanPatternB1+self.scanPatternB2)],
+                                      self.scanPatternY[np.invert(self.scanPatternB1+self.scanPatternB2)],
+                                      self.scanPatternX[self.scanPatternB1+self.scanPatternB2],
+                                      self.scanPatternY[self.scanPatternB1+self.scanPatternB2])

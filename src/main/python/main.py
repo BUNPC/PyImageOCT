@@ -48,7 +48,7 @@ class Main(QTabWidget):
         # self.setMaximumWidth(1200)
 
     def closeEvent(self, event):
-        self.tabFigEight.controller.abort()  # TODO make not-hardcoded
+        self.figEight.controller.abort()  # TODO make not-hardcoded
 
 # Qt main loop
 if __name__ == '__main__':
