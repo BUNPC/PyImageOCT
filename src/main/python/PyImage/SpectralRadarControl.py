@@ -242,7 +242,8 @@ class FigureEight:
 
         self.active = True
 
-        self.initializeSpectralRadar()
+        self.updateScanPattern()
+
         acq = threading.Thread(target=self.acquire)
         exp = threading.Thread(target=self.export_npy)
         self._threads.append(acq)
