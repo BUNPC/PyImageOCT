@@ -136,7 +136,6 @@ class ControlGroupBox(QGroupBox):
         super().__init__(name)
 
         self.controller = controller
-        self.controller.setControlWidget(self)
 
         self.layout = QGridLayout()
 
@@ -246,8 +245,6 @@ class Fig8GroupBox(QGroupBox):
         self.layout.addRow(QLabel("Total Figure-8s to acquire"), self.spinFig8Total)
         self.setLayout(self.layout)
 
-
-        self.controller.setControlWidget(self)
         self.update()
 
     def update(self):
@@ -283,14 +280,36 @@ class QuantGroupBox(QGroupBox):
 
         self.layout = QFormLayout()
 
-        self.spinLateralROI = QSpinBox()
-        self.spinLateralROI.setRange(2,self.controller.getAlinesPerX)
+        self.spinLateralMin = QSpinBox()
+        self.spinLateralMin.setValue(0)
+
+        self.spinLateralMax = QSpinBox()
+        self.spinLateralMax.setValue(self.controller.getAlinesPerX())
+
+        self.lateralBoxLayout = QHBoxLayout()
+        self.lateralBoxLayout.addWidget(self.spinLateralMin)
+        self.lateralBoxLayout.addWidget(self.spinLateralMax)
+
+        self.spinAxialMin = QSpinBox()
+        self.spinAxialMin.setRange(0, 1024)
+
+        self.spinAxialMax = QSpinBox()
+        self.spinAxialMax.setRange(0, 1024)
+
+        self.axialBoxLayout = QHBoxLayout()
+        self.axialBoxLayout.addWidget(self.spinAxialMin)
+        self.axialBoxLayout.addWidget(self.spinAxialMax)
+
+        self.layout.addRow(QLabel('B-Scan ROI max-min'), self.lateralBoxLayout)
+        self.layout.addRow(QLabel('Axial ROI max-min'), self.axialBoxLayout)
 
         self.setLayout(self.layout)
 
-    def update(self):
+        self.update()
 
-        pass
+    def update(self):
+        self.spinLateralMax.setRange(2, self.controller.getAlinesPerX())
+        self.spinLateralMin.setRange(0, self.spinLateralMax.value())
 
 
 

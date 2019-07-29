@@ -1,29 +1,19 @@
-from src.main.python import PySpectralRadar
-from queue import Queue, Full, Empty
+import os
 import threading
-from PyQt5.QtCore import QObject, QThread, pyqtSlot
+from copy import deepcopy
+from queue import Queue, Full
+
+import h5py
+from PyQt5.QtWidgets import QWidget, QGridLayout
 from pyqtgraph.Qt import QtGui
 
+from src.main.python import PySpectralRadar
+from src.main.python.PyImage import Widgets
 from src.main.python.PyImage.OCT import *
-from copy import deepcopy
-import h5py
-import os
-from pathlib import Path
-
-TRUE = True
-FALSE = False
-
 
 class FigureEight:
 
-    def __init__(self, plotWidget=None, scatterWidget=None, imageWidget=None, infoWidget=None):
-        # Arguments/child widgets
-        self.plotWidget = plotWidget
-        self.scatterWidget = scatterWidget
-        self.imageWidget = imageWidget
-
-        # Control widgets
-        self.controlWidgets = []
+    def __init__(self, parent):
 
         # File params
         self._fileExperimentName = None
@@ -70,6 +60,52 @@ class FigureEight:
         self._lam = None
 
         self._threads = []
+
+        # --------------------------------------------------------------------------------------------------------------
+
+        # QWidget for GUI tab
+        self.tab = QWidget(parent=parent)
+        self.tabGrid = QGridLayout()
+        self.tab.setLayout(self.tabGrid)
+
+        # Real-time plot widget for display of raw spectral data
+        self.plotSpectrum = Widgets.PlotWidget2D(name="Raw Spectrum", type='curve')
+        self.plotSpectrum.setMaximumHeight(250)
+        self.tabGrid.addWidget(self.plotSpectrum, 0, 2, 2, 1)
+        self.plotSpectrum.setXRange(0, 2048)
+        self.plotSpectrum.setYRange(0, 6000)
+
+        # Real-time scatter plot widget for display of scan pattern
+        self.plotPattern = Widgets.PlotWidget2D(name="Scan Pattern Preview", type='scatter', aspectLocked=True)
+        self.plotPattern.setMaximumHeight(250)
+        self.tabGrid.addWidget(self.plotPattern, 0, 3, 2, 1)
+        self.plotPattern.labelAxes('mm', '')
+
+        # Real-time image display for B-scan
+        self.plotBScan = Widgets.BScanViewer()
+        self.tabGrid.addWidget(self.plotBScan, 0, 0, 3, 2)
+
+        # File I/O properties interface
+        self.file = Widgets.FileGroupBox('File', self)
+        self.tabGrid.addWidget(self.file, 2, 2, 1, 1)
+
+        # Main OCT device settings
+        self.params = Widgets.ParamsGroupBox('OCT Imaging Parameters', self)
+        self.tabGrid.addWidget(self.params, 3, 2, 2, 1)
+
+        # Fig 8 scan pattern parameters
+        self.scanParameters = Widgets.Fig8GroupBox('Scan Pattern', self)
+        self.tabGrid.addWidget(self.scanParameters, 2, 3, 3, 1)
+
+        # Motion quant parameters
+        self.quantParameters = Widgets.QuantGroupBox('Motion Quantification', self)
+        self.tabGrid.addWidget(self.quantParameters, 5, 2, 2, 1)
+
+        # Master scan/acquire/stop buttons
+        self.controlButtons = Widgets.ControlGroupBox('Control', self)
+        self.tabGrid.addWidget(self.controlButtons, 3, 0, 2, 2)
+
+        # --------------------------------------------------------------------------------------------------------------
 
     def initializeSpectralRadar(self):  # TODO Need to thread this eventually, long hang time for GUI
         self._device = PySpectralRadar.initDevice()
@@ -122,7 +158,7 @@ class FigureEight:
     def getProcessingQueue(self):
         return self._ProcQueue
 
-    def setDisplayAxis(self,axis):
+    def setDisplayAxis(self, axis):
         self._displayAxis = axis
 
     def setRate(self, rate):
@@ -143,25 +179,10 @@ class FigureEight:
     def setConfig(self, config):
         self._config = config
 
-    def setControlWidget(self, controlWidget):
-        self.controlWidgets.append(controlWidget)
-
-    def resetControlWidgets(self):
-        self.controlWidgets = []
-
-    def disableControlWidgets(self):
-        for widget in self.controlWidgets:
-            widget.enabled(False)
-
-    def enableControlWidgets(self):
-        for widget in self.controlWidgets:
-            widget.enabled(True)
-
     def initScan(self):
         print('Init scan')
 
         self.active = True
-        self.disableControlWidgets()
 
         # For scanning, acquisition occurs after each figure-8, so rpt is set to 1
         self.setScanPatternParams(self._scanPatternSize,
@@ -185,7 +206,6 @@ class FigureEight:
         print('Init acq')
 
         self.active = True
-        self.disableControlWidgets()
 
         self.initializeSpectralRadar()
         acq = threading.Thread(target=self.acquire)
@@ -200,58 +220,57 @@ class FigureEight:
 
         Nx = self._scanPatternAlinesPerCross
         N = self.scanPatternN
-        interpIndices = np.linspace(min(self._lam),max(self._lam),2048)
+        interpIndices = np.linspace(min(self._lam), max(self._lam), 2048)
 
         if B2.any() != 0:
 
-            processed = np.empty([1024,Nx,2], dtype=np.complex64)
-            Bs = [B1,B2]
+            processed = np.empty([1024, Nx, 2], dtype=np.complex64)
+            Bs = [B1, B2]
 
             for b in range(len(Bs)):
                 B = Bs[b]
                 interpolated = np.empty([2048, Nx])
-                preprocessed = preprocess8(A,N,B,Nx,self.getApodWindow())
+                preprocessed = preprocess8(A, N, B, Nx, self.getApodWindow())
 
                 for n in np.arange(Nx):
-
-                    k = interp1d(self._lam, preprocessed[:,n])
-                    interpolated[:,n] = k(interpIndices)
-                    processed[:,n,b] = np.fft.ifft(interpolated[:,n])[0:1024].astype(np.complex64)
+                    k = interp1d(self._lam, preprocessed[:, n])
+                    interpolated[:, n] = k(interpIndices)
+                    processed[:, n, b] = np.fft.ifft(interpolated[:, n])[0:1024].astype(np.complex64)
 
         else:
 
-            processed = np.zeros([1024,Nx], dtype=np.complex64)
+            processed = np.zeros([1024, Nx], dtype=np.complex64)
 
             interpolated = np.empty([2048, Nx])
             preprocessed = preprocess8(A, N, B1, Nx, self.getApodWindow())
 
             for n in np.arange(Nx):
-                k = interp1d(self._lam, preprocessed[:,n])
+                k = interp1d(self._lam, preprocessed[:, n])
                 interpolated[:, n] = k(interpIndices)
                 processed[:, n] = np.fft.ifft(interpolated[:, n])[1024:2048].astype(np.complex64)
 
-        return processed[ROI[0]:ROI[1],:]
+        return processed[ROI[0]:ROI[1], :]
 
     def display(self):
 
-            running = True
-            processingQueue = self.getProcessingQueue()
-            Bs = [self.scanPatternB1,self.scanPatternB2]
+        running = True
+        processingQueue = self.getProcessingQueue()
+        Bs = [self.scanPatternB1, self.scanPatternB2]
 
-            while running and self.active:
-                B = Bs[self._displayAxis]
-                try:
-                    raw = processingQueue.get()
-                    spec = raw.flatten()[0:2048]  # First spectrum of the B-scan only is plotted
+        while running and self.active:
+            B = Bs[self._displayAxis]
+            try:
+                raw = processingQueue.get()
+                spec = raw.flatten()[0:2048]  # First spectrum of the B-scan only is plotted
 
-                    bscan = self.process8(raw,B,ROI=(620,1020))
+                bscan = self.process8(raw, B, ROI=(620, 1020))
 
-                    self.plotWidget.plot1D(spec)
-                    self.imageWidget.update(20*np.log10(np.abs(np.transpose(bscan))))
-                    QtGui.QGuiApplication.processEvents()
+                self.plotWidget.plot1D(spec)
+                self.imageWidget.update(20 * np.log10(np.abs(np.transpose(bscan))))
+                QtGui.QGuiApplication.processEvents()
 
-                except Full:
-                    pass
+            except Full:
+                pass
 
     def scan(self):
 
@@ -368,22 +387,22 @@ class FigureEight:
         except FileExistsError:
             pass
         root = self.getFilepath() + '.npy'
-        out = np.empty([1024,self._scanPatternAlinesPerCross,2,self._scanPatternTotalRepeats],dtype=np.complex64)  # TODO: implement max file size
+        out = np.empty([1024, self._scanPatternAlinesPerCross, 2, self._scanPatternTotalRepeats],
+                       dtype=np.complex64)  # TODO: implement max file size
 
         for i in np.arange(self._scanPatternTotalRepeats):
-
             temp = q.get()
 
-            bscan = self.process8(temp, self.scanPatternB1, ROI=(0,1024), B2=self.scanPatternB2)
+            bscan = self.process8(temp, self.scanPatternB1, ROI=(0, 1024), B2=self.scanPatternB2)
 
-            out[:,:,:,i] = bscan
+            out[:, :, :, i] = bscan
 
-        np.save(root,out)
+        np.save(root, out)
         print('Saving .npy complete')
         self.abort()
 
     def abort(self):
-        print('Abort') # TODO different function for mid-acq abort vs end of acquisition. Also write a safer one
+        print('Abort')  # TODO different function for mid-acq abort vs end of acquisition. Also write a safer one
         if self.active:
             self.active = False
             for thread in self._threads:
@@ -392,7 +411,6 @@ class FigureEight:
             self._RawQueue = Queue()
             self._ProcQueue = Queue()
             self.stopMeasurement()
-            self.enableControlWidgets()
             self.closeSpectralRadar()
 
     def setFileParams(self, experimentDirectory, experimentName, maxSize, fileType):
@@ -402,8 +420,7 @@ class FigureEight:
         self._fileType = fileType
 
     def getFilepath(self):
-        return self._fileExperimentDirectory+'/'+self._fileExperimentName
-
+        return self._fileExperimentDirectory + '/' + self._fileExperimentName
 
     def setDeviceParams(self, rate, config):
         self._imagingRate = rate
@@ -448,4 +465,4 @@ class FigureEight:
                                                                 flybackAngle=flybackAngle)
 
     def displayPattern(self):
-        self.scatterWidget.plot2D(self.scanPatternX, self.scanPatternY)
+        self.plotPattern.plot2D(self.scanPatternX, self.scanPatternY)

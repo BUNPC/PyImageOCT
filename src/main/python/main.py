@@ -34,13 +34,12 @@ class Main(QTabWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        self.tabFigEight = TabFigEight(parent=self)
+        self.figEight = SpectralRadarControl.FigureEight(parent=self)
 
-        self.addTab(self.tabFigEight, 'Figure-8 Motion Quantification')
+        self.addTab(self.figEight.tab, 'Figure-8 Motion Quantification')
 
         self.windowTitle = 'PyOCT V.0.1.0'
         self.setWindowTitle(self.windowTitle)
-
 
         # self.setMinimumHeight(550)
         # self.setMinimumWidth(800)
@@ -50,65 +49,6 @@ class Main(QTabWidget):
 
     def closeEvent(self, event):
         self.tabFigEight.controller.abort()  # TODO make not-hardcoded
-
-class TabFigEight(QWidget):
-    '''
-    Experimental scanning mode which uses figure-8 pattern to quickly measure 3D motion
-    along two orthogonal B-scans.
-    '''
-
-    def __init__(self, parent=None):
-        super().__init__(parent)
-
-        self.mainGrid = QGridLayout()
-        self.setLayout(self.mainGrid)
-
-        # Real-time plot widget for display of raw spectral data
-        self.plotSpectrum = Widgets.PlotWidget2D(name="Raw Spectrum", type='curve')
-        self.plotSpectrum.setMaximumHeight(250)
-        self.mainGrid.addWidget(self.plotSpectrum, 0, 2, 2, 1)
-        self.plotSpectrum.setXRange(0, 2048)
-        self.plotSpectrum.setYRange(0, 6000)
-
-        # Real-time scatter plot widget for display of scan pattern
-        self.plotPattern = Widgets.PlotWidget2D(name="Scan Pattern Preview", type='scatter', aspectLocked=True)
-        self.plotPattern.setMaximumHeight(250)
-        self.mainGrid.addWidget(self.plotPattern, 0, 3, 2, 1)
-        self.plotPattern.labelAxes('mm', '')
-
-        # Real-time image display for B-scan
-        self.plotBScan = Widgets.BScanViewer()
-        self.mainGrid.addWidget(self.plotBScan, 0, 0, 3, 2)
-
-        # Thorlabs SpectralRadar SDK is wrapped with PySpectralRadar module.
-        # Interfaces corresponding to scanning modes are defined PyImage.SpectralRadarControl
-        # All display widgets must be passed to the controller!
-        self.controller = SpectralRadarControl.FigureEight(plotWidget=self.plotSpectrum,
-                                                           scatterWidget=self.plotPattern,
-                                                           imageWidget=self.plotBScan)
-
-        # Control GUI must be passed the controller defined above in order to call its methods
-
-        # File I/O properties interface
-        self.file = Widgets.FileGroupBox('File', self.controller)
-        self.mainGrid.addWidget(self.file, 2, 2, 1, 1)
-
-        # Main OCT device settings
-        self.params = Widgets.ParamsGroupBox('OCT Imaging Parameters', self.controller)
-        self.mainGrid.addWidget(self.params, 3, 2, 2, 1)
-
-        # Fig 8 scan pattern parameters
-        self.scanParameters = Widgets.Fig8GroupBox('Scan Pattern', self.controller)
-        self.mainGrid.addWidget(self.scanParameters, 2, 3, 3, 1)
-
-        # Motion Quant Parameters
-        self.quantParameters = Widgets.QuantGroupBox('Motion Quantification', self.controller)
-        self.mainGrid.addWidget(self.quantParameters,3,4,3,1)
-
-        # Master scan/acquire/stop buttons
-        self.controlButtons = Widgets.ControlGroupBox('Control', self.controller)
-        self.mainGrid.addWidget(self.controlButtons, 3, 0, 2, 2)
-
 
 # Qt main loop
 if __name__ == '__main__':
