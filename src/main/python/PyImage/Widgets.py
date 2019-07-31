@@ -87,15 +87,15 @@ class ParamsGroupBox(QGroupBox):
 
         self.entryImagingRate = QComboBox()
         self.entryImagingRate.addItems(["76 kHz", "146 kHz"])
-        self.entryImagingRate.currentIndexChanged.connect(self.update)
+        self.entryImagingRate.activated.connect(lambda: self.controller.setRate(str(self.entryImagingRate.currentText())))
 
         self.entryConfig = QComboBox()
-        self.entryConfig.addItems(["10X"])
-        self.entryConfig.currentIndexChanged.connect(self.update)
+        self.entryConfig.addItems(["10X", "5X", "2X"])
+        self.entryConfig.activated.connect(lambda: self.controller.setConfig(str(self.entryConfig.currentText())))
 
         self.entryWindow = QComboBox()
         self.entryWindow.addItems(["Hann","Hamming","Blackman","None"])
-        self.entryWindow.currentIndexChanged.connect(self.update)
+        self.entryWindow.activated.connect(self.update)
 
         self.radioBoxB = QWidget(parent=self)
         self.radioBoxB.setFixedWidth(80)
@@ -126,13 +126,17 @@ class ParamsGroupBox(QGroupBox):
             "Blackman" : np.blackman(2048),
             "None" : np.ones(2048)
         }
+
         window = windowLUT[str(self.entryWindow.currentText())]
+
         self.controller.setApodWindow(window)
 
         if self.B1.isChecked():
             self.controller.setDisplayAxis(0)
         else:
             self.controller.setDisplayAxis(1)
+
+
 
     def enabled(self, bool):
         self.entryImagingRate.setEnabled(bool)
@@ -199,6 +203,7 @@ class ProgressWidget(QWidget):
 
     def setProgress(self,v):
         self.bar.setValue(v)
+        QtGui.QGuiApplication.processEvents()
 
 
 class Fig8GroupBox(QGroupBox):
@@ -294,7 +299,7 @@ class Fig8GroupBox(QGroupBox):
         self.textDistance.setText(str(self.controller.scanPatternD * 10 ** 6)[0:8] + ' nm')
         self.textTotal.setText(str(self.controller.scanPatternN))
 
-        w = 1 / (1 / self.controller.getRate() * self.controller.scanPatternN)
+        w = 1 / (1 / self.controller.getRateValue() * self.controller.scanPatternN)
         self.textRate.setText(str(w)[0:10] + ' hz ')
         self.controller.displayPattern()
 
@@ -319,38 +324,49 @@ class QuantGroupBox(QGroupBox):
 
         self.spinLateralMin = QSpinBox()
         self.spinLateralMin.setValue(0)
+        self.spinLateralMin.valueChanged.connect(self.update)
 
         self.spinLateralMax = QSpinBox()
+        self.spinLateralMax.setValue(controller.getAlinesPerX())
         self.spinLateralMax.setValue(self.controller.getAlinesPerX())
+        self.spinLateralMax.valueChanged.connect(self.update)
 
         self.lateralBoxLayout = QHBoxLayout()
         self.lateralBoxLayout.addWidget(self.spinLateralMin)
         self.lateralBoxLayout.addWidget(self.spinLateralMax)
 
         self.spinAxialMin = QSpinBox()
-        self.spinAxialMin.setRange(0, 1024)
+        self.spinAxialMin.setValue(8)
+        self.spinAxialMin.valueChanged.connect(self.update)
 
         self.spinAxialMax = QSpinBox()
-        self.spinAxialMax.setRange(0, 1024)
+        self.spinAxialMax.setValue(400)
+        self.spinAxialMax.valueChanged.connect(self.update)
 
         self.axialBoxLayout = QHBoxLayout()
         self.axialBoxLayout.addWidget(self.spinAxialMin)
         self.axialBoxLayout.addWidget(self.spinAxialMax)
 
-        self.layout.addRow(QLabel('B-Scan ROI max-min'), self.lateralBoxLayout)
-        self.layout.addRow(QLabel('Axial ROI max-min'), self.axialBoxLayout)
+        self.layout.addRow(QLabel('B-Scan ROI start-stop'), self.lateralBoxLayout)
+        self.layout.addRow(QLabel('Axial ROI top-bottom'), self.axialBoxLayout)
 
         self.setLayout(self.layout)
 
         self.update()
 
     def update(self):
-        self.spinLateralMax.setRange(2, self.controller.getAlinesPerX())
-        self.spinLateralMin.setRange(0, self.spinLateralMax.value())
+        self.spinLateralMax.setRange(1, self.controller.getAlinesPerX())
+        self.spinLateralMin.setRange(0, self.spinLateralMax.value()-1)
+
+        self.spinAxialMax.setRange(self.spinAxialMin.value()+1, 1024)
+
+        axial = (self.spinAxialMin.value(), self.spinAxialMax.value())
+        lateral = (self.spinLateralMin.value(), self.spinLateralMax.value())
+        self.controller.setROI(axial, lateral)
 
     def enabled(self, bool):
-        self.spinLateralMax.setEnabled(bool)
-        self.spinLateralMin.setEnabled(bool)
+        # For now, ROI change during scan works fine.
+        pass
 
 
 class PlotPatternWidget(PyQtG.PlotWidget):
@@ -447,7 +463,7 @@ class BScanViewer(PyQtG.ImageView):
         self.ui.menuBtn.hide()
 
     def update(self,data):
-        self.setImage(np.flip(data,axis=1), autoLevels=False, levels=(-100, -2))
+        self.setImage(data, autoLevels=False, levels=(-100, -2))
 
     def enabled(self, bool):
         pass

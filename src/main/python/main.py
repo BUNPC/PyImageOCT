@@ -38,7 +38,7 @@ class Main(QTabWidget):
 
         self.addTab(self.figEight.tab, 'Figure-8 Motion Quantification')
 
-        self.windowTitle = 'PyOCT V.0.1.0'
+        self.windowTitle = 'PyOCT V.0.1.5'
         self.setWindowTitle(self.windowTitle)
 
         # self.setMinimumHeight(550)
@@ -48,7 +48,7 @@ class Main(QTabWidget):
         # self.setMaximumWidth(1200)
 
     def closeEvent(self, event):
-        self.figEight.controller.close()  # TODO make not-hardcoded
+        self.figEight.close()
 
 # Qt main loop
 if __name__ == '__main__':

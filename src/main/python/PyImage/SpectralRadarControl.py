@@ -39,9 +39,14 @@ class FigureEight:
         self.scanPatternN = None
         self.scanPatternD = None
 
+        # ROI
+        self._roi_z = (None, None)
+        self._roi_x = (None, None)
+
         # Device config
-        self._imagingRate = 76000  # Rate in hz. NOT FUNCTIONAL
-        self._config = "ProbeLKM10-LV"  # TODO implement as real parameter from GUI
+        self._rateValue = 76000  # Rate in hz. NOT FUNCTIONAL
+        self._rateEnum = 0
+        self._config = 'LSM02-LV'
         self._apodWindow = None
         self._displayAxis = 0
 
@@ -58,8 +63,8 @@ class FigureEight:
         # OS
         self._threads = []
         self.active = False
-        self._RawQueue = Queue(maxsize=10)
-        self._ProcQueue = Queue(maxsize=1000)
+        self._RawQueue = Queue()
+        self._ProcQueue = Queue(maxsize=1)
 
         # Qt
         self._widgets = []
@@ -126,14 +131,16 @@ class FigureEight:
 
         # Setup
 
-        for widget in self._widgets:
-            widget.enabled(False)
+        self.start()
 
+    def start(self):
         init = threading.Thread(target=self.initializeSpectralRadar())
         init.start()
         init.join()
 
     def initializeSpectralRadar(self):  # TODO Implement on/off switch or splash while loading
+        for widget in self._widgets:
+            widget.enabled(False)
         self.progress.setText('Init device')
         self._device = PySpectralRadar.initDevice()
         self.progress.setProgress(2)
@@ -166,7 +173,36 @@ class FigureEight:
         for widget in self._widgets:
             widget.enabled(True)
         self.progress.setProgress(0)
-        self.progress.setText('')
+        self.progress.setText('Ready')
+
+    def setConfig(self, config):
+        configLUT = {
+            "10X" : "ProbeLKM10-LV",
+            "5X"  : "ProbeLKM05-LV",
+            "2X"  : "LSM02-LV"
+        }
+
+        self.closeSpectralRadar()
+        self._config = configLUT[config]
+        self.initializeSpectralRadar()
+
+        print('config changed')
+
+
+    def setRate(self,rate):
+        rateLUT = {
+            "76 kHz" : 0,
+            "146 kHz" : 1
+        }
+        values = [76000, 146000]  # Hz
+        self._rateEnum = rateLUT[rate]
+        self._rateValue = values[self._rateEnum]
+
+        PySpectralRadar.setCameraPreset(self._device, self._probe, self._proc, self._rateEnum)
+
+
+    def getRateValue(self):
+        return self._rateValue
 
     def closeSpectralRadar(self):
         PySpectralRadar.clearScanPattern(self._scanPattern)
@@ -201,12 +237,6 @@ class FigureEight:
     def setDisplayAxis(self, axis):
         self._displayAxis = axis
 
-    def setRate(self, rate):
-        self._imagingRate = rate
-
-    def getRate(self):
-        return self._imagingRate
-
     def setApodWindow(self, window):
         self._apodWindow = window
 
@@ -216,8 +246,9 @@ class FigureEight:
     def getLambda(self):
         return self._lam
 
-    def setConfig(self, config):
-        self._config = config
+    def setROI(self, axial, lateral):
+        self._roi_z = axial
+        self._roi_x = lateral
 
     def initScan(self):
         print('Init scan')
@@ -268,8 +299,8 @@ class FigureEight:
             processed = np.empty([1024, Nx, 2], dtype=np.complex64)
             Bs = [B1, B2]
 
-            for b in range(len(Bs)):
-                B = Bs[b]
+            for b, B in enumerate(Bs):
+
                 interpolated = np.empty([2048, Nx])
                 preprocessed = preprocess8(A, N, B, Nx, self.getApodWindow())
 
@@ -288,7 +319,7 @@ class FigureEight:
             for n in np.arange(Nx):
                 k = interp1d(self._lam, preprocessed[:, n])
                 interpolated[:, n] = k(interpIndices)
-                processed[:, n] = np.fft.ifft(interpolated[:, n])[1024:2048].astype(np.complex64)
+                processed[:, n] = np.fft.ifft(interpolated[:, n])[0:1024].astype(np.complex64)
 
         return processed[ROI[0]:ROI[1], :]
 
@@ -304,7 +335,7 @@ class FigureEight:
                 raw = processingQueue.get()
                 spec = raw.flatten()[0:2048]  # First spectrum of the B-scan only is plotted
 
-                bscan = self.process8(raw, B, ROI=(620, 1020))
+                bscan = self.process8(raw, B, ROI=self._roi_z)
 
                 self.plotSpectrum.plot1D(spec)
                 self.plotBScan.update(20 * np.log10(np.abs(np.transpose(bscan))))
@@ -315,12 +346,13 @@ class FigureEight:
 
     def scan(self):
 
+        self.progress.setText('Scanning...')
         running = True
         processingQueue = self.getProcessingQueue()
         counter = 0
 
         # Set number of frames to process based on predicted speed
-        interval = 30
+        interval = [10, 100][self._rateEnum]
 
         rawDataHandle = PySpectralRadar.createRawData()
 
@@ -366,11 +398,6 @@ class FigureEight:
 
         self.startMeasurement()
 
-        # Progress bar stuff
-        tenths = int(self._scanPatternTotalRepeats / 10)
-        self.progress.setText('Acquiring')
-        prog = 0
-
         for i in np.arange(self._scanPatternTotalRepeats):
 
             self.getRawData(rawDataHandle)
@@ -391,44 +418,19 @@ class FigureEight:
 
                 pass
 
-            if i % tenths == 0:
-                prog += 1
-                self.progress.setProgress(prog)
+        self.stopMeasurement()
 
         PySpectralRadar.clearRawData(rawDataHandle)
-        self.abort()  # needs to call abort at the end since it will finish and doesnt look for active == True
 
         print('Acquisition complete')
 
     def export_hdf(self):  # TODO fix this
 
-        q = self.getRawQueue()
-
-        root = h5py.File(self.getFilepath(), 'w')
-
-        root.create_group("scan")
-        root.create_dataset("scan/positions", data=np.concatenate([self.scanPatternX, self.scanPatternY]))
-        root.create_dataset("scan/N", data=self.scanPatternN)
-        root.create_dataset("scan/D", data=self.scanPatternD)
-
-        rawshape = [2048, self._scanPatternAlinesPerCross, 2, self._scanPatternTotalRepeats]
-        raw = root.create_dataset("raw", rawshape, dtype=np.uint16)
-
-        while not q.empty():
-
-            for i in np.arange(self._scanPatternTotalRepeats):
-                temp = q.get()
-
-                raw[:, :, :, i] = reshape8(temp,
-                                           self.scanPatternN,
-                                           self._scanPatternAlinesPerCross,
-                                           self.scanPatternB1,
-                                           self.scanPatternB2)
-
-        root.close()
-        print('Saving .hdf complete')
+        pass
 
     def export_npy(self):
+
+        self.progress.setText('Processing...')
 
         q = self.getRawQueue()
         try:
@@ -439,6 +441,7 @@ class FigureEight:
         out = np.empty([1024, self._scanPatternAlinesPerCross, 2, self._scanPatternTotalRepeats],
                        dtype=np.complex64)  # TODO: implement max file size
 
+
         for i in np.arange(self._scanPatternTotalRepeats):
             temp = q.get()
 
@@ -446,12 +449,30 @@ class FigureEight:
 
             out[:, :, :, i] = bscan
 
+        self.progress.setText('Export complete!')
         np.save(root, out)
         print('Saving .npy complete')
-        self.abort()
+        # This is just the abort method w/o call to stop measurement
+        self.progress.setText('Stopped')
+        self.progress.setProgress(0)
+        if self.active:
+            self.active = False
+            for thread in self._threads:
+                thread._is_running = False
+            self._threads = []
+            self._RawQueue = Queue()
+            self._ProcQueue = Queue()
+            for widget in self._widgets:
+                widget.enabled(True)
+
+
+
+
 
     def abort(self):
         print('Abort')  # TODO different function for mid-acq abort vs end of acquisition. Also write a safer one
+        self.progress.setText('Stopped')
+        self.progress.setProgress(0)
         if self.active:
             self.active = False
             for thread in self._threads:
@@ -476,10 +497,6 @@ class FigureEight:
 
     def getFilepath(self):
         return self._fileExperimentDirectory + '/' + self._fileExperimentName
-
-    def setDeviceParams(self, rate, config):
-        self._imagingRate = rate
-        self._config = config
 
     def clearScanPattern(self):
         PySpectralRadar.clearScanPattern(self._scanPattern)
