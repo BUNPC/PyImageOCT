@@ -277,8 +277,8 @@ class Fig8GroupBox(QGroupBox):
 
         self.layout.addRow(QLabel("A-lines per B-scan"), self.spinALinesPerX)
         self.layout.addRow(QLabel("A-lines per flyback"), self.spinFlyback)
-        # self.layout.addRow(QLabel("Scan-pattern angle"), self.spinAngle)
-        self.layout.addRow(QLabel("Flyback angle"), self.spinFlybackAngle)  # TODO fix rotation mechanic
+        self.layout.addRow(QLabel("Scan-pattern angle"), self.spinAngle)  # TODO fix rotation mechanic
+        self.layout.addRow(QLabel("Flyback angle"), self.spinFlybackAngle)
         self.layout.addRow(QLabel("Figure-8 width"), self.spinFig8Size)
         self.layout.addRow(QLabel("Distance between adjacent A-scans"), self.textDistance)
         self.layout.addRow(QLabel("Total A-scans in each figure-8"), self.textTotal)

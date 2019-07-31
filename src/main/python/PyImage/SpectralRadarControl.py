@@ -350,7 +350,7 @@ class FigureEight:
         counter = 0
 
         # Set number of frames to process based on predicted speed
-        interval = [10, 20][self._rateEnum]
+        interval = [10, 10][self._rateEnum]
 
         rawDataHandle = PySpectralRadar.createRawData()
 
