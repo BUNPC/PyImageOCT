@@ -8,7 +8,7 @@ import h5py
 from PyQt5.QtWidgets import QWidget, QGridLayout
 from pyqtgraph.Qt import QtGui
 
-from src.main.python import PySpectralRadar
+from src.main.python.PySpectralRadar import PySpectralRadar
 from src.main.python.PyImage import Widgets
 from src.main.python.PyImage.OCT import *
 
