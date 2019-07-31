@@ -1,0 +1,3 @@
+[submodule "PySpectralRadar"]
+	path = PySpectralRadar
+	url = https://github.com/BUNPC/PySpectralRadar
