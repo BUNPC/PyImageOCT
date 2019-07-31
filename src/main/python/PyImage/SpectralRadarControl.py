@@ -12,6 +12,7 @@ from src.main.python.PySpectralRadar import PySpectralRadar
 from src.main.python.PyImage import Widgets
 from src.main.python.PyImage.OCT import *
 
+
 class FigureEight:
 
     def __init__(self, parent):
@@ -46,7 +47,7 @@ class FigureEight:
         # Device config
         self._rateValue = 76000  # Rate in hz. NOT FUNCTIONAL
         self._rateEnum = 0
-        self._config = 'LSM02-LV'
+        self._config = "ProbeLKM10-LV"  # TODO un-hardcode default
         self._apodWindow = None
         self._displayAxis = 0
 
@@ -69,7 +70,7 @@ class FigureEight:
         # Qt
         self._widgets = []
 
-    # ------------------------------------------------------------------------------------------------------------------
+        # ------------------------------------------------------------------------------------------------------------------
 
         # QWidget for GUI tab
         self.tab = QWidget(parent=parent)
@@ -84,7 +85,6 @@ class FigureEight:
         self.plotSpectrum.labelAxes('Wavelength', 'ADU')
         self.plotSpectrum.setXRange(0, 2048)
         self.plotSpectrum.setYRange(0, 4500)
-
 
         # Real-time scatter plot widget for display of scan pattern
         self.plotPattern = Widgets.PlotPatternWidget(name="Scan Pattern")
@@ -127,7 +127,7 @@ class FigureEight:
         self.tabGrid.addWidget(self.controlButtons, 4, 0, 2, 2)
         self._widgets.append(self.controlButtons)
 
-    # ------------------------------------------------------------------------------------------------------------------
+        # ------------------------------------------------------------------------------------------------------------------
 
         # Setup
 
@@ -177,9 +177,9 @@ class FigureEight:
 
     def setConfig(self, config):
         configLUT = {
-            "10X" : "ProbeLKM10-LV",
-            "5X"  : "ProbeLKM05-LV",
-            "2X"  : "LSM02-LV"
+            "10X": "ProbeLKM10-LV",
+            "5X": "ProbeLKM05-LV",
+            "2X": "LSM02-LV"
         }
 
         self.closeSpectralRadar()
@@ -188,18 +188,16 @@ class FigureEight:
 
         print('config changed')
 
-
-    def setRate(self,rate):
+    def setRate(self, rate):
         rateLUT = {
-            "76 kHz" : 0,
-            "146 kHz" : 1
+            "76 kHz": 0,
+            "146 kHz": 1
         }
         values = [76000, 146000]  # Hz
         self._rateEnum = rateLUT[rate]
         self._rateValue = values[self._rateEnum]
 
         PySpectralRadar.setCameraPreset(self._device, self._probe, self._proc, self._rateEnum)
-
 
     def getRateValue(self):
         return self._rateValue
@@ -352,7 +350,7 @@ class FigureEight:
         counter = 0
 
         # Set number of frames to process based on predicted speed
-        interval = [10, 100][self._rateEnum]
+        interval = [10, 20][self._rateEnum]
 
         rawDataHandle = PySpectralRadar.createRawData()
 
@@ -441,7 +439,6 @@ class FigureEight:
         out = np.empty([1024, self._scanPatternAlinesPerCross, 2, self._scanPatternTotalRepeats],
                        dtype=np.complex64)  # TODO: implement max file size
 
-
         for i in np.arange(self._scanPatternTotalRepeats):
             temp = q.get()
 
@@ -464,10 +461,6 @@ class FigureEight:
             self._ProcQueue = Queue()
             for widget in self._widgets:
                 widget.enabled(True)
-
-
-
-
 
     def abort(self):
         print('Abort')  # TODO different function for mid-acq abort vs end of acquisition. Also write a safer one
@@ -514,7 +507,7 @@ class FigureEight:
                                                                       1,  # All repeating patterns handled with loops!
                                                                       False)
 
-        PySpectralRadar.rotateScanPattern(self._scanPattern, self._scanPatternAngle)
+        PySpectralRadar.rotateScanPattern(self._scanPattern, self._scanPatternAngle)  # TODO fix rotation mechanic
 
     def setScanPatternParams(self, patternSize, aLinesPerCross, aLinesPerFlyback, repeats, angle, flybackAngle):
         self._scanPatternSize = patternSize
@@ -537,7 +530,7 @@ class FigureEight:
                                                                 flybackAngle=flybackAngle)
 
     def displayPattern(self):
-        self.plotPattern.plotFigEight(self.scanPatternX[np.invert(self.scanPatternB1+self.scanPatternB2)],
-                                      self.scanPatternY[np.invert(self.scanPatternB1+self.scanPatternB2)],
-                                      self.scanPatternX[self.scanPatternB1+self.scanPatternB2],
-                                      self.scanPatternY[self.scanPatternB1+self.scanPatternB2])
+        self.plotPattern.plotFigEight(self.scanPatternX[np.invert(self.scanPatternB1 + self.scanPatternB2)],
+                                      self.scanPatternY[np.invert(self.scanPatternB1 + self.scanPatternB2)],
+                                      self.scanPatternX[self.scanPatternB1 + self.scanPatternB2],
+                                      self.scanPatternY[self.scanPatternB1 + self.scanPatternB2])
