@@ -56,7 +56,7 @@ def generateIdealFigureEightPositions(xsize, alinesPerX, rpt=1, flyback=20, flyb
 
         return [posRpt, X, Y, b1, b2, N, D]
 
-
+@numba.jit(forceobj=True)
 def fig8ToBScan(A, N, B, AlinesPerX, apod, ROI=400, lam=None, start=14):
     """
     Converts a raw array of unsigned 16 bit integer fig-8 data from Telesto to ROI of complex spatial domain
@@ -83,7 +83,7 @@ def fig8ToBScan(A, N, B, AlinesPerX, apod, ROI=400, lam=None, start=14):
 
     return proc[start:ROI]
 
-@numba.jit
+@numba.jit(forceobj=True)
 def preprocess8(A,N,B,AlinesPerX,apod):
     """
     Compiled w numba. Reshapes raw figure-8 OCT data into a B scan

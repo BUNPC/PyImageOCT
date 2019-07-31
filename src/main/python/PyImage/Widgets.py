@@ -71,7 +71,10 @@ class FileGroupBox(QGroupBox):
         self.controller.setFileParams(experimentDirectory, experimentName, maxFileSize, fileType)
 
     def enabled(self, bool):
-        pass
+        self.entryExpDir.setEnabled(bool)
+        self.entryExpName.setEnabled(bool)
+        self.entryFileSize.setEnabled(bool)
+        self.entryFileType.setEnabled(bool)
 
 class ParamsGroupBox(QGroupBox):
 
@@ -135,8 +138,8 @@ class ParamsGroupBox(QGroupBox):
         self.entryImagingRate.setEnabled(bool)
         self.entryConfig.setEnabled(bool)
         self.entryWindow.setEnabled(bool)
-        self.B1.setEnabled(bool)
-        self.B2.setEnabled(bool)
+        # self.B1.setEnabled(bool)  # For now, switching views works during scanning
+        # self.B2.setEnabled(bool)
 
 
 class ControlGroupBox(QGroupBox):
@@ -240,7 +243,7 @@ class Fig8GroupBox(QGroupBox):
         self.spinFig8Size.valueChanged.connect(self.update)
 
         self.spinFig8Total = QSpinBox()
-        self.spinFig8Total.setRange(1, 5000)
+        self.spinFig8Total.setRange(2, 5000)
         self.spinFig8Total.setValue(500)
         self.spinFig8Total.valueChanged.connect(self.update)
 
@@ -302,6 +305,7 @@ class Fig8GroupBox(QGroupBox):
         self.spinAngle.setEnabled(bool)
         self.spinFlybackAngle.setEnabled(bool)
         self.spinAcqTime.setEnabled(bool)
+        self.spinFig8Total.setEnabled(bool)
 
 
 class QuantGroupBox(QGroupBox):

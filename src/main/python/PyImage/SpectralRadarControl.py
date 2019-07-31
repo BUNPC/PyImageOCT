@@ -76,8 +76,10 @@ class FigureEight:
         self.plotSpectrum.setMaximumHeight(250)
         self.tabGrid.addWidget(self.plotSpectrum, 0, 2, 2, 1)
         self._widgets.append(self.plotSpectrum)
+        self.plotSpectrum.labelAxes('Wavelength', 'ADU')
         self.plotSpectrum.setXRange(0, 2048)
-        self.plotSpectrum.setYRange(0, 6000)
+        self.plotSpectrum.setYRange(0, 4500)
+
 
         # Real-time scatter plot widget for display of scan pattern
         self.plotPattern = Widgets.PlotPatternWidget(name="Scan Pattern")
@@ -124,13 +126,14 @@ class FigureEight:
 
         # Setup
 
-        # for widget in self._widgets:
-        #     widget.enabled(False)
-        #
-        # init = threading.Thread(target=self.initializeSpectralRadar())
-        # init.start()
+        for widget in self._widgets:
+            widget.enabled(False)
 
-    def initializeSpectralRadar(self):  # TODO Need to thread this eventually, long hang time for GUI
+        init = threading.Thread(target=self.initializeSpectralRadar())
+        init.start()
+        init.join()
+
+    def initializeSpectralRadar(self):  # TODO Implement on/off switch or splash while loading
         self.progress.setText('Init device')
         self._device = PySpectralRadar.initDevice()
         self.progress.setProgress(2)
@@ -162,6 +165,8 @@ class FigureEight:
         print('Telesto initialized successfully.')
         for widget in self._widgets:
             widget.enabled(True)
+        self.progress.setProgress(0)
+        self.progress.setText('')
 
     def closeSpectralRadar(self):
         PySpectralRadar.clearScanPattern(self._scanPattern)
@@ -219,14 +224,10 @@ class FigureEight:
 
         self.active = True
 
-        # For scanning, acquisition occurs after each figure-8, so rpt is set to 1 TODO make this simpler
-        self.setScanPatternParams(self._scanPatternSize,
-                                  self._scanPatternAlinesPerCross,
-                                  self._scanPatternAlinesPerFlyback,
-                                  1,
-                                  self._scanPatternFlybackAngle,
-                                  self._scanPatternAngle)
         self.updateScanPattern()
+
+        for widget in self._widgets:
+            widget.enabled(False)
 
         scan = threading.Thread(target=self.scan)
         disp = threading.Thread(target=self.display)
@@ -244,6 +245,9 @@ class FigureEight:
 
         self.updateScanPattern()
 
+        for widget in self._widgets:
+            widget.enabled(False)
+
         acq = threading.Thread(target=self.acquire)
         exp = threading.Thread(target=self.export_npy)
         self._threads.append(acq)
@@ -252,6 +256,7 @@ class FigureEight:
         for thread in self._threads:
             thread.start()
 
+    @numba.jit(forceobj=True)
     def process8(self, A, B1, ROI, B2=np.zeros(1)):
 
         Nx = self._scanPatternAlinesPerCross
@@ -301,8 +306,8 @@ class FigureEight:
 
                 bscan = self.process8(raw, B, ROI=(620, 1020))
 
-                self.plotWidget.plot1D(spec)
-                self.imageWidget.update(20 * np.log10(np.abs(np.transpose(bscan))))
+                self.plotSpectrum.plot1D(spec)
+                self.plotBScan.update(20 * np.log10(np.abs(np.transpose(bscan))))
                 QtGui.QGuiApplication.processEvents()
 
             except Full:
@@ -349,7 +354,6 @@ class FigureEight:
 
             counter += 1
 
-        self.stopMeasurement()
         PySpectralRadar.clearRawData(rawDataHandle)
 
     def acquire(self):
@@ -361,6 +365,11 @@ class FigureEight:
         self.getRawData(rawDataHandle)
 
         self.startMeasurement()
+
+        # Progress bar stuff
+        tenths = int(self._scanPatternTotalRepeats / 10)
+        self.progress.setText('Acquiring')
+        prog = 0
 
         for i in np.arange(self._scanPatternTotalRepeats):
 
@@ -382,8 +391,12 @@ class FigureEight:
 
                 pass
 
-        self.stopMeasurement()
+            if i % tenths == 0:
+                prog += 1
+                self.progress.setProgress(prog)
+
         PySpectralRadar.clearRawData(rawDataHandle)
+        self.abort()  # needs to call abort at the end since it will finish and doesnt look for active == True
 
         print('Acquisition complete')
 
@@ -447,7 +460,13 @@ class FigureEight:
             self._RawQueue = Queue()
             self._ProcQueue = Queue()
             self.stopMeasurement()
-            self.closeSpectralRadar()
+            for widget in self._widgets:
+                widget.enabled(True)
+
+    def close(self):
+        print('Close')
+        self.abort()
+        self.closeSpectralRadar()
 
     def setFileParams(self, experimentDirectory, experimentName, maxSize, fileType):
         self._fileExperimentDirectory = experimentDirectory
