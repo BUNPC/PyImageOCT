@@ -3,12 +3,13 @@ import numba
 from scipy.interpolate import interp1d
 
 
-def generateIdealFigureEightPositions(xsize, alinesPerX, rpt=1, flyback=20, flybackAngle=np.pi/2.58):
+def generateIdealFigureEightPositions(xdistance, alinesPerX, rpt=1, angle=np.pi / 4, flyback=20,flybackAngle=np.pi / 2.58):
     """
     Generates figure-8 scan pattern positions with orthogonal cross.
     :param xdistance: Distance between adjacent scans in perpendicular B-scans
     :param alinesPerX: Number of A-lines in each orthogonal B-scan
-    :param rpt: Number of times to repeat the pattern in the 1D positions array
+    :param rpt: Number of times to repeat the pattern in the 1D positions array. Default is 1
+    :param angle: Angle by which to rotate the figure-8 in radians. Default is pi/4
     :param flyback: Number of A-lines in each flyback loop
     :param flybackAngle: Range over which to sweep flyback loops in radians
     :return: posRpt: 1D positions array for use with FreeformScanPattern; [x1,y1,x2,y2...] format
@@ -19,6 +20,10 @@ def generateIdealFigureEightPositions(xsize, alinesPerX, rpt=1, flyback=20, flyb
              N: Total number of A-scans in the pattern
              D: Distance between adjacent A-scans in the B-scans
     """
+    fbscale = 2
+    xsize = np.sqrt(2) / 4 * xdistance * (alinesPerX - 1)
+    rotmat = np.array([[np.cos(angle), np.sin(angle)], [-np.sin(angle), np.cos(angle)]])
+
     if rpt > 0:
         cross = np.linspace(-xsize, xsize, alinesPerX)
 
@@ -30,10 +35,10 @@ def generateIdealFigureEightPositions(xsize, alinesPerX, rpt=1, flyback=20, flyb
 
         D = np.sqrt((B1[0][0] - B1[0][1]) ** 2 + (B1[1][0] - B1[1][1]) ** 2)
 
-        x1 = 2.95 * xsize * np.cos(fb1)
-        y1 = (1.572 * xsize) * np.sin(2 * fb1)
-        x2 = 2.95 * xsize * np.cos(fb2)
-        y2 = (1.572 * xsize) * np.sin(2 * fb2)
+        x1 = 1.93 * fbscale * xsize * np.cos(fb1)
+        y1 = fbscale * xsize * np.sin(2 * fb1)
+        x2 = 1.93 * fbscale * xsize * np.cos(fb2)
+        y2 = fbscale * xsize * np.sin(2 * fb2)
 
         X = np.concatenate([x1, B1[0], x2, B2[0]])
         Y = np.concatenate([y1, B1[1], y2, B2[1]])
@@ -50,11 +55,14 @@ def generateIdealFigureEightPositions(xsize, alinesPerX, rpt=1, flyback=20, flyb
         pos[0::2] = X
         pos[1::2] = Y
 
+        [X, Y] = np.matmul(rotmat, [X, Y])
+
         posRpt = np.tile(pos, rpt)
 
         N = len(X)
 
         return [posRpt, X, Y, b1, b2, N, D]
+
 
 @numba.jit(forceobj=True)
 def fig8ToBScan(A, N, B, AlinesPerX, apod, ROI=400, lam=None, start=14):

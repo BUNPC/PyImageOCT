@@ -131,7 +131,7 @@ class FigureEight:
 
         # Setup
 
-        self.start()
+        # self.start()
 
     def start(self):
         init = threading.Thread(target=self.initializeSpectralRadar())
@@ -507,14 +507,12 @@ class FigureEight:
                                                                       1,  # All repeating patterns handled with loops!
                                                                       False)
 
-        PySpectralRadar.rotateScanPattern(self._scanPattern, self._scanPatternAngle)  # TODO fix rotation mechanic
-
-    def setScanPatternParams(self, patternSize, aLinesPerCross, aLinesPerFlyback, repeats, angle, flybackAngle):
+    def setScanPatternParams(self, patternSize, aLinesPerCross, aLinesPerFlyback, repeats, patternAngle, flybackAngle):
         self._scanPatternSize = patternSize
         self._scanPatternAlinesPerCross = aLinesPerCross
         self._scanPatternAlinesPerFlyback = aLinesPerFlyback
         self._scanPatternTotalRepeats = repeats
-        self._scanPatternAngle = angle
+        self._scanPatternAngle = patternAngle
         self._scanPatternFlybackAngle = flybackAngle
 
         [self.scanPatternPositions,
@@ -526,6 +524,7 @@ class FigureEight:
          self.scanPatternD] = generateIdealFigureEightPositions(patternSize,
                                                                 aLinesPerCross,
                                                                 rpt=1,  # All repeating patterns handled with loops!
+                                                                angle=patternAngle,
                                                                 flyback=aLinesPerFlyback,
                                                                 flybackAngle=flybackAngle)
 
