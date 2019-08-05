@@ -220,6 +220,10 @@ class Fig8GroupBox(QGroupBox):
         self.spinALinesPerX.setValue(100)
         self.spinALinesPerX.valueChanged.connect(self.update)
 
+        self.spinBPadding = QSpinBox()
+        self.spinBPadding.setValue(0)
+        self.spinBPadding.valueChanged.connect(self.update)
+
         self.spinFlyback = QSpinBox()
         self.spinFlyback.setRange(2, 600)
         self.spinFlyback.setValue(100)
@@ -270,6 +274,7 @@ class Fig8GroupBox(QGroupBox):
         self.textTotal.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
 
         self.layout.addRow(QLabel("A-lines per B-scan"), self.spinALinesPerX)
+        self.layout.addRow(QLabel("B-Scan padding"), self.spinBPadding)
         self.layout.addRow(QLabel("A-lines per flyback"), self.spinFlyback)
         self.layout.addRow(QLabel("Distance between A-lines in B-scan"), self.spinALineSpacing)
         self.layout.addRow(QLabel("Scan-pattern angle"), self.spinAngle)
@@ -282,8 +287,11 @@ class Fig8GroupBox(QGroupBox):
         self.update()
 
     def update(self):
+
+        self.spinBPadding.setRange(0,int((self.spinALinesPerX.value()-1)/2))
         self.controller.setScanPatternParams(self.spinALineSpacing.value()*10**-3,  # Convert from um to mm
                                              self.spinALinesPerX.value(),
+                                             self.spinBPadding.value(),
                                              self.spinFlyback.value(),
                                              self.spinFig8Total.value(),
                                              self.spinAngle.value() * (np.pi/180),

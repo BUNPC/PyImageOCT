@@ -507,9 +507,10 @@ class FigureEight:
                                                                       1,  # All repeating patterns handled with loops!
                                                                       False)
 
-    def setScanPatternParams(self, patternSize, aLinesPerCross, aLinesPerFlyback, repeats, patternAngle, flybackAngle):
+    def setScanPatternParams(self, patternSize, aLinesPerCross, bPadding, aLinesPerFlyback, repeats, patternAngle, flybackAngle):
         self._scanPatternSize = patternSize
         self._scanPatternAlinesPerCross = aLinesPerCross
+        self._scanPatternBPadding = bPadding
         self._scanPatternAlinesPerFlyback = aLinesPerFlyback
         self._scanPatternTotalRepeats = repeats
         self._scanPatternAngle = patternAngle
@@ -523,6 +524,7 @@ class FigureEight:
          self.scanPatternN,
          self.scanPatternD] = generateIdealFigureEightPositions(patternSize,
                                                                 aLinesPerCross,
+                                                                padB=bPadding,
                                                                 rpt=1,  # All repeating patterns handled with loops!
                                                                 angle=patternAngle,
                                                                 flyback=aLinesPerFlyback,

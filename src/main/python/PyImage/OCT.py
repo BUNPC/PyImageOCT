@@ -3,7 +3,7 @@ import numba
 from scipy.interpolate import interp1d
 
 
-def generateIdealFigureEightPositions(xdistance, alinesPerX, rpt=1, angle=np.pi / 4, flyback=20,flybackAngle=np.pi / 2.58):
+def generateIdealFigureEightPositions(xdistance, alinesPerX, rpt=1, padB=0, angle=np.pi / 4, flyback=20, flybackAngle=np.pi / 2.58):
     """
     Generates figure-8 scan pattern positions with orthogonal cross.
     :param xdistance: Distance between adjacent scans in perpendicular B-scans
@@ -44,10 +44,10 @@ def generateIdealFigureEightPositions(xdistance, alinesPerX, rpt=1, angle=np.pi 
         Y = np.concatenate([y1, B1[1], y2, B2[1]])
 
         b1 = np.concatenate(
-            [np.zeros(flyback), np.ones(alinesPerX), np.zeros(flyback), np.zeros(alinesPerX)]).astype(
+            [np.zeros(flyback+padB), np.ones(alinesPerX-2*padB), np.zeros(flyback+padB), np.zeros(alinesPerX)]).astype(
             np.bool)
         b2 = np.concatenate(
-            [np.zeros(flyback), np.zeros(alinesPerX), np.zeros(flyback), np.ones(alinesPerX)]).astype(
+            [np.zeros(flyback), np.zeros(alinesPerX), np.zeros(flyback+padB), np.ones(alinesPerX-2*padB),np.zeros(padB)]).astype(
             np.bool)
 
         pos = np.empty(int(2 * len(X)), dtype=np.float32)
