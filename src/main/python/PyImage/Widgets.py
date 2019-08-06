@@ -221,12 +221,12 @@ class Fig8GroupBox(QGroupBox):
         self.spinALinesPerX.valueChanged.connect(self.update)
 
         self.spinBPadding = QSpinBox()
-        self.spinBPadding.setValue(0)
+        self.spinBPadding.setValue(20)
         self.spinBPadding.valueChanged.connect(self.update)
 
         self.spinFlyback = QSpinBox()
         self.spinFlyback.setRange(2, 600)
-        self.spinFlyback.setValue(100)
+        self.spinFlyback.setValue(50)
         self.spinFlyback.valueChanged.connect(self.update)
 
         self.spinAngle = QSpinBox()
@@ -288,7 +288,7 @@ class Fig8GroupBox(QGroupBox):
 
     def update(self):
 
-        self.spinBPadding.setRange(0,int((self.spinALinesPerX.value()-1)/2))
+        self.spinBPadding.setRange(0,int((self.spinALinesPerX.value()-1)))
         self.controller.setScanPatternParams(self.spinALineSpacing.value()*10**-3,  # Convert from um to mm
                                              self.spinALinesPerX.value(),  # Do not subtract bPadding!
                                              self.spinBPadding.value(),

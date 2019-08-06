@@ -507,7 +507,7 @@ class FigureEight:
 
     def setScanPatternParams(self, patternSize, aLinesPerCross, bPadding, aLinesPerFlyback, repeats, patternAngle, flybackAngle):
         self._scanPatternSize = patternSize
-        self._scanPatternAlinesPerCross = aLinesPerCross - 2 * bPadding  # Padding subtracted here
+        self._scanPatternAlinesPerCross = aLinesPerCross - bPadding  # Padding subtracted here
         self._scanPatternBPadding = bPadding
         self._scanPatternAlinesPerFlyback = aLinesPerFlyback
         self._scanPatternTotalRepeats = repeats
