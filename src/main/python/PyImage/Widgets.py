@@ -300,7 +300,7 @@ class Fig8GroupBox(QGroupBox):
         self.textTotal.setText(str(self.controller.scanPatternN))
 
         w = 1 / (1 / self.controller.getRateValue() * self.controller.scanPatternN)
-        self.textRate.setText(str(w)[0:10] + ' hz ')
+        self.textRate.setText(str(w)[0:5] + ' hz ')
         self.controller.displayPattern()
 
     def enabled(self, bool):

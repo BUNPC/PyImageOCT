@@ -196,6 +196,8 @@ class FigureEight:
         self._rateEnum = rateLUT[rate]
         self._rateValue = values[self._rateEnum]
 
+        self.groupScanParams.update()
+
         PySpectralRadar.setCameraPreset(self._device, self._probe, self._proc, self._rateEnum)
 
     def getRateValue(self):
