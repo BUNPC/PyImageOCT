@@ -65,33 +65,6 @@ def generateIdealFigureEightPositions(xdistance, alinesPerX, rpt=1, padB=0, angl
 
 
 @numba.jit(forceobj=True)
-def fig8ToBScan(A, N, B, AlinesPerX, apod, ROI=400, lam=None, start=14):
-    """
-    Converts a raw array of unsigned 16 bit integer fig-8 data from Telesto to ROI of complex spatial domain
-    :param A: Raw figure-8 data
-    :param N: The total number of A-lines in the figure-8 pattern
-    :param B: Boolean-type array representing indices in N-length A which make up a B-scan
-    :param AlinesPerX: Number of A-lines in each B-scan
-    :param apod: Apodization window. Must be 2048 in length
-    :param ROI: number of pixels from the top of the B-scan to return
-    :param lam: linear interpolation vector
-    :param start: start of ROI, used to exclude ringing from edge of window
-    :return: A 2D array of complex data
-    """
-
-    proc = np.empty([1024, AlinesPerX], dtype=np.complex64)
-    interpolated = np.empty([2048,AlinesPerX])
-
-    preprocessed = preprocess8(A,N,B,AlinesPerX,apod)
-
-    for n in np.arange(AlinesPerX):
-        k = interp1d(lam,preprocessed[:,n])
-        interpolated[:,n] = k(np.linspace(min(lam),max(lam),2048))
-        proc[:, n] = np.fft.ifft(interpolated[:,n])[0:1024].astype(np.complex64)
-
-    return proc[start:ROI]
-
-@numba.jit(forceobj=True)
 def preprocess8(A,N,B,AlinesPerX,apod):
     """
     Compiled w numba. Reshapes raw figure-8 OCT data into a B scan
