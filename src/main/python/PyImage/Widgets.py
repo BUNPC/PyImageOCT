@@ -322,19 +322,6 @@ class QuantGroupBox(QGroupBox):
 
         self.layout = QFormLayout()
 
-        self.spinLateralMin = QSpinBox()
-        self.spinLateralMin.setValue(0)
-        self.spinLateralMin.valueChanged.connect(self.update)
-
-        self.spinLateralMax = QSpinBox()
-        self.spinLateralMax.setValue(controller.getAlinesPerX())
-        self.spinLateralMax.setValue(self.controller.getAlinesPerX())
-        self.spinLateralMax.valueChanged.connect(self.update)
-
-        self.lateralBoxLayout = QHBoxLayout()
-        self.lateralBoxLayout.addWidget(self.spinLateralMin)
-        self.lateralBoxLayout.addWidget(self.spinLateralMax)
-
         self.spinAxialMin = QSpinBox()
         self.spinAxialMin.setValue(8)
         self.spinAxialMin.valueChanged.connect(self.update)
@@ -347,7 +334,6 @@ class QuantGroupBox(QGroupBox):
         self.axialBoxLayout.addWidget(self.spinAxialMin)
         self.axialBoxLayout.addWidget(self.spinAxialMax)
 
-        self.layout.addRow(QLabel('B-Scan ROI start-stop'), self.lateralBoxLayout)
         self.layout.addRow(QLabel('Axial ROI top-bottom'), self.axialBoxLayout)
 
         self.setLayout(self.layout)
@@ -355,14 +341,12 @@ class QuantGroupBox(QGroupBox):
         self.update()
 
     def update(self):
-        self.spinLateralMax.setRange(1, self.controller.getAlinesPerX())
-        self.spinLateralMin.setRange(0, self.spinLateralMax.value()-1)
 
         self.spinAxialMax.setRange(self.spinAxialMin.value()+1, 1024)
 
         axial = (self.spinAxialMin.value(), self.spinAxialMax.value())
-        lateral = (self.spinLateralMin.value(), self.spinLateralMax.value())
-        self.controller.setROI(axial, lateral)
+
+        self.controller.setROI(axial)
 
     def enabled(self, bool):
         # For now, ROI change during scan works fine.

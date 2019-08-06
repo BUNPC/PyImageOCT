@@ -42,7 +42,6 @@ class FigureEight:
 
         # ROI
         self._roi_z = (None, None)
-        self._roi_x = (None, None)
 
         # Device config
         self._rateValue = 76000  # Rate in hz. NOT FUNCTIONAL
@@ -131,7 +130,7 @@ class FigureEight:
 
         # Setup
 
-        # self.start()
+        self.start()
 
     def start(self):
         init = threading.Thread(target=self.initializeSpectralRadar())
@@ -244,9 +243,8 @@ class FigureEight:
     def getLambda(self):
         return self._lam
 
-    def setROI(self, axial, lateral):
+    def setROI(self, axial):
         self._roi_z = axial
-        self._roi_x = lateral
 
     def initScan(self):
         print('Init scan')
