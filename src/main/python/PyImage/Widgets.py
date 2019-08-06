@@ -231,7 +231,7 @@ class Fig8GroupBox(QGroupBox):
 
         self.spinAngle = QSpinBox()
         self.spinAngle.setRange(0, 360)
-        self.spinAngle.setValue(45)
+        self.spinAngle.setValue(43)
         self.spinAngle.setSuffix('°')
         self.spinAngle.valueChanged.connect(self.update)
 

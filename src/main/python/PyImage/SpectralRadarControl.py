@@ -332,7 +332,6 @@ class FigureEight:
                 spec = raw.flatten()[0:2048]  # First spectrum of the B-scan only is plotted
 
                 bscan = self.process8(raw, B, ROI=self._roi_z)
-                print(np.shape(bscan))
 
                 self.plotSpectrum.plot1D(spec)
                 self.plotBScan.update(20 * np.log10(np.abs(np.transpose(bscan))))
