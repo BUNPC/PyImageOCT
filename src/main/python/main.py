@@ -8,7 +8,7 @@ import sys
 
 from PyQt5 import QtCore
 
-from src.main.python.PyImage import SpectralRadarControl, Widgets
+from src.main.python.PyImage import FigureEight, Widgets
 
 # Something wrong with these-- intended to fix DPI scaling issues but they make it worse
 '''
@@ -34,7 +34,7 @@ class Main(QTabWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        self.figEight = SpectralRadarControl.FigureEight(parent=self)
+        self.figEight = FigureEight.FigureEight(parent=self)
 
         self.addTab(self.figEight.tab, 'Figure-8 Motion Quantification')
 

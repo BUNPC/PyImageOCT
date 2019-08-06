@@ -1,16 +1,14 @@
 import os
-import time
 import threading
 from copy import deepcopy
 from queue import Queue, Full
 
-import h5py
 from PyQt5.QtWidgets import QWidget, QGridLayout
 from pyqtgraph.Qt import QtGui
 
-from src.main.python.PySpectralRadar import PySpectralRadar
 from src.main.python.PyImage import Widgets
 from src.main.python.PyImage.OCT import *
+from src.main.python.PySpectralRadar import PySpectralRadar
 
 
 class FigureEight:
@@ -27,7 +25,7 @@ class FigureEight:
         self._scanPatternSize = None
         self._scanPatternAlinesPerCross = None
         self._scanPatternAlinesPerFlyback = None
-        self._scanPatternTotalRepeats = None
+        self._scanPatternTotalRepeats = None  # Deprecated
         self._scanPatternAngle = None
         self._scanPatternFlybackAngle = None
 
@@ -42,12 +40,12 @@ class FigureEight:
 
         # ROI
         self._roi_z = (None, None)
-        self._roi_x = (None, None)
+        self._roi_x = (None, None)  # Deprecated
 
         # Device config
         self._rateValue = 76000  # Rate in hz. NOT FUNCTIONAL
         self._rateEnum = 0
-        self._config = "ProbeLKM10-LV"  # TODO un-hardcode default
+        self._config = "ProbeLKM10-LV"  # TODO un-hardcode default. Needs to be defined to init spectralradar stuff
         self._apodWindow = None
         self._displayAxis = 0
 
@@ -507,7 +505,8 @@ class FigureEight:
                                                                       1,  # All repeating patterns handled with loops!
                                                                       False)
 
-    def setScanPatternParams(self, patternSize, aLinesPerCross, bPadding, aLinesPerFlyback, repeats, patternAngle, flybackAngle):
+    def setScanPatternParams(self, patternSize, aLinesPerCross, bPadding, aLinesPerFlyback, repeats, patternAngle,
+                             flybackAngle):
         self._scanPatternSize = patternSize
         self._scanPatternAlinesPerCross = aLinesPerCross
         self._scanPatternBPadding = bPadding
