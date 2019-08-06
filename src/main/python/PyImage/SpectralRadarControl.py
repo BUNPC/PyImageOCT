@@ -436,13 +436,13 @@ class FigureEight:
         except FileExistsError:
             pass
         root = self.getFilepath() + '.npy'
-        out = np.empty([1024, self._scanPatternAlinesPerCross, 2, self._scanPatternTotalRepeats],
+        out = np.empty([self._roi_z[1]-self._roi_z[0], self._scanPatternAlinesPerCross, 2, self._scanPatternTotalRepeats],
                        dtype=np.complex64)  # TODO: implement max file size
 
         for i in np.arange(self._scanPatternTotalRepeats):
             temp = q.get()
 
-            bscan = self.process8(temp, self.scanPatternB1, ROI=(0, 1024), B2=self.scanPatternB2)
+            bscan = self.process8(temp, self.scanPatternB1, ROI=self._roi_z, B2=self.scanPatternB2)
 
             out[:, :, :, i] = bscan
 

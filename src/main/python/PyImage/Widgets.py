@@ -222,7 +222,7 @@ class Fig8GroupBox(QGroupBox):
 
         self.spinFlyback = QSpinBox()
         self.spinFlyback.setRange(2, 600)
-        self.spinFlyback.setValue(20)
+        self.spinFlyback.setValue(75)
         self.spinFlyback.valueChanged.connect(self.update)
 
         self.spinAngle = QSpinBox()
@@ -332,15 +332,15 @@ class QuantGroupBox(QGroupBox):
         self.spinLateralMax.valueChanged.connect(self.update)
 
         self.lateralBoxLayout = QHBoxLayout()
-        self.lateralBoxLayout.addWidget(self.spinLateralMin)
-        self.lateralBoxLayout.addWidget(self.spinLateralMax)
+        # self.lateralBoxLayout.addWidget(self.spinLateralMin)
+        # self.lateralBoxLayout.addWidget(self.spinLateralMax)  # TODO implement
 
         self.spinAxialMin = QSpinBox()
         self.spinAxialMin.setValue(8)
         self.spinAxialMin.valueChanged.connect(self.update)
 
         self.spinAxialMax = QSpinBox()
-        self.spinAxialMax.setValue(400)
+        self.spinAxialMax.setValue(228)
         self.spinAxialMax.valueChanged.connect(self.update)
 
         self.axialBoxLayout = QHBoxLayout()
