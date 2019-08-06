@@ -3,12 +3,13 @@ import numba
 from scipy.interpolate import interp1d
 
 
-def generateIdealFigureEightPositions(xsize, alinesPerX, rpt=1, flyback=20, flybackAngle=np.pi/2.58):
+def generateIdealFigureEightPositions(xdistance, alinesPerX, rpt=1, padB=0, angle=np.pi / 4, flyback=20, flybackAngle=np.pi / 2.58):
     """
     Generates figure-8 scan pattern positions with orthogonal cross.
     :param xdistance: Distance between adjacent scans in perpendicular B-scans
     :param alinesPerX: Number of A-lines in each orthogonal B-scan
-    :param rpt: Number of times to repeat the pattern in the 1D positions array
+    :param rpt: Number of times to repeat the pattern in the 1D positions array. Default is 1
+    :param angle: Angle by which to rotate the figure-8 in radians. Default is pi/4
     :param flyback: Number of A-lines in each flyback loop
     :param flybackAngle: Range over which to sweep flyback loops in radians
     :return: posRpt: 1D positions array for use with FreeformScanPattern; [x1,y1,x2,y2...] format
@@ -19,6 +20,10 @@ def generateIdealFigureEightPositions(xsize, alinesPerX, rpt=1, flyback=20, flyb
              N: Total number of A-scans in the pattern
              D: Distance between adjacent A-scans in the B-scans
     """
+    fbscale = 2
+    xsize = np.sqrt(2) / 4 * xdistance * (alinesPerX - 1)
+    rotmat = np.array([[np.cos(angle), np.sin(angle)], [-np.sin(angle), np.cos(angle)]])
+
     if rpt > 0:
         cross = np.linspace(-xsize, xsize, alinesPerX)
 
@@ -30,19 +35,19 @@ def generateIdealFigureEightPositions(xsize, alinesPerX, rpt=1, flyback=20, flyb
 
         D = np.sqrt((B1[0][0] - B1[0][1]) ** 2 + (B1[1][0] - B1[1][1]) ** 2)
 
-        x1 = 2.95 * xsize * np.cos(fb1)
-        y1 = (1.572 * xsize) * np.sin(2 * fb1)
-        x2 = 2.95 * xsize * np.cos(fb2)
-        y2 = (1.572 * xsize) * np.sin(2 * fb2)
+        x1 = 1.93 * fbscale * xsize * np.cos(fb1)
+        y1 = fbscale * xsize * np.sin(2 * fb1)
+        x2 = 1.93 * fbscale * xsize * np.cos(fb2)
+        y2 = fbscale * xsize * np.sin(2 * fb2)
 
         X = np.concatenate([x1, B1[0], x2, B2[0]])
         Y = np.concatenate([y1, B1[1], y2, B2[1]])
 
         b1 = np.concatenate(
-            [np.zeros(flyback), np.ones(alinesPerX), np.zeros(flyback), np.zeros(alinesPerX)]).astype(
+            [np.zeros(flyback+padB), np.ones(alinesPerX-2*padB), np.zeros(flyback+padB), np.zeros(alinesPerX)]).astype(
             np.bool)
         b2 = np.concatenate(
-            [np.zeros(flyback), np.zeros(alinesPerX), np.zeros(flyback), np.ones(alinesPerX)]).astype(
+            [np.zeros(flyback), np.zeros(alinesPerX), np.zeros(flyback+padB), np.ones(alinesPerX-2*padB),np.zeros(padB)]).astype(
             np.bool)
 
         pos = np.empty(int(2 * len(X)), dtype=np.float32)
@@ -50,38 +55,14 @@ def generateIdealFigureEightPositions(xsize, alinesPerX, rpt=1, flyback=20, flyb
         pos[0::2] = X
         pos[1::2] = Y
 
+        [X, Y] = np.matmul(rotmat, [X, Y])
+
         posRpt = np.tile(pos, rpt)
 
         N = len(X)
 
         return [posRpt, X, Y, b1, b2, N, D]
 
-@numba.jit(forceobj=True)
-def fig8ToBScan(A, N, B, AlinesPerX, apod, ROI=400, lam=None, start=14):
-    """
-    Converts a raw array of unsigned 16 bit integer fig-8 data from Telesto to ROI of complex spatial domain
-    :param A: Raw figure-8 data
-    :param N: The total number of A-lines in the figure-8 pattern
-    :param B: Boolean-type array representing indices in N-length A which make up a B-scan
-    :param AlinesPerX: Number of A-lines in each B-scan
-    :param apod: Apodization window. Must be 2048 in length
-    :param ROI: number of pixels from the top of the B-scan to return
-    :param lam: linear interpolation vector
-    :param start: start of ROI, used to exclude ringing from edge of window
-    :return: A 2D array of complex data
-    """
-
-    proc = np.empty([1024, AlinesPerX], dtype=np.complex64)
-    interpolated = np.empty([2048,AlinesPerX])
-
-    preprocessed = preprocess8(A,N,B,AlinesPerX,apod)
-
-    for n in np.arange(AlinesPerX):
-        k = interp1d(lam,preprocessed[:,n])
-        interpolated[:,n] = k(np.linspace(min(lam),max(lam),2048))
-        proc[:, n] = np.fft.ifft(interpolated[:,n])[0:1024].astype(np.complex64)
-
-    return proc[start:ROI]
 
 @numba.jit(forceobj=True)
 def preprocess8(A,N,B,AlinesPerX,apod):

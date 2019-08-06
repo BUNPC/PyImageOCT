@@ -220,9 +220,13 @@ class Fig8GroupBox(QGroupBox):
         self.spinALinesPerX.setValue(100)
         self.spinALinesPerX.valueChanged.connect(self.update)
 
+        self.spinBPadding = QSpinBox()
+        self.spinBPadding.setValue(0)
+        self.spinBPadding.valueChanged.connect(self.update)
+
         self.spinFlyback = QSpinBox()
         self.spinFlyback.setRange(2, 600)
-        self.spinFlyback.setValue(75)
+        self.spinFlyback.setValue(100)
         self.spinFlyback.valueChanged.connect(self.update)
 
         self.spinAngle = QSpinBox()
@@ -233,19 +237,19 @@ class Fig8GroupBox(QGroupBox):
 
         self.spinFlybackAngle = QDoubleSpinBox()
         self.spinFlybackAngle.setRange(40, 120)
-        self.spinFlybackAngle.setValue(69.5)
+        self.spinFlybackAngle.setValue(74.5)
         self.spinFlybackAngle.setSingleStep(0.5)
         self.spinFlybackAngle.setDecimals(1)
         self.spinFlybackAngle.setSuffix('°')
         self.spinFlybackAngle.valueChanged.connect(self.update)
 
-        self.spinFig8Size = QDoubleSpinBox()
-        self.spinFig8Size.setRange(0.00001, 3)
-        self.spinFig8Size.setSuffix(' mm')
-        self.spinFig8Size.setDecimals(6)
-        self.spinFig8Size.setSingleStep(0.00001)
-        self.spinFig8Size.setValue(0.08)
-        self.spinFig8Size.valueChanged.connect(self.update)
+        self.spinALineSpacing = QDoubleSpinBox()
+        self.spinALineSpacing.setRange(0.001, 2000)
+        self.spinALineSpacing.setSuffix(' um')
+        self.spinALineSpacing.setDecimals(2)
+        self.spinALineSpacing.setSingleStep(0.10)
+        self.spinALineSpacing.setValue(3.00)
+        self.spinALineSpacing.valueChanged.connect(self.update)
 
         self.spinFig8Total = QSpinBox()
         self.spinFig8Total.setRange(2, 5000)
@@ -256,12 +260,6 @@ class Fig8GroupBox(QGroupBox):
         self.spinAcqTime.setRange(10, 20000)
         self.spinAcqTime.setValue(1000)
         self.spinAcqTime.valueChanged.connect(self.update)
-
-        self.textDistance = QTextEdit()
-        self.textDistance.setReadOnly(True)
-        self.textDistance.setFixedHeight(24)
-        self.textDistance.setCursorWidth(0)
-        self.textDistance.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
 
         self.textRate = QTextEdit()
         self.textRate.setReadOnly(True)
@@ -276,11 +274,11 @@ class Fig8GroupBox(QGroupBox):
         self.textTotal.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
 
         self.layout.addRow(QLabel("A-lines per B-scan"), self.spinALinesPerX)
+        self.layout.addRow(QLabel("B-Scan padding"), self.spinBPadding)
         self.layout.addRow(QLabel("A-lines per flyback"), self.spinFlyback)
-        self.layout.addRow(QLabel("Scan-pattern angle"), self.spinAngle)  # TODO fix rotation mechanic
+        self.layout.addRow(QLabel("Distance between A-lines in B-scan"), self.spinALineSpacing)
+        self.layout.addRow(QLabel("Scan-pattern angle"), self.spinAngle)
         self.layout.addRow(QLabel("Flyback angle"), self.spinFlybackAngle)
-        self.layout.addRow(QLabel("Figure-8 width"), self.spinFig8Size)
-        self.layout.addRow(QLabel("Distance between adjacent A-scans"), self.textDistance)
         self.layout.addRow(QLabel("Total A-scans in each figure-8"), self.textTotal)
         self.layout.addRow(QLabel("Rate of figure-8 acquisition"), self.textRate)
         self.layout.addRow(QLabel("Total Figure-8s to acquire"), self.spinFig8Total)
@@ -289,14 +287,16 @@ class Fig8GroupBox(QGroupBox):
         self.update()
 
     def update(self):
-        self.controller.setScanPatternParams(self.spinFig8Size.value(),
+
+        self.spinBPadding.setRange(0,int((self.spinALinesPerX.value()-1)/2))
+        self.controller.setScanPatternParams(self.spinALineSpacing.value()*10**-3,  # Convert from um to mm
                                              self.spinALinesPerX.value(),
+                                             self.spinBPadding.value(),
                                              self.spinFlyback.value(),
                                              self.spinFig8Total.value(),
-                                             self.spinAngle.value()*(np.pi/180),
-                                             self.spinFlybackAngle.value()*(np.pi/180)) # Conversion to rad happens here!
+                                             self.spinAngle.value() * (np.pi/180),
+                                             self.spinFlybackAngle.value() * (np.pi/180)) # Conversion to rad happens here!
 
-        self.textDistance.setText(str(self.controller.scanPatternD * 10 ** 6)[0:8] + ' nm')
         self.textTotal.setText(str(self.controller.scanPatternN))
 
         w = 1 / (1 / self.controller.getRateValue() * self.controller.scanPatternN)
@@ -306,7 +306,7 @@ class Fig8GroupBox(QGroupBox):
     def enabled(self, bool):
         self.spinALinesPerX.setEnabled(bool)
         self.spinFlyback.setEnabled(bool)
-        self.spinFig8Size.setEnabled(bool)
+        self.spinALineSpacing.setEnabled(bool)
         self.spinAngle.setEnabled(bool)
         self.spinFlybackAngle.setEnabled(bool)
         self.spinAcqTime.setEnabled(bool)
@@ -332,15 +332,15 @@ class QuantGroupBox(QGroupBox):
         self.spinLateralMax.valueChanged.connect(self.update)
 
         self.lateralBoxLayout = QHBoxLayout()
-        # self.lateralBoxLayout.addWidget(self.spinLateralMin)
-        # self.lateralBoxLayout.addWidget(self.spinLateralMax)  # TODO implement
+        self.lateralBoxLayout.addWidget(self.spinLateralMin)
+        self.lateralBoxLayout.addWidget(self.spinLateralMax)
 
         self.spinAxialMin = QSpinBox()
         self.spinAxialMin.setValue(8)
         self.spinAxialMin.valueChanged.connect(self.update)
 
         self.spinAxialMax = QSpinBox()
-        self.spinAxialMax.setValue(228)
+        self.spinAxialMax.setValue(400)
         self.spinAxialMax.valueChanged.connect(self.update)
 
         self.axialBoxLayout = QHBoxLayout()
