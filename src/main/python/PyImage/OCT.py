@@ -43,6 +43,8 @@ def generateIdealFigureEightPositions(xdistance, alinesPerX, rpt=1, padB=0, angl
         X = np.concatenate([x1, B1[0], x2, B2[0]])
         Y = np.concatenate([y1, B1[1], y2, B2[1]])
 
+        [X, Y] = np.matmul(rotmat, [X, Y])
+
         b1 = np.concatenate(
             [np.zeros(flyback+padB), np.ones(alinesPerX-2*padB), np.zeros(flyback+padB), np.zeros(alinesPerX)]).astype(
             np.bool)
@@ -54,8 +56,6 @@ def generateIdealFigureEightPositions(xdistance, alinesPerX, rpt=1, padB=0, angl
 
         pos[0::2] = X
         pos[1::2] = Y
-
-        [X, Y] = np.matmul(rotmat, [X, Y])
 
         posRpt = np.tile(pos, rpt)
 

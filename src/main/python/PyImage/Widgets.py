@@ -290,7 +290,7 @@ class Fig8GroupBox(QGroupBox):
 
         self.spinBPadding.setRange(0,int((self.spinALinesPerX.value()-1)/2))
         self.controller.setScanPatternParams(self.spinALineSpacing.value()*10**-3,  # Convert from um to mm
-                                             self.spinALinesPerX.value(),
+                                             self.spinALinesPerX.value(),  # Do not subtract bPadding!
                                              self.spinBPadding.value(),
                                              self.spinFlyback.value(),
                                              self.spinFig8Total.value(),
@@ -311,6 +311,7 @@ class Fig8GroupBox(QGroupBox):
         self.spinFlybackAngle.setEnabled(bool)
         self.spinAcqTime.setEnabled(bool)
         self.spinFig8Total.setEnabled(bool)
+        self.spinBPadding.setEnabled(bool)
 
 
 class QuantGroupBox(QGroupBox):
@@ -447,6 +448,7 @@ class BScanViewer(PyQtG.ImageView):
         self.ui.menuBtn.hide()
 
     def update(self,data):
+        self.clear()
         self.setImage(data, autoLevels=False, levels=(-100, -2))
 
     def enabled(self, bool):
