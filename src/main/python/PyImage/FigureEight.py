@@ -1,14 +1,16 @@
 import os
+import time
 import threading
 from copy import deepcopy
 from queue import Queue, Full
 
+import h5py
 from PyQt5.QtWidgets import QWidget, QGridLayout
 from pyqtgraph.Qt import QtGui
 
+from src.main.python.PySpectralRadar import PySpectralRadar
 from src.main.python.PyImage import Widgets
 from src.main.python.PyImage.OCT import *
-from src.main.python.PySpectralRadar import PySpectralRadar
 
 
 class FigureEight:
@@ -25,7 +27,7 @@ class FigureEight:
         self._scanPatternSize = None
         self._scanPatternAlinesPerCross = None
         self._scanPatternAlinesPerFlyback = None
-        self._scanPatternTotalRepeats = None  # Deprecated
+        self._scanPatternTotalRepeats = None
         self._scanPatternAngle = None
         self._scanPatternFlybackAngle = None
 
@@ -40,12 +42,11 @@ class FigureEight:
 
         # ROI
         self._roi_z = (None, None)
-        self._roi_x = (None, None)  # Deprecated
 
         # Device config
         self._rateValue = 76000  # Rate in hz. NOT FUNCTIONAL
         self._rateEnum = 0
-        self._config = "ProbeLKM10-LV"  # TODO un-hardcode default. Needs to be defined to init spectralradar stuff
+        self._config = "ProbeLKM10-LV"  # TODO un-hardcode default
         self._apodWindow = None
         self._displayAxis = 0
 
@@ -129,7 +130,7 @@ class FigureEight:
 
         # Setup
 
-        # self.start()
+        # self.start()  # Comment out for offline testing
 
     def start(self):
         init = threading.Thread(target=self.initializeSpectralRadar())
@@ -195,6 +196,8 @@ class FigureEight:
         self._rateEnum = rateLUT[rate]
         self._rateValue = values[self._rateEnum]
 
+        self.groupScanParams.update()
+
         PySpectralRadar.setCameraPreset(self._device, self._probe, self._proc, self._rateEnum)
 
     def getRateValue(self):
@@ -242,9 +245,8 @@ class FigureEight:
     def getLambda(self):
         return self._lam
 
-    def setROI(self, axial, lateral):
+    def setROI(self, axial):
         self._roi_z = axial
-        self._roi_x = lateral
 
     def initScan(self):
         print('Init scan')
@@ -434,13 +436,13 @@ class FigureEight:
         except FileExistsError:
             pass
         root = self.getFilepath() + '.npy'
-        out = np.empty([1024, self._scanPatternAlinesPerCross, 2, self._scanPatternTotalRepeats],
+        out = np.empty([self._roi_z[1]-self._roi_z[0], self._scanPatternAlinesPerCross, 2, self._scanPatternTotalRepeats],
                        dtype=np.complex64)  # TODO: implement max file size
 
         for i in np.arange(self._scanPatternTotalRepeats):
             temp = q.get()
 
-            bscan = self.process8(temp, self.scanPatternB1, ROI=(0, 1024), B2=self.scanPatternB2)
+            bscan = self.process8(temp, self.scanPatternB1, ROI=self._roi_z, B2=self.scanPatternB2)
 
             out[:, :, :, i] = bscan
 
@@ -505,10 +507,9 @@ class FigureEight:
                                                                       1,  # All repeating patterns handled with loops!
                                                                       False)
 
-    def setScanPatternParams(self, patternSize, aLinesPerCross, bPadding, aLinesPerFlyback, repeats, patternAngle,
-                             flybackAngle):
+    def setScanPatternParams(self, patternSize, aLinesPerCross, bPadding, aLinesPerFlyback, repeats, patternAngle, flybackAngle):
         self._scanPatternSize = patternSize
-        self._scanPatternAlinesPerCross = aLinesPerCross
+        self._scanPatternAlinesPerCross = aLinesPerCross - bPadding  # Padding subtracted here
         self._scanPatternBPadding = bPadding
         self._scanPatternAlinesPerFlyback = aLinesPerFlyback
         self._scanPatternTotalRepeats = repeats

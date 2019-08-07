@@ -221,17 +221,17 @@ class Fig8GroupBox(QGroupBox):
         self.spinALinesPerX.valueChanged.connect(self.update)
 
         self.spinBPadding = QSpinBox()
-        self.spinBPadding.setValue(0)
+        self.spinBPadding.setValue(20)
         self.spinBPadding.valueChanged.connect(self.update)
 
         self.spinFlyback = QSpinBox()
         self.spinFlyback.setRange(2, 600)
-        self.spinFlyback.setValue(100)
+        self.spinFlyback.setValue(50)
         self.spinFlyback.valueChanged.connect(self.update)
 
         self.spinAngle = QSpinBox()
         self.spinAngle.setRange(0, 360)
-        self.spinAngle.setValue(45)
+        self.spinAngle.setValue(43)
         self.spinAngle.setSuffix('°')
         self.spinAngle.valueChanged.connect(self.update)
 
@@ -288,9 +288,9 @@ class Fig8GroupBox(QGroupBox):
 
     def update(self):
 
-        self.spinBPadding.setRange(0,int((self.spinALinesPerX.value()-1)/2))
+        self.spinBPadding.setRange(0,int((self.spinALinesPerX.value()-1)))
         self.controller.setScanPatternParams(self.spinALineSpacing.value()*10**-3,  # Convert from um to mm
-                                             self.spinALinesPerX.value(),
+                                             self.spinALinesPerX.value(),  # Do not subtract bPadding!
                                              self.spinBPadding.value(),
                                              self.spinFlyback.value(),
                                              self.spinFig8Total.value(),
@@ -300,7 +300,7 @@ class Fig8GroupBox(QGroupBox):
         self.textTotal.setText(str(self.controller.scanPatternN))
 
         w = 1 / (1 / self.controller.getRateValue() * self.controller.scanPatternN)
-        self.textRate.setText(str(w)[0:10] + ' hz ')
+        self.textRate.setText(str(w)[0:5] + ' hz ')
         self.controller.displayPattern()
 
     def enabled(self, bool):
@@ -311,6 +311,7 @@ class Fig8GroupBox(QGroupBox):
         self.spinFlybackAngle.setEnabled(bool)
         self.spinAcqTime.setEnabled(bool)
         self.spinFig8Total.setEnabled(bool)
+        self.spinBPadding.setEnabled(bool)
 
 
 class QuantGroupBox(QGroupBox):
@@ -321,19 +322,6 @@ class QuantGroupBox(QGroupBox):
         self.controller = controller
 
         self.layout = QFormLayout()
-
-        self.spinLateralMin = QSpinBox()
-        self.spinLateralMin.setValue(0)
-        self.spinLateralMin.valueChanged.connect(self.update)
-
-        self.spinLateralMax = QSpinBox()
-        self.spinLateralMax.setValue(controller.getAlinesPerX())
-        self.spinLateralMax.setValue(self.controller.getAlinesPerX())
-        self.spinLateralMax.valueChanged.connect(self.update)
-
-        self.lateralBoxLayout = QHBoxLayout()
-        self.lateralBoxLayout.addWidget(self.spinLateralMin)
-        self.lateralBoxLayout.addWidget(self.spinLateralMax)
 
         self.spinAxialMin = QSpinBox()
         self.spinAxialMin.setValue(8)
@@ -347,7 +335,6 @@ class QuantGroupBox(QGroupBox):
         self.axialBoxLayout.addWidget(self.spinAxialMin)
         self.axialBoxLayout.addWidget(self.spinAxialMax)
 
-        self.layout.addRow(QLabel('B-Scan ROI start-stop'), self.lateralBoxLayout)
         self.layout.addRow(QLabel('Axial ROI top-bottom'), self.axialBoxLayout)
 
         self.setLayout(self.layout)
@@ -355,14 +342,12 @@ class QuantGroupBox(QGroupBox):
         self.update()
 
     def update(self):
-        self.spinLateralMax.setRange(1, self.controller.getAlinesPerX())
-        self.spinLateralMin.setRange(0, self.spinLateralMax.value()-1)
 
         self.spinAxialMax.setRange(self.spinAxialMin.value()+1, 1024)
 
         axial = (self.spinAxialMin.value(), self.spinAxialMax.value())
-        lateral = (self.spinLateralMin.value(), self.spinLateralMax.value())
-        self.controller.setROI(axial, lateral)
+
+        self.controller.setROI(axial)
 
     def enabled(self, bool):
         # For now, ROI change during scan works fine.
@@ -434,24 +419,6 @@ class PlotWidget2D(PyQtG.PlotWidget):
         pass
 
 
-class BScanView(PyQtG.GraphicsLayoutWidget):  # Doesn't work for some reason. TODO fix
-
-    def __init__(self, aspect=0.5):
-
-        super().__init__()
-
-        self.aspect = aspect
-
-        self.viewbox = self.addViewBox(row=1,col=1)
-        self.viewbox.setAspectLocked()
-        self.image = PyQtG.ImageItem()
-        self.viewbox.addItem(self.image)
-
-    def update(self, data):
-        self.image.clear()
-        self.image.setImage(data, autoLevels=False, levels=(-100, -2))
-
-
 class BScanViewer(PyQtG.ImageView):
 
     def __init__(self):
@@ -463,6 +430,7 @@ class BScanViewer(PyQtG.ImageView):
         self.ui.menuBtn.hide()
 
     def update(self,data):
+        self.clear()
         self.setImage(data, autoLevels=False, levels=(-100, -2))
 
     def enabled(self, bool):
