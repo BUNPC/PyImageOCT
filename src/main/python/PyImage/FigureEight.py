@@ -1,5 +1,7 @@
 import threading
 
+from PyImage.processeight import ProcessEight
+
 from PyQt5.QtWidgets import QWidget, QGridLayout
 
 from src.main.python.PyImage import Widgets
@@ -204,7 +206,9 @@ class FigureEight:
     def init_scan(self):
         print('Init scan')
 
-        pass
+        processing = ProcessEight(self)
+
+        processing.start_preprocessing(n=3)
 
     def init_acquisition(self):
         print('Init acq')

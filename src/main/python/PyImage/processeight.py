@@ -12,11 +12,15 @@ class ProcessEight:
 
         self.dropped_frames = 0
 
-    def initialize(self):
+        self._maxframes = 4
+        self._maxdisplacements = 2
 
         self._raw_frames = Queue(maxsize=self._maxframes)
         self._proc_frames = Queue()
         self._displacements = Queue(maxsize=self._maxdisplacements)
+
+        self._preprocessing_pool = []
+        self._quant_pool = []
 
     def put_frame(self,frame):
 
@@ -26,7 +30,7 @@ class ProcessEight:
 
         except Full:
 
-            self.dropped_frames += 1
+            pass
 
     def get_proccessed_frame(self):
 
@@ -34,20 +38,11 @@ class ProcessEight:
 
             self._proc_frames.get()
 
+        except Empty:
 
-class PreprocessingWorker(Thread):
+            pass
 
-    def __init__(self, controller, raw_queue, proc_queue):
-
-        super(PreprocessingWorker, self).__init__()
-
-        self.controller = controller
-        self._raw_queue = raw_queue
-        self._proc_queue = proc_queue
-
-        self.stop = Event()
-
-    def run(self):
+    def start_preprocessing(self,n=1):
 
         x = len(self.controller.scanpattern_b1)
         n = len(self.controller.scanpattern_x)
@@ -55,23 +50,49 @@ class PreprocessingWorker(Thread):
         b2 = self.controller.scanpattern_b2
         window = self.controller.get_apodwindow()
 
-        while not self.stop.is_set():
+        for i in range(n):
 
-            try:
+            worker = PreprocessingWorker(self._raw_frames, self._proc_frames, x, n, b1, b2, window)
+            self._preprocessing_pool.append(worker)
 
-                raw = self._raw_queue.get()
+        for process in self._preprocessing_pool:
 
-                proc = self.preprocess_jitted(raw, x, n, b1, b2, window)
+            process.start()
 
-                self._proc_queue.put(proc)
 
-            except Empty:
 
-                continue
+class PreprocessingWorker(Process):
 
-    def join(self, timeout=None):
-        self.stoprequest.set()
-        super(WorkerThread, self).join(timeout)
+    def __init__(self, raw_queue, proc_queue, x, n, b1, b2, window, id=0):
+
+        super(PreprocessingWorker, self).__init__()
+
+        self._raw_queue = raw_queue
+        self._proc_queue = proc_queue
+        self.id = id
+
+        self.x = x
+        self.n = n
+        self.b1 = b1
+        self.b2 = b2
+        self.window = window
+
+    def run(self):
+
+        print('Doing!')
+
+        try:
+
+            raw = self._raw_queue.get()
+
+            proc = self.preprocess_jitted(raw, self.x, self.n, self.b1, self.b2, self.window)
+
+            self._proc_queue.put(proc)
+
+        except Empty:
+
+            pass
+
 
     @numba.jit(forceobj=True, fastmath=True, cache=True)  # Array creation cannot be compiled
     def preprocess_jitted(raw, x, n, b1, b2, window):
@@ -95,14 +116,14 @@ class PreprocessingWorker(Thread):
         np.divide(mean, n, out=mean)
         np.divide(window, mean, out=apod)
 
-        apodize_fft_jitted(reshaped, x, apod, im)  # TODO implement lambda->k interp
+        self.apodize_fft_jitted(reshaped, x, apod, im)  # TODO implement lambda->k interp
 
         return im
 
-    @numba.njit(fastmath=True, cache=True)
     """
     Subfunction of preprocess that can be compiled in nopython mode
     """
+    @numba.njit(fastmath=True, cache=True)
     def reshape_jitted(raw, N, b1, b2, reshaped, mean):
         flat = raw.flatten()
         ib1 = 0
