@@ -63,8 +63,7 @@ class FigureEight:
         # OS
         self._threads = []
         self.active = False
-        self._RawQueue = Queue()
-        self._ProcQueue = Queue(maxsize=1)
+        self.Processing = None  # ProcessEight object
 
         # Qt
         self._widgets = []
@@ -130,7 +129,7 @@ class FigureEight:
 
         # Setup
 
-        # self.start()  # Comment out for offline testing
+        self.start()  # Comment out for offline testing
 
     def start(self):
         init = threading.Thread(target=self.initializeSpectralRadar())
@@ -313,17 +312,13 @@ class FigureEight:
     def scan(self):
 
         self.progress.setText('Scanning...')
-        running = True
-        processingQueue = self.getProcessingQueue()
         counter = 0
 
         rawDataHandle = PySpectralRadar.createRawData()
 
-        self.getRawData(rawDataHandle)
-
         self.startMeasurement()
 
-        while running and self.active:
+        while self.active:
 
             self.getRawData(rawDataHandle)
 
@@ -335,57 +330,19 @@ class FigureEight:
 
             if np.size(temp) > 0:
 
-                if counter % interval == 0:
+                new = deepcopy(temp)
 
-                    new = deepcopy(temp)
+                try:
 
-                    try:
+                    processingQueue.put(new)
 
-                        processingQueue.put(new)
+                except Full:
 
-                    except Full:
-
-                        pass
+                    pass
 
             counter += 1
 
         PySpectralRadar.clearRawData(rawDataHandle)
-
-    def acquire(self):
-
-        rawQueue = self.getRawQueue()
-
-        rawDataHandle = PySpectralRadar.createRawData()
-
-        self.getRawData(rawDataHandle)
-
-        self.startMeasurement()
-
-        for i in np.arange(self._scanPatternTotalRepeats):
-
-            self.getRawData(rawDataHandle)
-
-            dim = PySpectralRadar.getRawDataShape(rawDataHandle)
-
-            temp = np.empty(dim, dtype=np.uint16)
-
-            PySpectralRadar.copyRawDataContent(rawDataHandle, temp)
-
-            new = deepcopy(temp)
-
-            try:
-
-                rawQueue.put(new)
-
-            except Full:
-
-                pass
-
-        self.stopMeasurement()
-
-        PySpectralRadar.clearRawData(rawDataHandle)
-
-        print('Acquisition complete')
 
 
     def export_npy(self):

@@ -6,7 +6,8 @@ class ProcessEight:
 
     def __init__(self,controller):
 
-        pass
+        self.controller = controller
+        self._threads = []
 
     def initialize(self):
 
@@ -26,4 +27,6 @@ class ProcessEight:
         except Empty:
 
             pass
+
+
 
