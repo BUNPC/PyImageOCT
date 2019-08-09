@@ -207,6 +207,23 @@ class FigureEight:
         self.abort()
         self.close_spectralradar()
 
+    def init_scan(self):
+        print('Init scan')
+
+        pass
+
+    def init_acquisition(self):
+        print('Init acq')
+
+        pass
+
+    def init_tracking(self):
+        print('Init tracking')
+
+        pass
+
+    # Misc getters and setters
+
     def set_config(self, config):
         configLUT = {
             "10X": "ProbeLKM10-LV",
@@ -266,22 +283,6 @@ class FigureEight:
     def get_filepath(self):
         return self._file_experimentdirectory + '/' + self._file_experimentname
 
-
-    def init_scan(self):
-        print('Init scan')
-
-        pass
-
-    def init_acquisition(self):
-        print('Init acq')
-
-        pass
-
-    def init_tracking(self):
-        print('Init tracking')
-
-        pass
-
     def get_scanpattern(self):
         return self._scanpattern
 
@@ -309,7 +310,7 @@ class FigureEight:
                                                 rpt=1,  # All repeating patterns handled with loops!
                                                 angle=angle,
                                                 flyback=aperflyback,
-                                                flybackAngle=flybackangle)
+                                                flybackangle=flybackangle)
 
     def display_pattern(self):
         self.plotPattern.plotFigEight(self.scanpattern_x[np.invert(self.scanpattern_b1 + self.scanpattern_b2)],
@@ -390,12 +391,6 @@ class FigureEight:
     #
     #     self.stopMeasurement()
     #     PySpectralRadar.clearRawData(rawDataHandle)
-
-    def _export_npy(self):
-
-        self.progressBar.setText('Processing...')
-
-        pass
 
     # Wrappers for SpectralRadar functions that call controller members
 

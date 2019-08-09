@@ -35,7 +35,7 @@ class ProcessEight:
 
             return 0
 
-    def _preprocess_frames(self):
+    def __preprocess_frames(self):
 
 
 

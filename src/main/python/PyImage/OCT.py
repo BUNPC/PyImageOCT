@@ -1,9 +1,12 @@
 import numpy as np
 import numba
-from scipy.interpolate import interp1d
 
+"""
+Misc toolbox for OCT imaging
+author: sstucker
+"""
 
-def generate_figure8(xdistance, alinesPerX, rpt=1, padB=0, angle=np.pi / 4, flyback=20, flybackAngle=np.pi / 2.58):
+def generate_figure8(xdistance, alinesPerX, rpt=1, padB=0, angle=np.pi / 4, flyback=20, flybackangle=np.pi / 2.58):
     """
     Generates figure-8 scan pattern positions with orthogonal cross.
     :param xdistance: Distance between adjacent scans in perpendicular B-scans
@@ -11,7 +14,7 @@ def generate_figure8(xdistance, alinesPerX, rpt=1, padB=0, angle=np.pi / 4, flyb
     :param rpt: Number of times to repeat the pattern in the 1D positions array. Default is 1
     :param angle: Angle by which to rotate the figure-8 in radians. Default is pi/4
     :param flyback: Number of A-lines in each flyback loop
-    :param flybackAngle: Range over which to sweep flyback loops in radians
+    :param flybackangle: Range over which to sweep flyback loops in radians
     :return: posRpt: 1D positions array for use with FreeformScanPattern; [x1,y1,x2,y2...] format
              X: X coordinates of a single figure-8
              Y: Y coordinates of a single figure-8
@@ -27,8 +30,8 @@ def generate_figure8(xdistance, alinesPerX, rpt=1, padB=0, angle=np.pi / 4, flyb
     if rpt > 0:
         cross = np.linspace(-xsize, xsize, alinesPerX)
 
-        fb1 = np.linspace(-flybackAngle, flybackAngle, flyback, dtype=np.float32)
-        fb2 = np.linspace(-flybackAngle + np.pi, flybackAngle + np.pi, flyback, dtype=np.float32)
+        fb1 = np.linspace(-flybackangle, flybackangle, flyback, dtype=np.float32)
+        fb2 = np.linspace(-flybackangle + np.pi, flybackangle + np.pi, flyback, dtype=np.float32)
 
         B1 = np.array([cross[::-1], cross[::-1]])
         B2 = np.array([cross, -cross])
