@@ -18,47 +18,47 @@ class FigureEight:
     def __init__(self, parent):
 
         # File params
-        self._fileExperimentName = None
-        self._fileExperimentDirectory = None
-        self._fileMaxSize = None
-        self._fileType = None
+        self._file_experimentname = None
+        self._file_experimentdirectory = None
+        self._file_maxsize = None
+        self._file_type = None
 
         # Scan pattern params
-        self._scanPatternSize = None
-        self._scanPatternAlinesPerCross = None
-        self._scanPatternAlinesPerFlyback = None
-        self._scanPatternTotalRepeats = None
-        self._scanPatternAngle = None
-        self._scanPatternFlybackAngle = None
+        self._scanpattern_size = None
+        self._scanpattern_aperb = None
+        self._scanpattern_aperflyback = None
+        self._scanpattern_rpt = None
+        self._scanpattern_angle = None
+        self._scanpattern_fbangle = None
 
         # Scan geometry
-        self.scanPatternPositions = None
-        self.scanPatternX = None
-        self.scanPatternY = None
-        self.scanPatternB1 = None
-        self.scanPatternB2 = None
-        self.scanPatternN = None
-        self.scanPatternD = None
+        self.scanpattern_positions = None
+        self.scanpattern_x = None
+        self.scanpattern_y = None
+        self.scanpattern_b1 = None
+        self.scanpattern_b2 = None
+        self.scanpattern_n = None
+        self.scanpattern_d = None
 
         # ROI
         self._roi_z = (None, None)
 
         # Device config
-        self._rateValue = 76000  # Rate in hz. NOT FUNCTIONAL
-        self._rateEnum = 0
+        self._ratevalue = 76000  # Rate in hz. NOT FUNCTIONAL
+        self._rateenum = 0
         self._config = "ProbeLKM10-LV"  # TODO un-hardcode default
-        self._apodWindow = None
-        self._displayAxis = 0
+        self._apodwindow = None
+        self._displayaxis = 0
 
         # SpectralRadar handles
         self._device = None
         self._probe = None
         self._proc = None
-        self._scanPattern = None
-        self._triggerType = None
-        self._acquisitionType = None
-        self._triggerTimeout = None
-        self._lam = None
+        self._scanpattern = None
+        self._triggertype = None
+        self._acquisitiontype = None
+        self._trigger_timeout = None
+        self._lam = None  # An array of wavelength data loaded from disk
 
         # OS
         self._threads = []
@@ -117,8 +117,8 @@ class FigureEight:
         self._widgets.append(self.groupQuantParams)
 
         # Progress bar
-        self.progress = Widgets.ProgressWidget(self)
-        self.tabGrid.addWidget(self.progress, 3, 0, 1, 2)
+        self.progressBar = Widgets.ProgressWidget(self)
+        self.tabGrid.addWidget(self.progressBar, 3, 0, 1, 2)
 
         # Master scan/acquire/stop buttons
         self.controlButtons = Widgets.ControlGroupBox('Control', self)
@@ -132,325 +132,309 @@ class FigureEight:
         self.start()  # Comment out for offline testing
 
     def start(self):
-        init = threading.Thread(target=self.initializeSpectralRadar())
+        init = threading.Thread(target=self.initialize_spectralradar())
         init.start()
         init.join()
 
-    def initializeSpectralRadar(self):  # TODO Implement on/off switch or splash while loading
+    def initialize_spectralradar(self):  # TODO Implement on/off switch or splash while loading
         for widget in self._widgets:
             widget.enabled(False)
-        self.progress.setText('Init device')
+        self.progressBar.setText('Init device')
         self._device = PySpectralRadar.initDevice()
-        self.progress.setProgress(2)
-        self.progress.setText('Init probe')
+        self.progressBar.setProgress(2)
+        self.progressBar.setText('Init probe')
         self._probe = PySpectralRadar.initProbe(self._device, self._config)
-        self.progress.setProgress(4)
+        self.progressBar.setProgress(4)
         self._proc = PySpectralRadar.createProcessingForDevice(self._device)
-        self.progress.setText('Init camera')
+        self.progressBar.setText('Init camera')
         PySpectralRadar.setCameraPreset(self._device, self._probe, self._proc, 0)  # 0 is the main camera
-        self._triggerType = PySpectralRadar.Device_TriggerType.Trigger_FreeRunning  # Default
-        self._triggerTimeout = 5  # Number from old labVIEW program
-        self.progress.setProgress(6)
-        self._acquisitionType = PySpectralRadar.AcquisitionType.Acquisition_AsyncContinuous
-        PySpectralRadar.setTriggerMode(self._device, self._triggerType)
-        PySpectralRadar.setTriggerTimeoutSec(self._device, self._triggerTimeout)
-        self.updateScanPattern()
-        self.progress.setProgress(7)
-        self.progress.setText('Loading chirp')
+        self._triggertype = PySpectralRadar.Device_TriggerType.Trigger_FreeRunning  # Default
+        self._trigger_timeout = 5  # Number from old labVIEW program
+        self.progressBar.setProgress(6)
+        self._acquisitiontype = PySpectralRadar.AcquisitionType.Acquisition_AsyncContinuous
+        PySpectralRadar.setTriggerMode(self._device, self._triggertype)
+        PySpectralRadar.setTriggerTimeoutSec(self._device, self._trigger_timeout)
+        self._update_scanpattern()
+        self.progressBar.setProgress(7)
+        self.progressBar.setText('Loading chirp')
         try:
             self._lam = np.load('lam.npy')
         except FileNotFoundError:
-            self.progress.setText('Chirp not found')
+            self.progressBar.setText('Chirp not found')
             self._lam = np.empty(2048)
             for y in np.arange(2048):
                 self._lam[y] = PySpectralRadar.getWavelengthAtPixel(self._device, y)
             np.save('lam', self._lam)
-        self.progress.setProgress(10)
-        self.progress.setText('Done!')
+        self.progressBar.setProgress(10)
+        self.progressBar.setText('Done!')
         print('Telesto initialized successfully.')
         for widget in self._widgets:
             widget.enabled(True)
-        self.progress.setProgress(0)
-        self.progress.setText('Ready')
+        self.progressBar.setProgress(0)
+        self.progressBar.setText('Ready')
 
-    def setConfig(self, config):
+    def close_spectralradar(self):
+        """
+        Safely releases SpectralRadar objects
+        """
+        PySpectralRadar.clearScanPattern(self._scanpattern)
+        PySpectralRadar.closeProcessing(self._proc)
+        PySpectralRadar.closeProbe(self._probe)
+        PySpectralRadar.closeDevice(self._device)
+
+    def abort(self):
+        """
+        Stops scanning and re-enables GUI.  TODO: Make GUI manipulation thread-safe
+        """
+        print('Abort')
+
+        if self.active:
+
+            self.active = False
+
+            for widget in self._widgets:
+
+                widget.enabled(True)
+
+        self.progressBar.setText('Stopped')
+        self.progressBar.setProgress(0)
+
+    def close_window(self):
+        """
+        Convenience function for closing of window
+        """
+        print('Close')
+        self.abort()
+        self.close_spectralradar()
+
+    def set_config(self, config):
         configLUT = {
             "10X": "ProbeLKM10-LV",
             "5X": "ProbeLKM05-LV",
             "2X": "LSM02-LV"
         }
 
-        self.closeSpectralRadar()
+        self.close_spectralradar()
         self._config = configLUT[config]
-        self.initializeSpectralRadar()
+        self.initialize_spectralradar()
 
         print('config changed')
 
-    def setRate(self, rate):
+    def set_rate(self, rate):
         rateLUT = {
             "76 kHz": 0,
             "146 kHz": 1
         }
         values = [76000, 146000]  # Hz
-        self._rateEnum = rateLUT[rate]
-        self._rateValue = values[self._rateEnum]
+        self._rateenum = rateLUT[rate]
+        self._ratevalue = values[self._rateenum]
 
         self.groupScanParams.update()
 
-        PySpectralRadar.setCameraPreset(self._device, self._probe, self._proc, self._rateEnum)
+        PySpectralRadar.setCameraPreset(self._device, self._probe, self._proc, self._rateenum)
 
-    def getRateValue(self):
-        return self._rateValue
+    def get_ratevalue(self):
+        return self._ratevalue
 
-    def closeSpectralRadar(self):
-        PySpectralRadar.clearScanPattern(self._scanPattern)
-        PySpectralRadar.closeProcessing(self._proc)
-        PySpectralRadar.closeProbe(self._probe)
-        PySpectralRadar.closeDevice(self._device)
+    def get_triggertype(self):
+        return self._triggertype
 
-    def startMeasurement(self):
-        PySpectralRadar.startMeasurement(self._device, self._scanPattern, self._acquisitionType)
+    def get_acquisitiontype(self):
+        return self._acquisitiontype
 
-    def setComplexDataOutput(self, complexDataHandle):
-        PySpectralRadar.setComplexDataOutput(self._proc, complexDataHandle)
+    def set_displayaxis(self, axis):
+        self._displayaxis = axis
 
-    def getRawData(self, rawDataHandle):
-        PySpectralRadar.getRawData(self._device, rawDataHandle)
+    def set_apodwindow(self, window):
+        self._apodwindow = window
 
-    def stopMeasurement(self):
-        PySpectralRadar.stopMeasurement(self._device)
+    def get_apodwindow(self):
+        return self._apodwindow
 
-    def getTriggerType(self):
-        return self._triggerType
-
-    def getAcquisitionType(self):
-        return self._acquisitionType
-
-    def getRawQueue(self):
-        return self._RawQueue
-
-    def getProcessingQueue(self):
-        return self._ProcQueue
-
-    def setDisplayAxis(self, axis):
-        self._displayAxis = axis
-
-    def setApodWindow(self, window):
-        self._apodWindow = window
-
-    def getApodWindow(self):
-        return self._apodWindow
-
-    def getLambda(self):
+    def get_lambda(self):
         return self._lam
 
-    def setROI(self, axial):
+    def set_roi(self, axial):
         self._roi_z = axial
 
-    def initScan(self):
+    def set_file_params(self, experimentDirectory, experimentName, maxSize, fileType):
+        self._file_experimentdirectory = experimentDirectory
+        self._file_experimentname = experimentName
+        self._file_maxsize = maxSize
+        self._file_type = fileType
+
+    def get_filepath(self):
+        return self._file_experimentdirectory + '/' + self._file_experimentname
+
+
+    def init_scan(self):
         print('Init scan')
-
-        self.active = True
-
-        self.updateScanPattern()
-
-        for widget in self._widgets:
-            widget.enabled(False)
-
-        scan = threading.Thread(target=self.scan)
-        disp = threading.Thread(target=self.display)
-        self._threads.append(scan)
-        self._threads.append(disp)
-
-        for thread in self._threads:
-            thread.daemon = True
-            thread.start()
-
-    def initAcq(self):
-        print('Init acq')
-
-        self.active = True
-
-        self.updateScanPattern()
-
-        for widget in self._widgets:
-            widget.enabled(False)
-
-        acq = threading.Thread(target=self.acquire)
-        exp = threading.Thread(target=self.export_npy)
-        self._threads.append(acq)
-        self._threads.append(exp)
-
-        for thread in self._threads:
-            thread.start()
-
-    def initTracking(self):
 
         pass
 
-    def display(self):
+    def init_acquisition(self):
+        print('Init acq')
 
-        running = True
-        processingQueue = self.getProcessingQueue()
-        Bs = [self.scanPatternB1, self.scanPatternB2]
+        pass
 
-        while running and self.active:
-            B = Bs[self._displayAxis]
-            try:
-                raw = processingQueue.get()
-                spec = raw.flatten()[0:2048]  # First spectrum of the B-scan only is plotted
+    def init_tracking(self):
+        print('Init tracking')
 
-                bscan = self.process8(raw, B, ROI=self._roi_z)
+        pass
 
-                self.plotSpectrum.plot1D(spec)
-                self.plotBScan.update(20 * np.log10(np.abs(np.transpose(bscan))))
-                QtGui.QGuiApplication.processEvents()
+    def get_scanpattern(self):
+        return self._scanpattern
 
-            except Full:
-                pass
+    def get_aperb(self):
+        return self._scanpattern_aperb
 
-    def scan(self):
+    def set_scanpatternparams(self, patternSize, aLinesPerCross, bPadding, aLinesPerFlyback, repeats, patternAngle, flybackAngle):
+        self._scanpattern_size = patternSize
+        self._scanpattern_aperb = aLinesPerCross - bPadding  # Padding subtracted here
+        self._scanPatternBPadding = bPadding
+        self._scanpattern_aperflyback = aLinesPerFlyback
+        self._scanpattern_rpt = repeats
+        self._scanpattern_angle = patternAngle
+        self._scanpattern_fbangle = flybackAngle
 
-        self.progress.setText('Scanning...')
-        counter = 0
+        [self.scanpattern_positions,
+         self.scanpattern_x,
+         self.scanpattern_y,
+         self.scanpattern_b1,
+         self.scanpattern_b2,
+         self.scanpattern_n,
+         self.scanpattern_d] = generateIdealFigureEightPositions(patternSize,
+                                                                 aLinesPerCross,
+                                                                 padB=bPadding,
+                                                                 rpt=1,  # All repeating patterns handled with loops!
+                                                                 angle=patternAngle,
+                                                                 flyback=aLinesPerFlyback,
+                                                                 flybackAngle=flybackAngle)
 
-        rawDataHandle = PySpectralRadar.createRawData()
+    def display_pattern(self):
+        self.plotPattern.plotFigEight(self.scanpattern_x[np.invert(self.scanpattern_b1 + self.scanpattern_b2)],
+                                      self.scanpattern_y[np.invert(self.scanpattern_b1 + self.scanpattern_b2)],
+                                      self.scanpattern_x[self.scanpattern_b1 + self.scanpattern_b2],
+                                      self.scanpattern_y[self.scanpattern_b1 + self.scanpattern_b2])
 
-        self.startMeasurement()
-
-        while self.active:
-
-            self.getRawData(rawDataHandle)
-
-            dim = PySpectralRadar.getRawDataShape(rawDataHandle)
-
-            temp = np.empty(dim, dtype=np.uint16)
-
-            PySpectralRadar.copyRawDataContent(rawDataHandle, temp)
-
-            if np.size(temp) > 0:
-
-                new = deepcopy(temp)
-
-                try:
-
-                    processingQueue.put(new)
-
-                except Full:
-
-                    pass
-
-            counter += 1
-
-        PySpectralRadar.clearRawData(rawDataHandle)
-
-
-    def export_npy(self):
-
-        self.progress.setText('Processing...')
-
-        q = self.getRawQueue()
-        try:
-            os.mkdir(self._fileExperimentDirectory)
-        except FileExistsError:
-            pass
-        root = self.getFilepath() + '.npy'
-        out = np.empty([self._roi_z[1]-self._roi_z[0], self._scanPatternAlinesPerCross, 2, self._scanPatternTotalRepeats],
-                       dtype=np.complex64)  # TODO: implement max file size
-
-        for i in np.arange(self._scanPatternTotalRepeats):
-            temp = q.get()
-
-            bscan = self.process8(temp, self.scanPatternB1, ROI=self._roi_z, B2=self.scanPatternB2)
-
-            out[:, :, :, i] = bscan
-
-        self.progress.setText('Export complete!')
-        np.save(root, out)
-        print('Saving .npy complete')
-        # This is just the abort method w/o call to stop measurement
-        self.progress.setText('Stopped')
-        self.progress.setProgress(0)
-        if self.active:
-            self.active = False
-            for thread in self._threads:
-                thread._is_running = False
-            self._threads = []
-            self._RawQueue = Queue()
-            self._ProcQueue = Queue()
-            for widget in self._widgets:
-                widget.enabled(True)
-
-    def abort(self):
-        print('Abort')  # TODO different function for mid-acq abort vs end of acquisition. Also write a safer one
-        self.progress.setText('Stopped')
-        self.progress.setProgress(0)
-        if self.active:
-            self.active = False
-            for thread in self._threads:
-                thread._is_running = False
-            self._threads = []
-            self._RawQueue = Queue()
-            self._ProcQueue = Queue()
-            self.stopMeasurement()
-            for widget in self._widgets:
-                widget.enabled(True)
-
-    def close(self):
-        print('Close')
-        self.abort()
-        self.closeSpectralRadar()
-
-    def setFileParams(self, experimentDirectory, experimentName, maxSize, fileType):
-        self._fileExperimentDirectory = experimentDirectory
-        self._fileExperimentName = experimentName
-        self._fileMaxSize = maxSize
-        self._fileType = fileType
-
-    def getFilepath(self):
-        return self._fileExperimentDirectory + '/' + self._fileExperimentName
-
-    def clearScanPattern(self):
-        PySpectralRadar.clearScanPattern(self._scanPattern)
-
-    def getScanPattern(self):
-        return self._scanPattern
-
-    def getAlinesPerX(self):
-        return self._scanPatternAlinesPerCross
-
-    def updateScanPattern(self):
-        self._scanPattern = PySpectralRadar.createFreeformScanPattern(self._probe,
-                                                                      self.scanPatternPositions,
-                                                                      self.scanPatternN,
+    def _update_scanpattern(self):
+        self._scanpattern = PySpectralRadar.createFreeformScanPattern(self._probe,
+                                                                      self.scanpattern_positions,
+                                                                      self.scanpattern_n,
                                                                       1,  # All repeating patterns handled with loops!
                                                                       False)
 
-    def setScanPatternParams(self, patternSize, aLinesPerCross, bPadding, aLinesPerFlyback, repeats, patternAngle, flybackAngle):
-        self._scanPatternSize = patternSize
-        self._scanPatternAlinesPerCross = aLinesPerCross - bPadding  # Padding subtracted here
-        self._scanPatternBPadding = bPadding
-        self._scanPatternAlinesPerFlyback = aLinesPerFlyback
-        self._scanPatternTotalRepeats = repeats
-        self._scanPatternAngle = patternAngle
-        self._scanPatternFlybackAngle = flybackAngle
+    def _clearScanPattern(self):
+        PySpectralRadar.clearScanPattern(self._scanpattern)
 
-        [self.scanPatternPositions,
-         self.scanPatternX,
-         self.scanPatternY,
-         self.scanPatternB1,
-         self.scanPatternB2,
-         self.scanPatternN,
-         self.scanPatternD] = generateIdealFigureEightPositions(patternSize,
-                                                                aLinesPerCross,
-                                                                padB=bPadding,
-                                                                rpt=1,  # All repeating patterns handled with loops!
-                                                                angle=patternAngle,
-                                                                flyback=aLinesPerFlyback,
-                                                                flybackAngle=flybackAngle)
+    '''
+    The following methods are deprecated and to be replaced with thread objects defined elsewhere
+    '''
+    # def display(self):
+    #
+    #     running = True
+    #     processingQueue = self.getProcessingQueue()
+    #     Bs = [self.scanpattern_b1, self.scanpattern_b2]
+    #
+    #     while running and self.active:
+    #         B = Bs[self._displayaxis]
+    #         try:
+    #             raw = processingQueue.get()
+    #             spec = raw.flatten()[0:2048]  # First spectrum of the B-scan only is plotted
+    #
+    #             bscan = self.process8(raw, B, ROI=self._roi_z)
+    #
+    #             self.plotSpectrum.plot1D(spec)
+    #             self.plotBScan.update(20 * np.log10(np.abs(np.transpose(bscan))))
+    #             QtGui.QGuiApplication.processEvents()
+    #
+    #         except Full:
+    #             pass
 
-    def displayPattern(self):
-        self.plotPattern.plotFigEight(self.scanPatternX[np.invert(self.scanPatternB1 + self.scanPatternB2)],
-                                      self.scanPatternY[np.invert(self.scanPatternB1 + self.scanPatternB2)],
-                                      self.scanPatternX[self.scanPatternB1 + self.scanPatternB2],
-                                      self.scanPatternY[self.scanPatternB1 + self.scanPatternB2])
+    # def scan(self,acq=False):
+    #
+    #     self.progress.setText('Scanning...')
+    #
+    #     rawDataHandle = PySpectralRadar.createRawData()
+    #
+    #     self.startMeasurement()
+    #
+    #     counter = 0
+    #     acquired = 0  # Only stepped if acquisition argument is true
+    #
+    #     while self.active and acquired < self._scanPatternTotalRepeats:
+    #
+    #         self.getRawData(rawDataHandle)
+    #
+    #         dim = PySpectralRadar.getRawDataShape(rawDataHandle)
+    #
+    #         temp = np.empty(dim, dtype=np.uint16)
+    #
+    #         PySpectralRadar.copyRawDataContent(rawDataHandle, temp)
+    #
+    #         if np.size(temp) > 0:
+    #
+    #             new = deepcopy(temp)
+    #
+    #             try:
+    #
+    #                 self.Processing.put_frame(new)
+    #
+    #             except Full:
+    #
+    #                 pass
+    #
+    #         counter += 1
+    #         if acq:
+    #             acquired += 1
+    #
+    #     self.stopMeasurement()
+    #     PySpectralRadar.clearRawData(rawDataHandle)
+
+    def _export_npy(self):
+
+        self.progressBar.setText('Processing...')
+
+        q = self.getRawQueue()
+        try:
+            os.mkdir(self._file_experimentdirectory)
+        except FileExistsError:
+            pass
+        root = self.get_filepath() + '.npy'
+        out = np.empty([self._roi_z[1] - self._roi_z[0], self._scanpattern_aperb, 2, self._scanpattern_rpt],
+                       dtype=np.complex64)  # TODO: implement max file size
+
+        for i in np.arange(self._scanpattern_rpt):
+            temp = q.get()
+
+            bscan = self.process8(temp, self.scanpattern_b1, ROI=self._roi_z, B2=self.scanpattern_b2)
+
+            out[:, :, :, i] = bscan
+
+        self.progressBar.setText('Export complete!')
+        np.save(root, out)
+        print('Saving .npy complete')
+        # This is just the abort method w/o call to stop measurement
+        self.progressBar.setText('Stopped')
+        self.progressBar.setProgress(0)
+        if self.active:
+            self.active = False
+            for thread in self._threads:
+                thread._is_running = False
+            self._threads = []
+            self._RawQueue = Queue()
+            self._ProcQueue = Queue()
+            for widget in self._widgets:
+                widget.enabled(True)
+
+    def _startMeasurement(self):
+        PySpectralRadar.startMeasurement(self._device, self._scanpattern, self._acquisitiontype)
+
+    def _stopMeasurement(self):
+        PySpectralRadar.stopMeasurement(self._device)
+
+    def _setComplexDataOutput(self, complexDataHandle):
+        PySpectralRadar.setComplexDataOutput(self._proc, complexDataHandle)
+
+    def _getRawData(self, rawDataHandle):
+        PySpectralRadar.getRawData(self._device, rawDataHandle)

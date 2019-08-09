@@ -48,7 +48,7 @@ class Main(QTabWidget):
         # self.setMaximumWidth(1200)
 
     def closeEvent(self, event):
-        self.figEight.close()
+        self.figEight.close_window()
 
 # Qt main loop
 if __name__ == '__main__':

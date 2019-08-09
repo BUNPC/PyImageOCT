@@ -16,17 +16,28 @@ class ProcessEight:
         self._displacements = Queue(maxsize=self._maxdisplacements)
 
     def put_frame(self,frame):
-        self._raw_frames.put(frame)
-
-    def __preprocess_frames(self):
 
         try:
 
-            f = self._raw_frames.get()
+            self._raw_frames.put(frame)
+
+        except Full:
+
+            pass
+
+    def get_raw_frame(self):
+
+        try:
+
+            return self._raw_frames.get()
 
         except Empty:
 
-            pass
+            return 0
+
+    def __preprocess_frames(self):
+
+
 
 
 

@@ -68,7 +68,7 @@ class FileGroupBox(QGroupBox):
         maxFileSize = str(self.entryFileSize.currentText())
         fileType = str(self.entryFileType.currentText())
 
-        self.controller.setFileParams(experimentDirectory, experimentName, maxFileSize, fileType)
+        self.controller.set_file_params(experimentDirectory, experimentName, maxFileSize, fileType)
 
     def enabled(self, bool):
         self.entryExpDir.setEnabled(bool)
@@ -87,11 +87,11 @@ class ParamsGroupBox(QGroupBox):
 
         self.entryImagingRate = QComboBox()
         self.entryImagingRate.addItems(["76 kHz", "146 kHz"])
-        self.entryImagingRate.currentIndexChanged.connect(lambda: self.controller.setRate(str(self.entryImagingRate.currentText())))
+        self.entryImagingRate.currentIndexChanged.connect(lambda: self.controller.set_rate(str(self.entryImagingRate.currentText())))
 
         self.entryConfig = QComboBox()
         self.entryConfig.addItems(["10X", "5X"])  # TODO fix 2X
-        self.entryConfig.currentIndexChanged.connect(lambda: self.controller.setConfig(str(self.entryConfig.currentText())))
+        self.entryConfig.currentIndexChanged.connect(lambda: self.controller.set_config(str(self.entryConfig.currentText())))
 
         self.entryWindow = QComboBox()
         self.entryWindow.addItems(["Hann", "Hamming", "Blackman", "None"])
@@ -129,12 +129,12 @@ class ParamsGroupBox(QGroupBox):
 
         window = windowLUT[str(self.entryWindow.currentText())]
 
-        self.controller.setApodWindow(window)
+        self.controller.set_apodwindow(window)
 
         if self.B1.isChecked():
-            self.controller.setDisplayAxis(0)
+            self.controller.set_displayaxis(0)
         else:
-            self.controller.setDisplayAxis(1)
+            self.controller.set_displayaxis(1)
 
 
 
@@ -160,9 +160,9 @@ class ControlGroupBox(QGroupBox):
         self.trackButton = QPushButton('TRACK MOTION')
         self.abortButton = QPushButton('STOP')
 
-        self.scanButton.clicked.connect(self.controller.initScan)
-        self.acqButton.clicked.connect(self.controller.initAcq)
-        self.trackButton.clicked.connect(self.controller.initTracking)
+        self.scanButton.clicked.connect(self.controller.init_scan)
+        self.acqButton.clicked.connect(self.controller.init_acquisition)
+        self.trackButton.clicked.connect(self.controller.init_tracking)
         self.abortButton.clicked.connect(self.controller.abort)
 
         self.scanButton.clicked.connect(self.update)
@@ -294,19 +294,19 @@ class Fig8GroupBox(QGroupBox):
     def update(self):
 
         self.spinBPadding.setRange(0,int((self.spinALinesPerX.value()-1)))
-        self.controller.setScanPatternParams(self.spinALineSpacing.value()*10**-3,  # Convert from um to mm
-                                             self.spinALinesPerX.value(),  # Do not subtract bPadding!
-                                             self.spinBPadding.value(),
-                                             self.spinFlyback.value(),
-                                             self.spinFig8Total.value(),
-                                             self.spinAngle.value() * (np.pi/180),
-                                             self.spinFlybackAngle.value() * (np.pi/180)) # Conversion to rad happens here!
+        self.controller.set_scanpatternparams(self.spinALineSpacing.value() * 10 ** -3,  # Convert from um to mm
+                                              self.spinALinesPerX.value(),  # Do not subtract bPadding!
+                                              self.spinBPadding.value(),
+                                              self.spinFlyback.value(),
+                                              self.spinFig8Total.value(),
+                                              self.spinAngle.value() * (np.pi/180),
+                                              self.spinFlybackAngle.value() * (np.pi/180)) # Conversion to rad happens here!
 
-        self.textTotal.setText(str(self.controller.scanPatternN))
+        self.textTotal.setText(str(self.controller.scanpattern_n))
 
-        w = 1 / (1 / self.controller.getRateValue() * self.controller.scanPatternN)
+        w = 1 / (1 / self.controller.get_ratevalue() * self.controller.scanpattern_n)
         self.textRate.setText(str(w)[0:5] + ' hz ')
-        self.controller.displayPattern()
+        self.controller.display_pattern()
 
     def enabled(self, bool):
         self.spinALinesPerX.setEnabled(bool)
@@ -352,7 +352,7 @@ class QuantGroupBox(QGroupBox):
 
         axial = (self.spinAxialMin.value(), self.spinAxialMax.value())
 
-        self.controller.setROI(axial)
+        self.controller.set_roi(axial)
 
     def enabled(self, bool):
         # For now, ROI change during scan works fine.
