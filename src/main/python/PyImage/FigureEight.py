@@ -285,41 +285,9 @@ class FigureEight:
         for thread in self._threads:
             thread.start()
 
-    @numba.jit(forceobj=True)
-    def process8(self, A, B1, ROI, B2=np.zeros(1)):
+    def initTracking(self):
 
-        Nx = self._scanPatternAlinesPerCross
-        N = self.scanPatternN
-        interpIndices = np.linspace(min(self._lam), max(self._lam), 2048)
-
-        if B2.any() != 0:
-
-            processed = np.empty([1024, Nx, 2], dtype=np.complex64)
-            Bs = [B1, B2]
-
-            for b, B in enumerate(Bs):
-
-                interpolated = np.empty([2048, Nx])
-                preprocessed = preprocess8(A, N, B, Nx, self.getApodWindow())
-
-                for n in np.arange(Nx):
-                    k = interp1d(self._lam, preprocessed[:, n])
-                    interpolated[:, n] = k(interpIndices)
-                    processed[:, n, b] = np.fft.ifft(interpolated[:, n])[0:1024].astype(np.complex64)
-
-        else:
-
-            processed = np.zeros([1024, Nx], dtype=np.complex64)
-
-            interpolated = np.empty([2048, Nx])
-            preprocessed = preprocess8(A, N, B1, Nx, self.getApodWindow())
-
-            for n in np.arange(Nx):
-                k = interp1d(self._lam, preprocessed[:, n])
-                interpolated[:, n] = k(interpIndices)
-                processed[:, n] = np.fft.ifft(interpolated[:, n])[0:1024].astype(np.complex64)
-
-        return processed[ROI[0]:ROI[1], :]
+        pass
 
     def display(self):
 
@@ -348,9 +316,6 @@ class FigureEight:
         running = True
         processingQueue = self.getProcessingQueue()
         counter = 0
-
-        # Set number of frames to process based on predicted speed
-        interval = [10, 10][self._rateEnum]
 
         rawDataHandle = PySpectralRadar.createRawData()
 
@@ -422,9 +387,6 @@ class FigureEight:
 
         print('Acquisition complete')
 
-    def export_hdf(self):  # TODO fix this
-
-        pass
 
     def export_npy(self):
 

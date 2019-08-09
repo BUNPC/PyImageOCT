@@ -157,18 +157,23 @@ class ControlGroupBox(QGroupBox):
 
         self.scanButton = QPushButton('SCAN')
         self.acqButton = QPushButton('ACQUIRE')
+        self.trackButton = QPushButton('TRACK MOTION')
         self.abortButton = QPushButton('STOP')
 
         self.scanButton.clicked.connect(self.controller.initScan)
         self.acqButton.clicked.connect(self.controller.initAcq)
+        self.trackButton.clicked.connect(self.controller.initTracking)
         self.abortButton.clicked.connect(self.controller.abort)
+
         self.scanButton.clicked.connect(self.update)
         self.acqButton.clicked.connect(self.update)
+        self.trackButton.clicked.connect(self.update)
         self.abortButton.clicked.connect(self.update)
 
         self.layout.addWidget(self.scanButton, 0, 0)
         self.layout.addWidget(self.acqButton, 0, 1)
-        self.layout.addWidget(self.abortButton, 0, 2)
+        self.layout.addWidget(self.trackButton, 0 ,2)
+        self.layout.addWidget(self.abortButton, 0, 3)
 
         self.setLayout(self.layout)
 
