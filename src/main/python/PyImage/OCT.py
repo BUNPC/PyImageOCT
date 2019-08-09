@@ -3,7 +3,7 @@ import numba
 from scipy.interpolate import interp1d
 
 
-def generateIdealFigureEightPositions(xdistance, alinesPerX, rpt=1, padB=0, angle=np.pi / 4, flyback=20, flybackAngle=np.pi / 2.58):
+def generate_figure8(xdistance, alinesPerX, rpt=1, padB=0, angle=np.pi / 4, flyback=20, flybackAngle=np.pi / 2.58):
     """
     Generates figure-8 scan pattern positions with orthogonal cross.
     :param xdistance: Distance between adjacent scans in perpendicular B-scans

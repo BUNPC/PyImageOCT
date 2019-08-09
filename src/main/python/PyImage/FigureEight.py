@@ -21,7 +21,7 @@ class FigureEight:
         self._file_experimentname = None
         self._file_experimentdirectory = None
         self._file_maxsize = None
-        self._file_type = None
+        self._filetype = None
 
         # Scan pattern params
         self._scanpattern_size = None
@@ -257,11 +257,11 @@ class FigureEight:
     def set_roi(self, axial):
         self._roi_z = axial
 
-    def set_file_params(self, experimentDirectory, experimentName, maxSize, fileType):
-        self._file_experimentdirectory = experimentDirectory
-        self._file_experimentname = experimentName
-        self._file_maxsize = maxSize
-        self._file_type = fileType
+    def set_file_params(self, directory, name, maxsize, filetype):
+        self._file_experimentdirectory = directory
+        self._file_experimentname = name
+        self._file_maxsize = maxsize
+        self._filetype = filetype
 
     def get_filepath(self):
         return self._file_experimentdirectory + '/' + self._file_experimentname
@@ -288,14 +288,14 @@ class FigureEight:
     def get_aperb(self):
         return self._scanpattern_aperb
 
-    def set_scanpatternparams(self, patternSize, aLinesPerCross, bPadding, aLinesPerFlyback, repeats, patternAngle, flybackAngle):
-        self._scanpattern_size = patternSize
-        self._scanpattern_aperb = aLinesPerCross - bPadding  # Padding subtracted here
-        self._scanPatternBPadding = bPadding
-        self._scanpattern_aperflyback = aLinesPerFlyback
+    def set_scanpatternparams(self, d, aperx, b_padding, aperflyback, repeats, angle, flybackangle):
+        self._scanpattern_size = d
+        self._scanpattern_aperb = aperx - b_padding  # Padding subtracted here
+        self._scanPatternBPadding = b_padding
+        self._scanpattern_aperflyback = aperflyback
         self._scanpattern_rpt = repeats
-        self._scanpattern_angle = patternAngle
-        self._scanpattern_fbangle = flybackAngle
+        self._scanpattern_angle = angle
+        self._scanpattern_fbangle = flybackangle
 
         [self.scanpattern_positions,
          self.scanpattern_x,
@@ -303,13 +303,13 @@ class FigureEight:
          self.scanpattern_b1,
          self.scanpattern_b2,
          self.scanpattern_n,
-         self.scanpattern_d] = generateIdealFigureEightPositions(patternSize,
-                                                                 aLinesPerCross,
-                                                                 padB=bPadding,
-                                                                 rpt=1,  # All repeating patterns handled with loops!
-                                                                 angle=patternAngle,
-                                                                 flyback=aLinesPerFlyback,
-                                                                 flybackAngle=flybackAngle)
+         self.scanpattern_d] = generate_figure8(d,
+                                                aperx,
+                                                padB=b_padding,
+                                                rpt=1,  # All repeating patterns handled with loops!
+                                                angle=angle,
+                                                flyback=aperflyback,
+                                                flybackAngle=flybackangle)
 
     def display_pattern(self):
         self.plotPattern.plotFigEight(self.scanpattern_x[np.invert(self.scanpattern_b1 + self.scanpattern_b2)],
@@ -395,37 +395,9 @@ class FigureEight:
 
         self.progressBar.setText('Processing...')
 
-        q = self.getRawQueue()
-        try:
-            os.mkdir(self._file_experimentdirectory)
-        except FileExistsError:
-            pass
-        root = self.get_filepath() + '.npy'
-        out = np.empty([self._roi_z[1] - self._roi_z[0], self._scanpattern_aperb, 2, self._scanpattern_rpt],
-                       dtype=np.complex64)  # TODO: implement max file size
+        pass
 
-        for i in np.arange(self._scanpattern_rpt):
-            temp = q.get()
-
-            bscan = self.process8(temp, self.scanpattern_b1, ROI=self._roi_z, B2=self.scanpattern_b2)
-
-            out[:, :, :, i] = bscan
-
-        self.progressBar.setText('Export complete!')
-        np.save(root, out)
-        print('Saving .npy complete')
-        # This is just the abort method w/o call to stop measurement
-        self.progressBar.setText('Stopped')
-        self.progressBar.setProgress(0)
-        if self.active:
-            self.active = False
-            for thread in self._threads:
-                thread._is_running = False
-            self._threads = []
-            self._RawQueue = Queue()
-            self._ProcQueue = Queue()
-            for widget in self._widgets:
-                widget.enabled(True)
+    # Wrappers for SpectralRadar functions that call controller members
 
     def _startMeasurement(self):
         PySpectralRadar.startMeasurement(self._device, self._scanpattern, self._acquisitiontype)
