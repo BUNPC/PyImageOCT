@@ -1,16 +1,10 @@
-import os
-import time
 import threading
-from copy import deepcopy
-from queue import Queue, Full
 
-import h5py
 from PyQt5.QtWidgets import QWidget, QGridLayout
-from pyqtgraph.Qt import QtGui
 
-from src.main.python.PySpectralRadar import PySpectralRadar
 from src.main.python.PyImage import Widgets
 from src.main.python.PyImage.OCT import *
+from src.main.python.PySpectralRadar import PySpectralRadar
 
 
 class FigureEight:
@@ -25,7 +19,8 @@ class FigureEight:
 
         # Scan pattern params
         self._scanpattern_size = None
-        self._scanpattern_aperb = None
+        self._scanpattern_aperb = None  # A-lines per B-scan after padding
+        self._scanpattern_aperx = None  # A-lines per B-scan before padding
         self._scanpattern_aperflyback = None
         self._scanpattern_rpt = None
         self._scanpattern_angle = None
@@ -193,7 +188,6 @@ class FigureEight:
             self.active = False
 
             for widget in self._widgets:
-
                 widget.enabled(True)
 
         self.progressBar.setText('Stopped')
@@ -289,8 +283,12 @@ class FigureEight:
     def get_aperb(self):
         return self._scanpattern_aperb
 
+    def get_aperx(self):
+        return self._scanpattern_aperx
+
     def set_scanpatternparams(self, d, aperx, b_padding, aperflyback, repeats, angle, flybackangle):
         self._scanpattern_size = d
+        self._scanpattern_aperx = aperx
         self._scanpattern_aperb = aperx - b_padding  # Padding subtracted here
         self._scanPatternBPadding = b_padding
         self._scanpattern_aperflyback = aperflyback
@@ -331,6 +329,7 @@ class FigureEight:
     '''
     The following methods are deprecated and to be replaced with thread objects defined elsewhere
     '''
+
     # def display(self):
     #
     #     running = True
