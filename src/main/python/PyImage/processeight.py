@@ -12,10 +12,12 @@ class ProcessEight:
 
         self.dropped_frames = 0
 
+        # TODO un-hardcode
+        self._window_size = 4
         self._maxframes = 4
         self._maxdisplacements = 2
 
-        self._raw_frames = Queue(maxsize=self._maxframes)
+        self._raw_frames = Queue()
         self._proc_frames = Queue()
         self._displacements = Queue(maxsize=self._maxdisplacements)
 
@@ -71,6 +73,22 @@ class ProcessEight:
         window = self.controller.get_apodwindow()
 
         self._preprocessing_pool = PreprocessorPool(x, n, b1, b2, window, pool_size=4)  # 4 cores
+
+        while True:
+
+            self._preprocess_raw_frame()
+
+    def _preprocess_raw_frame(self):
+
+        async_results = []
+
+        for i in range(self._window_size):
+
+            async_results.append(self._preprocessing_pool(self.get_frame()))
+
+        for i in range(self._window_size):
+
+            self.put_processed_frame(async_results[i].put())
 
 
 class PreprocessorPool:

@@ -327,7 +327,7 @@ class FigureEight:
                                                                       1,  # All repeating patterns handled with loops!
                                                                       False)
 
-    def _clearScanPattern(self):
+    def _clear_scanpattern(self):
         PySpectralRadar.clearScanPattern(self._scanpattern)
 
     '''
