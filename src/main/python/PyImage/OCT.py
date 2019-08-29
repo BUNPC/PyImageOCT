@@ -13,19 +13,18 @@ class Worker(Thread):
     """
 
     def __init__(self, func):
-
         super(Worker, self).__init__()
-        self._stop = Event()
+        self._stop_event = Event()
         self.func = func
 
     def run(self):
 
-        while not self._stop.is_set():
+        while not self._stop_event.is_set():
 
             self.func()  # Calls function repeatedly until thread is joined and killed
 
-    def join(self,timeout=None):
-        self._stop.set()
+    def join(self, timeout=None):
+        self._stop_event.set()
         super(Worker, self).join(timeout)
 
 def generate_figure8(xdistance, alinesPerX, rpt=1, padB=0, angle=np.pi / 4, flyback=20, flybackangle=np.pi / 2.58):

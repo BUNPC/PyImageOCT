@@ -1,4 +1,5 @@
 import numba
+import numpy as np
 from PyImage.OCT import Worker
 from multiprocessing import Queue, Pool, Process, Value, Array
 from queue import Full, Empty
@@ -38,11 +39,13 @@ class ProcessEight:
 
         try:
 
-            self._raw_frames.get()
+            f = self._raw_frames.get()
 
         except Empty:
 
-            pass
+            f = []
+
+        return f
 
     def put_processed_frame(self, frame):
 
@@ -58,11 +61,13 @@ class ProcessEight:
 
         try:
 
-            self._proc_frames.get()
+            f = self._proc_frames.get()
 
         except Empty:
 
-            pass
+            f = []
+
+        return f
 
     def start_preprocessing(self):
 
@@ -73,7 +78,6 @@ class ProcessEight:
         window = self.controller.get_apodwindow()
 
         self._preprocessing_pool = PreprocessorPool(x, n, b1, b2, window, pool_size=4)  # 4 cores
-
 
         preprocessing_thread = Worker(func=self._preprocess_raw_frame)
 
@@ -87,9 +91,11 @@ class ProcessEight:
 
             async_results.append(self._preprocessing_pool(self.get_frame()))
 
-        for i in range(self._window_size):
+        print(async_results)
 
-            self.put_processed_frame(async_results[i].put())
+        for i in range(self._window_size):
+            result = async_results[i].get()
+            self.put_processed_frame(result)
 
 
 class PreprocessorPool:
@@ -101,12 +107,12 @@ class PreprocessorPool:
 
     def __call__(self, frame):
 
-        return self._pool.apply_async(func=preprocess_jitted, args=[frame, *self._args])
+        return self._pool.apply_async(func=preprocess_jitted, args=(frame, *self._args))
 
 
+# TODO fix numba weirdness w/ names. Wrapper function seems like best way
 
-
-@numba.jit(forceobj=True, fastmath=True, cache=True)  # Array creation cannot be compiled
+# @numba.jit(forceobj=True, fastmath=True, cache=True)  # Array creation cannot be compiled
 def preprocess_jitted(raw, x, n, b1, b2, window):
     """
     :argument raw: raw uint16 data from Telesto from single frame grab of one B-Scan
@@ -123,7 +129,8 @@ def preprocess_jitted(raw, x, n, b1, b2, window):
     apod = np.empty(2048)
     im = np.empty([1024, x, 2], dtype=np.complex64)
 
-    reshape_jitted(raw, n, b1, b2, reshaped, mean)
+    flat = raw.flatten()
+    reshape_jitted(flat, n, b1, b2, reshaped, mean)
 
     np.divide(mean, n, out=mean)
     np.divide(window, mean, out=apod)
@@ -135,9 +142,8 @@ def preprocess_jitted(raw, x, n, b1, b2, window):
 """
 Subfunction of preprocess that can be compiled in nopython mode
 """
-@numba.njit(fastmath=True, cache=True)
-def reshape_jitted(raw, N, b1, b2, reshaped, mean):
-    flat = raw.flatten()
+# @numba.njit(fastmath=True, cache=True)
+def reshape_jitted(flat, N, b1, b2, reshaped, mean):
     ib1 = 0
     ib2 = 0
     for i, n in enumerate(np.arange(0, N * 2048, 2048)):
@@ -157,6 +163,18 @@ def reshape_jitted(raw, N, b1, b2, reshaped, mean):
             np.add(this, mean, mean)
     np.divide(mean, N, mean)
 
+# @numba.jit(parallel=True,fastmath=True)  # np.fft cannot be compiled
+def apodize_fft_jitted(reshaped,X,apod,im):
+    """
+    reshaped: reshaped uint16 data
+    X: total number of A-scans in the B-scan equal to 2nd dimension of reshaped
+    apod: apodization window (usually a 2048 hanning window)
+    im: empty array into which the fourier transformed complex data is placed
+    """
+    for i in numba.prange(X):
+        for j in numba.prange(2):
+            np.multiply(reshaped[:,i,j],apod,reshaped[:,i,j])
+            im[:,i,j] = np.fft.ifft(reshaped[:,i,j])[0:1024]
 
 
 

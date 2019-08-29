@@ -192,6 +192,9 @@ class FigureEight:
 
             self.active = False
 
+            for thread in self._threads:
+                thread.join()
+
             for widget in self._widgets:
                 widget.enabled(True)
 
@@ -208,6 +211,11 @@ class FigureEight:
 
     def init_scan(self):
         print('Init scan')
+
+        self.active = True
+
+        for widget in self._widgets:
+            widget.enabled(False)
 
         self._processor = ProcessEight(self)
 
@@ -366,15 +374,18 @@ class FigureEight:
         self._scan_thread = Worker(func=self._scan)
         self._scan_thread.start()
 
+        self._threads.append(self._scan_thread)
+
     def _stop_scan(self):
 
         self._scan_thread.join()
 
-
+        self._stopMeasurement()
+        PySpectralRadar.clearRawData(self._rawdatahandle)
 
     def _scan(self):
 
-        self.getRawData(self._rawdatahandle)
+        self._getRawData(self._rawdatahandle)
 
         dim = PySpectralRadar.getRawDataShape(self._rawdatahandle)
 
@@ -384,10 +395,10 @@ class FigureEight:
 
         new = deepcopy(temp)  # I think this is necessary to evade destruction of array created by C
 
-        self._processor.put_frame(new)
+        if new is not None and np.size(new) is not 0:
 
-        self._stopMeasurement()
-        PySpectralRadar.clearRawData(self._rawdatahandle)
+            self._processor.put_frame(new)
+
 
     # def scan(self,acq=False):
     #
