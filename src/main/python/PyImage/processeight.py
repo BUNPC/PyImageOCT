@@ -1,11 +1,11 @@
 import numba
-from threading import Thread, Event
+from PyImage.OCT import Worker
 from multiprocessing import Queue, Pool, Process, Value, Array
 from queue import Full, Empty
 
 class ProcessEight:
 
-    def __init__(self,controller):
+    def __init__(self, controller):
 
         self.controller = controller
         self._threads = []
@@ -74,9 +74,10 @@ class ProcessEight:
 
         self._preprocessing_pool = PreprocessorPool(x, n, b1, b2, window, pool_size=4)  # 4 cores
 
-        while True:
 
-            self._preprocess_raw_frame()
+        preprocessing_thread = Worker(func=self._preprocess_raw_frame)
+
+        preprocessing_thread.start()
 
     def _preprocess_raw_frame(self):
 
@@ -101,6 +102,8 @@ class PreprocessorPool:
     def __call__(self, frame):
 
         return self._pool.apply_async(func=preprocess_jitted, args=[frame, *self._args])
+
+
 
 
 @numba.jit(forceobj=True, fastmath=True, cache=True)  # Array creation cannot be compiled

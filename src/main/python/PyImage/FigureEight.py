@@ -8,6 +8,8 @@ from src.main.python.PyImage import Widgets
 from src.main.python.PyImage.OCT import *
 from src.main.python.PySpectralRadar import PySpectralRadar
 
+from copy import deepcopy
+
 
 class FigureEight:
 
@@ -56,11 +58,12 @@ class FigureEight:
         self._acquisitiontype = None
         self._trigger_timeout = None
         self._lam = None  # An array of wavelength data loaded from disk
+        self._rawdatahandle = None  # handle for raw data object used during acquisition
 
         # OS
         self._threads = []
         self.active = False
-        self.Processing = None  # ProcessEight object
+        self._processor = None  # ProcessEight object
 
         # Qt
         self._widgets = []
@@ -206,9 +209,11 @@ class FigureEight:
     def init_scan(self):
         print('Init scan')
 
-        processing = ProcessEight(self)
+        self._processor = ProcessEight(self)
 
-        processing.start_preprocessing(n=3)
+        self._start_scan()
+        self._processor.start_preprocessing()
+
 
     def init_acquisition(self):
         print('Init acq')
@@ -217,8 +222,6 @@ class FigureEight:
 
     def init_tracking(self):
         print('Init tracking')
-
-        pass
 
     # Misc getters and setters
 
@@ -354,6 +357,37 @@ class FigureEight:
     #
     #         except Full:
     #             pass
+
+    def _start_scan(self):
+
+        self._rawdatahandle = PySpectralRadar.createRawData()
+        self._startMeasurement()
+
+        self._scan_thread = Worker(func=self._scan)
+        self._scan_thread.start()
+
+    def _stop_scan(self):
+
+        self._scan_thread.join()
+
+
+
+    def _scan(self):
+
+        self.getRawData(self._rawdatahandle)
+
+        dim = PySpectralRadar.getRawDataShape(self._rawdatahandle)
+
+        temp = np.empty(dim, dtype=np.uint16)
+
+        PySpectralRadar.copyRawDataContent(self._rawdatahandle, temp)
+
+        new = deepcopy(temp)  # I think this is necessary to evade destruction of array created by C
+
+        self._processor.put_frame(new)
+
+        self._stopMeasurement()
+        PySpectralRadar.clearRawData(self._rawdatahandle)
 
     # def scan(self,acq=False):
     #

@@ -1,10 +1,32 @@
 import numpy as np
+from threading import Thread, Event
 import numba
 
 """
 Misc toolbox for OCT imaging
 author: sstucker
 """
+
+class Worker(Thread):
+    """
+    General use thread which targets a function passed as func and calls repeatedly until joined
+    """
+
+    def __init__(self, func):
+
+        super(Worker, self).__init__()
+        self._stop = Event()
+        self.func = func
+
+    def run(self):
+
+        while not self._stop.is_set():
+
+            self.func()  # Calls function repeatedly until thread is joined and killed
+
+    def join(self,timeout=None):
+        self._stop.set()
+        super(Worker, self).join(timeout)
 
 def generate_figure8(xdistance, alinesPerX, rpt=1, padB=0, angle=np.pi / 4, flyback=20, flybackangle=np.pi / 2.58):
     """
@@ -90,3 +112,4 @@ def preprocess8(A,N,B,AlinesPerX,apod):
     for n in np.arange(AlinesPerX):
         pp[:,n] = pp[:, n] * window
     return pp
+
