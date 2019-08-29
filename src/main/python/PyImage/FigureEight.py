@@ -192,6 +192,8 @@ class FigureEight:
 
             self.active = False
 
+            self._stop_scan()
+
             for thread in self._threads:
                 thread.join()
 
@@ -219,9 +221,9 @@ class FigureEight:
 
         self._processor = ProcessEight(self)
 
-        self._start_scan()
         self._processor.start_preprocessing()
 
+        self._start_scan()
 
     def init_acquisition(self):
         print('Init acq')
@@ -368,17 +370,20 @@ class FigureEight:
 
     def _start_scan(self):
 
-        self._rawdatahandle = PySpectralRadar.createRawData()
-        self._startMeasurement()
+        self._display_thread = Worker(func=self._display)
+        self._display_thread.start()
+        self._threads.append(self._display_thread)
 
         self._scan_thread = Worker(func=self._scan)
+        self._rawdatahandle = PySpectralRadar.createRawData()
+        self._startMeasurement()
         self._scan_thread.start()
-
         self._threads.append(self._scan_thread)
 
     def _stop_scan(self):
 
-        self._scan_thread.join()
+        for thread in self._threads:
+            thread.join()
 
         self._stopMeasurement()
         PySpectralRadar.clearRawData(self._rawdatahandle)
@@ -397,8 +402,19 @@ class FigureEight:
 
         if new is not None and np.size(new) is not 0:
 
-            self._processor.put_frame(new)
+            self._processor.put_frame(new.flatten())  # flattening happens here. Slow?
 
+    def _display(self):
+
+        bs = self._processor.get_display_frame()
+
+        b = bs[0]
+        s = bs[1]
+
+        display_b = np.rot90(20*np.log10(np.abs(np.real(b[self._roi_z[0]:self._roi_z[1], :, self._displayaxis]))))
+
+        self.plotBScan.update(display_b)
+        self.plotSpectrum.plot1D(s)
 
     # def scan(self,acq=False):
     #

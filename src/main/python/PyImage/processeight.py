@@ -17,10 +17,14 @@ class ProcessEight:
         self._window_size = 4
         self._maxframes = 4
         self._maxdisplacements = 2
+        self._display_interval = 10
+        self._counter = 0
 
         self._raw_frames = Queue()
         self._proc_frames = Queue()
         self._displacements = Queue(maxsize=self._maxdisplacements)
+
+        self._display_frames = Queue()
 
         self._preprocessing_pool = None
         self._quant_pool = []
@@ -57,6 +61,8 @@ class ProcessEight:
 
             pass
 
+        # print('Unprocessed: ',self._raw_frames.qsize())
+
     def get_proccessed_frame(self):
 
         try:
@@ -69,13 +75,37 @@ class ProcessEight:
 
         return f
 
+    def put_display_frame(self, b, s):
+
+        try:
+
+            self._display_frames.put([b, s])
+
+        except Full:
+
+            pass
+
+    def get_display_frame(self):
+
+        try:
+
+            bs = self._display_frames.get()
+
+        except Empty:
+
+            bs = []
+
+        return bs
+
     def start_preprocessing(self):
 
-        x = len(self.controller.scanpattern_b1)
+        x = self.controller._scanpattern_aperb
         n = len(self.controller.scanpattern_x)
         b1 = self.controller.scanpattern_b1
         b2 = self.controller.scanpattern_b2
         window = self.controller.get_apodwindow()
+
+        self._prejit(x,n,b1,b2,window)
 
         self._preprocessing_pool = PreprocessorPool(x, n, b1, b2, window, pool_size=4)  # 4 cores
 
@@ -83,19 +113,35 @@ class ProcessEight:
 
         preprocessing_thread.start()
 
+    def _prejit(self,x,n,b1,b2,window):
+        """
+        Makes a few mock calls to the jitted functions so they are compiled in time for actual processing
+        """
+        for i in range(10):
+            mockframe = np.ones(2048*n)
+            preprocess_jitted(mockframe,x,n,b1,b2,window)
+
     def _preprocess_raw_frame(self):
 
         async_results = []
 
         for i in range(self._window_size):
 
-            async_results.append(self._preprocessing_pool(self.get_frame()))
-
-        print(async_results)
+            raw = self.get_frame()
+            async_results.append(self._preprocessing_pool(raw))
+            s = raw[0:2048]
 
         for i in range(self._window_size):
+
             result = async_results[i].get()
+
             self.put_processed_frame(result)
+
+            if self._counter % self._display_interval == 0:
+
+                self.put_display_frame(result,s)
+
+            self._counter += 1
 
 
 class PreprocessorPool:
@@ -110,9 +156,7 @@ class PreprocessorPool:
         return self._pool.apply_async(func=preprocess_jitted, args=(frame, *self._args))
 
 
-# TODO fix numba weirdness w/ names. Wrapper function seems like best way
-
-# @numba.jit(forceobj=True, fastmath=True, cache=True)  # Array creation cannot be compiled
+@numba.jit(forceobj=True, fastmath=True, cache=True)  # Array creation cannot be compiled
 def preprocess_jitted(raw, x, n, b1, b2, window):
     """
     :argument raw: raw uint16 data from Telesto from single frame grab of one B-Scan
@@ -129,20 +173,20 @@ def preprocess_jitted(raw, x, n, b1, b2, window):
     apod = np.empty(2048)
     im = np.empty([1024, x, 2], dtype=np.complex64)
 
-    flat = raw.flatten()
+    flat = np.squeeze(raw.flatten())
     reshape_jitted(flat, n, b1, b2, reshaped, mean)
 
     np.divide(mean, n, out=mean)
     np.divide(window, mean, out=apod)
 
-    self.apodize_fft_jitted(reshaped, x, apod, im)  # TODO implement lambda->k interp
+    apodize_fft_jitted(reshaped, x, apod, im)  # TODO implement lambda->k interp
 
     return im
 
 """
 Subfunction of preprocess that can be compiled in nopython mode
 """
-# @numba.njit(fastmath=True, cache=True)
+@numba.njit(fastmath=True, cache=True)
 def reshape_jitted(flat, N, b1, b2, reshaped, mean):
     ib1 = 0
     ib2 = 0
@@ -163,7 +207,7 @@ def reshape_jitted(flat, N, b1, b2, reshaped, mean):
             np.add(this, mean, mean)
     np.divide(mean, N, mean)
 
-# @numba.jit(parallel=True,fastmath=True)  # np.fft cannot be compiled
+@numba.jit(forceobj=True, parallel=True,fastmath=True)  # np.fft cannot be compiled
 def apodize_fft_jitted(reshaped,X,apod,im):
     """
     reshaped: reshaped uint16 data
