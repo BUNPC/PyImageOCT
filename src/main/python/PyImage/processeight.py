@@ -62,8 +62,6 @@ class ProcessEight:
 
             pass
 
-        print('Unprocessed: ',self._raw_frames.qsize())
-
     def get_proccessed_frame(self):
 
         try:
@@ -110,6 +108,7 @@ class ProcessEight:
         # Compile jit functions
         self._prejit(x,n,b1,b2,window)
 
+        # Define helper class which manages pool of processor threads
         self._preprocessing_executor = PreprocessorPoolExecutor(x,n,b1,b2,window)
 
         self._preprocessing_thread = Worker(func=self._raw_window_consumer)
@@ -124,8 +123,10 @@ class ProcessEight:
             preprocess_jitted(mockframe,x,n,b1,b2,window)
 
     def _raw_window_consumer(self):
-
-        print('Consumer running n ',self._counter)
+        """
+        Preprocesses batch of frames in window concurrently and waits for ordered result before returning
+        Puts processed frames into display and processed queues
+        """
 
         futures = [ [] for k in range(self._window_size) ]
 
@@ -155,9 +156,10 @@ class ProcessEight:
                 self.put_display_frame(result,f[0:2048])
 
 
-
-
 class PreprocessorPoolExecutor:
+    """
+    Helper class which wraps pool of preprocessor threads. Call to submit a new job
+    """
 
     def __init__(self, x, n, b1, b2, window, pool_size=4):
 
@@ -167,8 +169,6 @@ class PreprocessorPoolExecutor:
     def __call__(self, frame):
         args = (frame, *self._static_args)
         return self._pool.submit(preprocess_jitted,*args)
-
-
 
 
 @numba.jit(forceobj=True, fastmath=True, cache=True)  # Array creation cannot be compiled
