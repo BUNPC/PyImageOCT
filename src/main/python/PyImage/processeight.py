@@ -4,6 +4,8 @@ from PyImage.OCT import Worker
 from multiprocessing import Queue, Pool, Process, Value, Array
 from queue import Full, Empty
 
+from concurrent.futures import ThreadPoolExecutor
+
 class ProcessEight:
 
     def __init__(self, controller):
@@ -17,7 +19,7 @@ class ProcessEight:
         self._window_size = 4
         self._maxframes = 4
         self._maxdisplacements = 2
-        self._display_interval = 10
+        self._display_interval = 6
         self._counter = 0
 
         self._raw_frames = Queue()
@@ -26,8 +28,7 @@ class ProcessEight:
 
         self._display_frames = Queue()
 
-        self._preprocessing_pool = None
-        self._quant_pool = []
+        self._preprocessing_executor = None
 
     def put_frame(self, frame):
 
@@ -61,7 +62,7 @@ class ProcessEight:
 
             pass
 
-        # print('Unprocessed: ',self._raw_frames.qsize())
+        print('Unprocessed: ',self._raw_frames.qsize())
 
     def get_proccessed_frame(self):
 
@@ -99,19 +100,20 @@ class ProcessEight:
 
     def start_preprocessing(self):
 
+        # Calculate or obtain processing parameters from controller
         x = self.controller._scanpattern_aperb
         n = len(self.controller.scanpattern_x)
         b1 = self.controller.scanpattern_b1
         b2 = self.controller.scanpattern_b2
         window = self.controller.get_apodwindow()
 
+        # Compile jit functions
         self._prejit(x,n,b1,b2,window)
 
-        self._preprocessing_pool = PreprocessorPool(x, n, b1, b2, window, pool_size=4)  # 4 cores
+        self._preprocessing_executor = PreprocessorPoolExecutor(x,n,b1,b2,window)
 
-        preprocessing_thread = Worker(func=self._preprocess_raw_frame)
-
-        preprocessing_thread.start()
+        self._preprocessing_thread = Worker(func=self._raw_window_consumer)
+        self._preprocessing_thread.start()
 
     def _prejit(self,x,n,b1,b2,window):
         """
@@ -121,39 +123,52 @@ class ProcessEight:
             mockframe = np.ones(2048*n)
             preprocess_jitted(mockframe,x,n,b1,b2,window)
 
-    def _preprocess_raw_frame(self):
+    def _raw_window_consumer(self):
 
-        async_results = []
+        print('Consumer running n ',self._counter)
 
-        for i in range(self._window_size):
-
-            raw = self.get_frame()
-            async_results.append(self._preprocessing_pool(raw))
-            s = raw[0:2048]
+        futures = [ [] for k in range(self._window_size) ]
 
         for i in range(self._window_size):
 
-            result = async_results[i].get()
+            grabbed = False
+
+            while not grabbed:
+
+                f = self.get_frame()
+
+                if f is not []:
+                    grabbed = True
+
+            futures[i] = self._preprocessing_executor(f)
+
+        for i in range(self._window_size):
+
+            result = futures[i].result()
 
             self.put_processed_frame(result)
 
-            if self._counter % self._display_interval == 0:
-
-                self.put_display_frame(result,s)
-
             self._counter += 1
 
+            if self._counter % self._display_interval == 0:
 
-class PreprocessorPool:
+                self.put_display_frame(result,f[0:2048])
+
+
+
+
+class PreprocessorPoolExecutor:
 
     def __init__(self, x, n, b1, b2, window, pool_size=4):
 
-        self._pool = Pool(processes=pool_size)
-        self._args = [x, n, b1, b2, window]
+        self._pool = ThreadPoolExecutor(pool_size)
+        self._static_args = [x, n, b1, b2, window]
 
     def __call__(self, frame):
+        args = (frame, *self._static_args)
+        return self._pool.submit(preprocess_jitted,*args)
 
-        return self._pool.apply_async(func=preprocess_jitted, args=(frame, *self._args))
+
 
 
 @numba.jit(forceobj=True, fastmath=True, cache=True)  # Array creation cannot be compiled
@@ -186,7 +201,7 @@ def preprocess_jitted(raw, x, n, b1, b2, window):
 """
 Subfunction of preprocess that can be compiled in nopython mode
 """
-@numba.njit(fastmath=True, cache=True)
+@numba.njit(fastmath=True)
 def reshape_jitted(flat, N, b1, b2, reshaped, mean):
     ib1 = 0
     ib2 = 0

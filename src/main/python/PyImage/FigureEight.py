@@ -9,7 +9,7 @@ from src.main.python.PyImage.OCT import *
 from src.main.python.PySpectralRadar import PySpectralRadar
 
 from copy import deepcopy
-
+from pyqtgraph.Qt import QtGui
 
 class FigureEight:
 
@@ -380,6 +380,7 @@ class FigureEight:
         self._scan_thread.start()
         self._threads.append(self._scan_thread)
 
+
     def _stop_scan(self):
 
         for thread in self._threads:
@@ -400,6 +401,8 @@ class FigureEight:
 
         new = deepcopy(temp)  # I think this is necessary to evade destruction of array created by C
 
+        del temp
+
         if new is not None and np.size(new) is not 0:
 
             self._processor.put_frame(new.flatten())  # flattening happens here. Slow?
@@ -415,6 +418,8 @@ class FigureEight:
 
         self.plotBScan.update(display_b)
         self.plotSpectrum.plot1D(s)
+
+        QtGui.QGuiApplication.processEvents()
 
     # def scan(self,acq=False):
     #

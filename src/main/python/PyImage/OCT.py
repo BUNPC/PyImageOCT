@@ -12,16 +12,25 @@ class Worker(Thread):
     General use thread which targets a function passed as func and calls repeatedly until joined
     """
 
-    def __init__(self, func):
+    def __init__(self, func, args=[]):
         super(Worker, self).__init__()
         self._stop_event = Event()
         self.func = func
+        self.args = args
 
     def run(self):
 
-        while not self._stop_event.is_set():
+        if self.args is not []:
 
-            self.func()  # Calls function repeatedly until thread is joined and killed
+            while not self._stop_event.is_set():
+
+                self.func(*self.args)  # Calls function repeatedly until thread is joined and killed
+
+        else:
+
+            while not self._stop_event.is_set():
+
+                self.func()
 
     def join(self, timeout=None):
         self._stop_event.set()
