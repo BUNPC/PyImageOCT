@@ -30,6 +30,14 @@ class ProcessEight:
 
         self._preprocessing_executor = None
 
+    def clear(self):
+
+        for q in [self._raw_frames, self._proc_frames, self._displacements, self._display_frames]:
+
+            while not q.empty():
+
+                q.get()
+
     def put_frame(self, frame):
 
         try:
@@ -171,7 +179,7 @@ class PreprocessorPoolExecutor:
         return self._pool.submit(preprocess_jitted,*args)
 
 
-@numba.jit(forceobj=True, fastmath=True, cache=True)  # Array creation cannot be compiled
+# @numba.jit(forceobj=True, fastmath=True, cache=True)  # Array creation cannot be compiled
 def preprocess_jitted(raw, x, n, b1, b2, window):
     """
     :argument raw: raw uint16 data from Telesto from single frame grab of one B-Scan
@@ -201,7 +209,7 @@ def preprocess_jitted(raw, x, n, b1, b2, window):
 """
 Subfunction of preprocess that can be compiled in nopython mode
 """
-@numba.njit(fastmath=True)
+# @numba.njit(fastmath=True)
 def reshape_jitted(flat, N, b1, b2, reshaped, mean):
     ib1 = 0
     ib2 = 0

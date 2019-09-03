@@ -389,6 +389,8 @@ class FigureEight:
         self._stopMeasurement()
         PySpectralRadar.clearRawData(self._rawdatahandle)
 
+        self._processor.clear()
+
     def _scan(self):
 
         self._getRawData(self._rawdatahandle)
