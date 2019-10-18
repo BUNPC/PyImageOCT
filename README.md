@@ -3,7 +3,7 @@ Control applications for Thorlabs Telesto SD-OCT system
 
 Currently, only Figure-8 scanning application which acquires two perpendicular B-scans is working.
 
-The project is dependent on fbs but will run without it
+The project is built around fbs but might run without it
 
 ## Dependencies:
 - Python > 3.5 (fbs build is finnicky for > 3.6)
