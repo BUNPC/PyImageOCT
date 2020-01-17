@@ -11,10 +11,13 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super(MainWindow, self).__init__()
         uifile = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))+"\\ui\\MainWindow.ui"
-        uic.loadUi(uifile,self)  # Entire GUI is marked up in one .ui file
-
-        layout2D = self.findChild(QtWidgets.QGridLayout, 'layout2D')
-        layoutSpectrum = self.findChild(QtWidgets.QGridLayout, 'layoutSpectrum')
+        uic.loadUi(uifile,self)
+        """
+        Entire GUI is marked up in one .ui file. Models of each tab/major function will be passed the MainWindow and 
+        will ask for the markup identifiers they expect directly.
+        """
+        layout2D = self.findChild(QtWidgets.QGridLayout, 'widget2D')
+        layoutSpectrum = self.findChild(QtWidgets.QGridLayout, 'widgetSpectrum')
 
         print(layout2D,layoutSpectrum)
 
