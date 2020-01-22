@@ -185,22 +185,22 @@
            </widget>
           </item>
           <item row="0" column="2" rowspan="4" colspan="2">
-           <widget class="QWidget" name="widget2D" native="true">
-            <layout class="QGridLayout" name="layout2D">
-             <item row="3" column="0">
-              <widget class="QCheckBox" name="checkScanThrough">
+           <widget class="QWidget" name="group2D" native="true">
+            <layout class="QGridLayout" name="layout2DGroup">
+             <item row="5" column="0">
+              <widget class="QRadioButton" name="radioEnface">
                <property name="toolTip">
-                <string>Scan automatically through the volume, or select a slice with the slider</string>
+                <string>Slice through B-scans or through enface C-scans</string>
                </property>
                <property name="text">
-                <string>Scan through volume</string>
+                <string>Enface</string>
                </property>
                <property name="checked">
-                <bool>false</bool>
+                <bool>true</bool>
                </property>
               </widget>
              </item>
-             <item row="3" column="1">
+             <item row="6" column="1">
               <widget class="QSlider" name="sliderSlice">
                <property name="enabled">
                 <bool>false</bool>
@@ -219,20 +219,27 @@
                </property>
               </widget>
              </item>
-             <item row="0" column="0">
-              <widget class="QRadioButton" name="radioEnface">
+             <item row="6" column="0">
+              <widget class="QCheckBox" name="checkScanThrough">
                <property name="toolTip">
-                <string>Slice through B-scans or through enface C-scans</string>
+                <string>Scan automatically through the volume, or select a slice with the slider</string>
                </property>
                <property name="text">
-                <string>Enface</string>
+                <string>Scan through volume</string>
                </property>
                <property name="checked">
+                <bool>false</bool>
+               </property>
+              </widget>
+             </item>
+             <item row="0" column="0" rowspan="4" colspan="2">
+              <widget class="QWidget" name="widget2D" native="true">
+               <property name="autoFillBackground">
                 <bool>true</bool>
                </property>
               </widget>
              </item>
-             <item row="1" column="0">
+             <item row="4" column="0">
               <widget class="QRadioButton" name="radioBScan">
                <property name="toolTip">
                 <string>Slice through B-scans or through enface C-scans</string>
@@ -404,15 +411,22 @@
            </widget>
           </item>
           <item row="4" column="2" rowspan="2" colspan="2">
-           <widget class="QWidget" name="widgetSpectrum" native="true">
-            <layout class="QGridLayout" name="layoutSpectrum">
-             <item row="0" column="0">
+           <widget class="QWidget" name="groupSpectrum" native="true">
+            <layout class="QGridLayout" name="layoutSpectrumGroup">
+             <item row="1" column="0">
               <widget class="QCheckBox" name="checkRemoveDC">
                <property name="toolTip">
                 <string>Subtract DC value from vizualized spectrum. The DC signal is simply the average dark image on the spectrometer</string>
                </property>
                <property name="text">
                 <string>Remove DC offset</string>
+               </property>
+              </widget>
+             </item>
+             <item row="0" column="0">
+              <widget class="QWidget" name="widgetSpectrum" native="true">
+               <property name="autoFillBackground">
+                <bool>true</bool>
                </property>
               </widget>
              </item>

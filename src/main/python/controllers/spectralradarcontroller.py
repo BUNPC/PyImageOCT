@@ -1,5 +1,6 @@
-import PySpectralRadar
+from PySpectralRadar import PySpectralRadar
 import numpy as np
+from copy import deepcopy
 
 class SpectralRadarController:
     """
@@ -22,6 +23,7 @@ class SpectralRadarController:
         self._trigger_timeout = None
         self._lam = None  # An array of wavelength data loaded from disk
         self._rawdatahandle = None  # handle for raw data object used during acquisition
+        self._rawdatadim = 0  # Size of raw data array
 
     def initialize(self):
         """
@@ -55,7 +57,7 @@ class SpectralRadarController:
         Safely releases most of SpectralRadar object memory.
         :return: 0 if successful
         """
-        PySpectralRadar.clearScanPattern(self._scanpattern)
+        PySpectralRadar.clearScanPattern(self._scanpattern)  # TODO decice if scan pattern should persist or not
         PySpectralRadar.closeProcessing(self._proc)
         PySpectralRadar.closeProbe(self._probe)
         PySpectralRadar.closeDevice(self._device)
@@ -72,21 +74,51 @@ class SpectralRadarController:
     def set_scanpattern(self,scanpatternhandle):
         """
         Directly sets the current SpectralRadar scan pattern handle
-        :param scanpatternhandle:
+        :param scanpatternhandle: SpectralRadar scan pattern handle object
         """
         self._scanpattern = scanpatternhandle
 
-    def create_scanpattern(self):
+    def create_scanpattern(self, positions, size_x, size_y, apodization):
         """
         By default, uses createFreeformScanPattern to generate and store a scan pattern object.
         If a different scan pattern generator function is to be used, override this method or use
         set_scanpattern.
         :return: 0 if successful
         """
-
+        self._scanpattern = PySpectralRadar.createFreeformScanPattern(self._probe, positions, size_x, size_y, apodization)
 
     def clear_scanpattern(self):
         """
         Clears SpectralRadar scan pattern object.
         """
         PySpectralRadar.clearScanPattern(self._scanpattern)
+        self._scanpattern = None
+
+    def start_measurement(self):
+        self._rawdatahandle = PySpectralRadar.createRawData()
+        PySpectralRadar.startMeasurement(self._device, self._scanpattern, self._acquisitiontype)
+
+    def stop_measurement(self):
+        self._rawdatadim = 0
+        PySpectralRadar.stopMeasurement(self._device)
+        PySpectralRadar.clearRawData(self._rawdatahandle)
+
+    def grab_rawdata(self):
+        """
+        Grabs a raw data frame from the current Telesto device
+        :return: numpy array of frame
+        """
+        PySpectralRadar.getRawData(self._device, self._rawdatahandle)
+        frame = np.empty(self._rawdatadim, dtype=np.uint16)
+        PySpectralRadar.copyRawDataContent(self._rawdatahandle, frame)
+        return deepcopy(frame)  # TODO determine if this is necessary
+
+    def prescan(self):
+        """
+        Pre-scan routine which determines necessary buffer size
+        :return: Returns the raw data size. It is stored as a private member also, however
+        """
+        self.start_measurement()
+        PySpectralRadar.getRawData(self._device, self._rawdatahandle)
+        self._rawdatadim = PySpectralRadar.getRawDatasShape(self._rawdatadim)
+        self.stop_measurement()
