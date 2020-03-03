@@ -29,7 +29,7 @@ if __name__ == '__main__':
     window = MainWindow()
     window.resize(860, 920)
     window.setMinimumSize(860,920)
-    window.setMaximumSize(860,920)
+    # window.setMaximumSize(860,920)
     window.show()
     exit_code = appctxt.app.exec_()      # 2. Invoke appctxt.app.exec_()
     sys.exit(exit_code)

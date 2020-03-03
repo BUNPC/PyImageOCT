@@ -16,10 +16,9 @@ class OCTAController(SpectralRadarController):
         widget2D.setLayout(layout2D)
         widgetSpectrum.setLayout(layoutSpectrum)
 
-        print(layout2D, layoutSpectrum)
-
         self.plot2D = pyqtg.PlotWidget()
         self.plotSpectrum = pyqtg.PlotWidget()
 
         layout2D.addWidget(self.plot2D)
         layoutSpectrum.addWidget(self.plotSpectrum)
+
