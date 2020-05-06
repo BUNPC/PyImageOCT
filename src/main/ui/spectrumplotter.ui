@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<ui version="4.0">
+ <author></author>
+ <comment></comment>
+ <exportmacro></exportmacro>
+ <class>Form</class>
+ <widget class="QWidget" name="widgetSpectrum" native="true">
+       <layout class="QGridLayout" name="layoutSpectrumGroup">
+        <item row="1" column="0">
+         <widget class="QCheckBox" name="checkRemoveDC">
+          <property name="toolTip">
+           <string>Subtract DC value from vizualized spectrum. The DC signal is simply the average dark image on the spectrometer</string>
+          </property>
+          <property name="text">
+           <string>Remove DC offset</string>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="0">
+         <widget class="QWidget" name="widgetSpec" native="true">
+          <property name="autoFillBackground">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+ <pixmapfunction></pixmapfunction>
+ <connections/>
+</ui>

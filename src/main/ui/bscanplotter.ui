@@ -1,0 +1,75 @@
+<?xml version="1.0"?>
+<ui version="4.0">
+ <author></author>
+ <comment></comment>
+ <exportmacro></exportmacro>
+ <class>Form</class>
+ <widget class="QWidget" name="widgetBScan" native="true">
+       <layout class="QGridLayout" name="layoutVisB">
+        <item row="5" column="0">
+         <widget class="QRadioButton" name="radioEnface">
+          <property name="toolTip">
+           <string>Slice through B-scans or through enface C-scans</string>
+          </property>
+          <property name="text">
+           <string>Enface</string>
+          </property>
+          <property name="checked">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item row="6" column="1">
+         <widget class="QSlider" name="sliderSlice">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
+          <property name="toolTip">
+           <string>Scan automatically through the volume, or select a slice with the slider</string>
+          </property>
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+          <property name="invertedAppearance">
+           <bool>false</bool>
+          </property>
+          <property name="tickPosition">
+           <enum>QSlider::TicksBelow</enum>
+          </property>
+         </widget>
+        </item>
+        <item row="6" column="0">
+         <widget class="QCheckBox" name="checkScanThrough">
+          <property name="toolTip">
+           <string>Scan automatically through the volume, or select a slice with the slider</string>
+          </property>
+          <property name="text">
+           <string>Scan through volume</string>
+          </property>
+          <property name="checked">
+           <bool>false</bool>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="0" rowspan="4" colspan="2">
+         <widget class="QWidget" name="widget2D" native="true">
+          <property name="autoFillBackground">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item row="4" column="0">
+         <widget class="QRadioButton" name="radioBScan">
+          <property name="toolTip">
+           <string>Slice through B-scans or through enface C-scans</string>
+          </property>
+          <property name="text">
+           <string>B-scan</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+ <pixmapfunction></pixmapfunction>
+ <connections/>
+</ui>

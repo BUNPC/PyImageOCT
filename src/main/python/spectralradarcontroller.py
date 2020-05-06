@@ -25,6 +25,9 @@ class SpectralRadarController:
         self._rawdatahandle = None  # handle for raw data object used during acquisition
         self._rawdatadim = 0  # Size of raw data array
 
+        # Flag set true upon initialization. No two controllers can be online simultaneously.
+        self._online = False
+
     def initialize(self):
         """
         Initializes device, probe, processing device with default settings.
@@ -50,6 +53,8 @@ class SpectralRadarController:
 
         print('SpectralRadarController: Telesto initialized successfully.')
 
+        self._online = True
+
         return 0
 
     def close(self):
@@ -61,6 +66,8 @@ class SpectralRadarController:
         PySpectralRadar.closeProcessing(self._proc)
         PySpectralRadar.closeProbe(self._probe)
         PySpectralRadar.closeDevice(self._device)
+
+        self._online = False
 
         return 0
 

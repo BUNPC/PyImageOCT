@@ -1,0 +1,4 @@
+numpy
+pyqtgraph
+fbs
+PyQt5==5.9.2
