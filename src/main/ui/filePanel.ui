@@ -6,22 +6,69 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>200</width>
-    <height>135</height>
+    <width>558</width>
+    <height>140</height>
    </rect>
+  </property>
+  <property name="sizePolicy">
+   <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+    <horstretch>1</horstretch>
+    <verstretch>0</verstretch>
+   </sizepolicy>
   </property>
   <property name="title">
    <string>File</string>
   </property>
-  <layout class="QGridLayout" name="gridFile">
+  <property name="flat">
+   <bool>false</bool>
+  </property>
+  <layout class="QGridLayout" name="gridFile" columnstretch="0">
    <item row="0" column="0">
     <layout class="QFormLayout" name="formExp">
+     <property name="sizeConstraint">
+      <enum>QLayout::SetMinimumSize</enum>
+     </property>
+     <property name="fieldGrowthPolicy">
+      <enum>QFormLayout::AllNonFixedFieldsGrow</enum>
+     </property>
      <item row="0" column="0">
-      <layout class="QGridLayout" name="gridExp">
+      <layout class="QGridLayout" name="gridExp" rowstretch="1" columnstretch="0,0" columnminimumwidth="0,0">
+       <property name="sizeConstraint">
+        <enum>QLayout::SetMinimumSize</enum>
+       </property>
        <item row="0" column="0">
         <widget class="QLineEdit" name="lineExp">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+           <horstretch>1</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="minimumSize">
+          <size>
+           <width>340</width>
+           <height>0</height>
+          </size>
+         </property>
+         <property name="baseSize">
+          <size>
+           <width>126</width>
+           <height>0</height>
+          </size>
+         </property>
+         <property name="font">
+          <font>
+           <family>Courier</family>
+          </font>
+         </property>
+         <property name="cursor">
+          <cursorShape>IBeamCursor</cursorShape>
+         </property>
          <property name="toolTip">
           <string>The directory where the recordings will be saved</string>
+         </property>
+         <property name="clearButtonEnabled">
+          <bool>false</bool>
          </property>
         </widget>
        </item>
@@ -39,6 +86,12 @@
      </item>
      <item row="0" column="1">
       <widget class="QLabel" name="labelExp">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
        <property name="toolTip">
         <string>The directory where the recordings will be saved</string>
        </property>
@@ -49,6 +102,29 @@
      </item>
      <item row="1" column="0">
       <widget class="QLineEdit" name="lineFileName">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+         <horstretch>1</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="minimumSize">
+        <size>
+         <width>340</width>
+         <height>0</height>
+        </size>
+       </property>
+       <property name="baseSize">
+        <size>
+         <width>0</width>
+         <height>0</height>
+        </size>
+       </property>
+       <property name="font">
+        <font>
+         <family>Courier</family>
+        </font>
+       </property>
        <property name="toolTip">
         <string>The name of this particular recording within the experiment</string>
        </property>
@@ -56,6 +132,12 @@
      </item>
      <item row="1" column="1">
       <widget class="QLabel" name="labelFileName">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
        <property name="toolTip">
         <string>The name of this particular recording within the experiment</string>
        </property>

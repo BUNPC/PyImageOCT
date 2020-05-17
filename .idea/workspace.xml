@@ -2,31 +2,13 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="953273ed-9c67-4db0-8d2d-b827690bb4de" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/req.txt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/python/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/python/widgets/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/python/widgets/plot.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/ui/bscanplotter.ui" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/ui/config.ui" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/ui/control.ui" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/ui/filePanel.ui" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/ui/octa.ui" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/ui/repeats.ui" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/ui/scan_octa.ui" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/ui/spectrumplotter.ui" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/ui/tabocta.ui" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/PyImageOCT.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/PyImageOCT.iml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/python/widgets/panels.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/python/PySpectralRadar" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/python/PySpectralRadar" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/python/controllers/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/python/controllers/circleacontroller.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/python/circleacontroller.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/python/controllers/fig8acontroller.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/python/fig8acontroller.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/python/controllers/octacontroller.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/python/octacontroller.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/python/controllers/spectralradarcontroller.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/python/spectralradarcontroller.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/python/__init__.py" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/python/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/python/main.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/ui/MainWindow.ui" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/ui/MainWindow.ui" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/ui/config.ui" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/ui/config.ui" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/ui/filePanel.ui" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/ui/filePanel.ui" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/ui/scan_octa.ui" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/ui/scan_octa.ui" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -37,65 +19,21 @@
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
       <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/src/main/python/octacontroller.py">
+        <entry file="file://$PROJECT_DIR$/src/main/python/main.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="170">
-              <caret line="10" selection-start-line="10" selection-end-line="10" />
-              <folding>
-                <element signature="e#0#27#0" expanded="true" />
-              </folding>
+            <state relative-caret-position="51">
+              <caret line="3" column="94" selection-start-line="3" selection-start-column="94" selection-end-line="3" selection-end-column="94" />
             </state>
           </provider>
         </entry>
       </file>
       <file pinned="false" current-in-tab="true">
-        <entry file="file://$PROJECT_DIR$/src/main/python/main.py">
+        <entry file="file://$PROJECT_DIR$/src/main/python/widgets/panels.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="221">
-              <caret line="47" column="18" lean-forward="true" selection-start-line="47" selection-start-column="18" selection-end-line="47" selection-end-column="18" />
+            <state relative-caret-position="136">
+              <caret line="108" column="32" lean-forward="true" selection-start-line="108" selection-start-column="32" selection-end-line="108" selection-end-column="32" />
               <folding>
-                <element signature="e#0#68#0" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/src/main/ui/MainWindow.ui">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="340">
-              <caret line="63" column="15" lean-forward="true" selection-start-line="63" selection-start-column="15" selection-end-line="63" selection-end-column="15" />
-              <folding>
-                <element signature="n#property#0;n#widget#0;n#ui#0;n#!!top" />
-                <element signature="n#property#1;n#widget#0;n#ui#0;n#!!top" />
-                <element signature="n#property#2;n#widget#0;n#ui#0;n#!!top" />
-                <element signature="n#property#3;n#widget#0;n#ui#0;n#!!top" />
-                <element signature="n#property#4;n#widget#0;n#ui#0;n#!!top" />
-                <element signature="n#property#5;n#widget#0;n#ui#0;n#!!top" />
-                <element signature="n#property#0;n#widget#0;n#item#0;n#layout#0;n#widget#0;n#widget#0;n#ui#0;n#!!top" />
-                <element signature="n#property#1;n#widget#0;n#item#0;n#layout#0;n#widget#0;n#widget#0;n#ui#0;n#!!top" />
-                <element signature="n#property#2;n#widget#0;n#item#0;n#layout#0;n#widget#0;n#widget#0;n#ui#0;n#!!top" />
-                <element signature="n#property#3;n#widget#0;n#item#0;n#layout#0;n#widget#0;n#widget#0;n#ui#0;n#!!top" />
-                <element signature="n#widget#0;n#widget#0;n#item#0;n#layout#0;n#widget#0;n#widget#0;n#ui#0;n#!!top" />
-                <element signature="n#widget#1;n#widget#0;n#item#0;n#layout#0;n#widget#0;n#widget#0;n#ui#0;n#!!top" />
-                <element signature="n#widget#2;n#widget#0;n#item#0;n#layout#0;n#widget#0;n#widget#0;n#ui#0;n#!!top" />
-                <element signature="n#widget#2;n#widget#0;n#ui#0;n#!!top" />
-                <element signature="n#action#0;n#widget#0;n#ui#0;n#!!top" />
-                <element signature="n#action#1;n#widget#0;n#ui#0;n#!!top" />
-                <element signature="n#action#2;n#widget#0;n#ui#0;n#!!top" />
-                <element signature="n#action#3;n#widget#0;n#ui#0;n#!!top" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/src/main/python/spectralradarcontroller.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state>
-              <caret line="39" column="64" lean-forward="true" selection-start-line="39" selection-start-column="64" selection-end-line="39" selection-end-column="64" />
-              <folding>
-                <element signature="e#0#43#0" expanded="true" />
+                <element signature="e#0#21#0" expanded="true" />
               </folding>
             </state>
           </provider>
@@ -126,7 +64,11 @@
       <find>bscan</find>
       <find>spectrum</find>
       <find>control</find>
+      <find>self.file_type</find>
     </findStrings>
+    <replaceStrings>
+      <replace>self.default_file_type</replace>
+    </replaceStrings>
   </component>
   <component name="Git.Settings">
     <option name="ROOT_SYNC" value="DONT_SYNC" />
@@ -156,15 +98,17 @@
         <option value="$PROJECT_DIR$/src/main/python/octacontroller.py" />
         <option value="$PROJECT_DIR$/src/main/python/spectralradarcontroller.py" />
         <option value="$PROJECT_DIR$/src/main/ui/tabocta.ui" />
+        <option value="$PROJECT_DIR$/src/main/python/filePanel.py" />
         <option value="$PROJECT_DIR$/src/main/python/main.py" />
+        <option value="$PROJECT_DIR$/src/main/python/widgets/panels.py" />
       </list>
     </option>
   </component>
   <component name="ProjectFrameBounds" extendedState="6">
-    <option name="x" value="-36" />
-    <option name="y" value="63" />
-    <option name="width" value="1938" />
-    <option name="height" value="1068" />
+    <option name="x" value="-11" />
+    <option name="y" value="46" />
+    <option name="width" value="1301" />
+    <option name="height" value="1404" />
   </component>
   <component name="ProjectId" id="1WoEXVfZ4wscEy1l8HAwVVPVfPl" />
   <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
@@ -173,7 +117,6 @@
       <foldersAlwaysOnTop value="true" />
     </navigator>
     <panes>
-      <pane id="Scope" />
       <pane id="ProjectPane">
         <subPane>
           <expand>
@@ -197,36 +140,32 @@
               <item name="PyImageOCT" type="462c0819:PsiDirectoryNode" />
               <item name="src" type="462c0819:PsiDirectoryNode" />
               <item name="main" type="462c0819:PsiDirectoryNode" />
-              <item name="python" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="PyImageOCT" type="b2602c69:ProjectViewProjectNode" />
-              <item name="PyImageOCT" type="462c0819:PsiDirectoryNode" />
-              <item name="src" type="462c0819:PsiDirectoryNode" />
-              <item name="main" type="462c0819:PsiDirectoryNode" />
               <item name="ui" type="462c0819:PsiDirectoryNode" />
             </path>
           </expand>
           <select />
         </subPane>
       </pane>
+      <pane id="Scope" />
     </panes>
   </component>
   <component name="PropertiesComponent">
     <property name="ASKED_SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
     <property name="SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
-    <property name="last_opened_file_path" value="C:/Program Files/Python36" />
-    <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$" />
+    <property name="restartRequiresConfirmation" value="false" />
+    <property name="settings.editor.selected.configurable" value="preferences.lookFeel" />
   </component>
   <component name="RecentsManager">
-    <key name="CopyFile.RECENT_KEYS">
-      <recent name="C:\Users\sstucker\OneDrive\Documents\BOAS_OCT_motion_corr\PyImageOCT\src" />
-    </key>
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\sstucker\OneDrive\Documents\OCT_motion_correction\PyImageOCT\src\main\python\widgets" />
       <recent name="C:\Users\sstucker\OneDrive\Documents\BOAS_OCT_motion_corr\PyImageOCT" />
       <recent name="C:\Users\sstucker\OneDrive\Documents\BOAS_OCT_motion_corr\PyImageOCT\src\main\python" />
       <recent name="C:\Users\sstucker\OneDrive\Documents\BOAS_OCT_motion_corr\PyImageOCT\src\main\python\controllers" />
       <recent name="C:\Users\sstucker\OneDrive\Documents\BOAS_OCT_motion_corr\PyImageOCT\src\main" />
+    </key>
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="C:\Users\sstucker\OneDrive\Documents\BOAS_OCT_motion_corr\PyImageOCT\src" />
     </key>
   </component>
   <component name="RunDashboard">
@@ -310,30 +249,37 @@
       <option name="project" value="LOCAL" />
       <updated>1588774400649</updated>
     </task>
-    <option name="localTasksCounter" value="6" />
+    <task id="LOCAL-00006" summary="reorg into sub uis">
+      <created>1588791301301</created>
+      <option name="number" value="00006" />
+      <option name="presentableId" value="LOCAL-00006" />
+      <option name="project" value="LOCAL" />
+      <updated>1588791301301</updated>
+    </task>
+    <option name="localTasksCounter" value="7" />
     <servers />
   </component>
   <component name="ToolWindowManager">
     <frame x="-7" y="23" width="1721" height="944" extended-state="6" />
     <editor active="true" />
     <layout>
-      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.20118694" />
+      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.10535822" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
       <window_info anchor="bottom" id="Find" order="1" />
-      <window_info active="true" anchor="bottom" id="Run" order="2" visible="true" weight="0.24231242" />
-      <window_info anchor="bottom" id="Debug" order="3" weight="0.4" />
+      <window_info active="true" anchor="bottom" id="Run" order="2" visible="true" weight="0.24167694" />
+      <window_info anchor="bottom" id="Debug" order="3" weight="0.39950678" />
       <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
       <window_info anchor="bottom" id="TODO" order="6" />
       <window_info anchor="bottom" id="Version Control" order="7" />
       <window_info anchor="bottom" id="Terminal" order="8" weight="0.3321033" />
       <window_info anchor="bottom" id="Event Log" order="9" side_tool="true" />
-      <window_info anchor="bottom" id="Python Console" order="10" />
+      <window_info anchor="bottom" id="Python Console" order="10" weight="0.3292232" />
       <window_info anchor="right" id="Commander" internal_type="SLIDING" order="0" type="SLIDING" weight="0.4" />
       <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
-      <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
+      <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.24984948" />
     </layout>
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -375,7 +321,8 @@
     <MESSAGE value="spectralradarcontroller stuff" />
     <MESSAGE value="Reorg, controllers, new ui" />
     <MESSAGE value="PySpectralRadar updates" />
-    <option name="LAST_COMMIT_MESSAGE" value="PySpectralRadar updates" />
+    <MESSAGE value="reorg into sub uis" />
+    <option name="LAST_COMMIT_MESSAGE" value="reorg into sub uis" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -406,16 +353,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="188">
           <caret line="74" selection-start-line="74" selection-end-line="74" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/main/ui/filePanel.ui">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="102">
-          <caret line="6" column="10" selection-start-line="6" selection-start-column="10" selection-end-line="6" selection-end-column="10" />
-          <folding>
-            <element signature="n#widget#0;n#ui#0;n#!!top" />
-          </folding>
         </state>
       </provider>
     </entry>
@@ -502,27 +439,27 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/main/python/widgets/__init__.py">
+    <entry file="file://$PROJECT_DIR$/src/main/ui/MainWindow_full.ui">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="17">
-          <caret line="1" column="6" selection-start-line="1" selection-start-column="6" selection-end-line="1" selection-end-column="6" />
+        <state relative-caret-position="73">
+          <caret line="842" column="15" lean-forward="true" selection-start-line="49" selection-start-column="6" selection-end-line="842" selection-end-column="15" />
+          <folding>
+            <element signature="n#widget#0;n#widget#0;n#item#0;n#layout#0;n#widget#0;n#widget#0;n#ui#0;n#!!top" />
+          </folding>
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/main/python/octacontroller.py">
+    <entry file="file://$PROJECT_DIR$/src/main/ui/tabocta.ui">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="170">
-          <caret line="10" selection-start-line="10" selection-end-line="10" />
-          <folding>
-            <element signature="e#0#27#0" expanded="true" />
-          </folding>
+        <state relative-caret-position="102">
+          <caret line="6" column="40" lean-forward="true" selection-start-line="6" selection-start-column="40" selection-end-line="6" selection-end-column="40" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/src/main/ui/MainWindow.ui">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="340">
-          <caret line="63" column="15" lean-forward="true" selection-start-line="63" selection-start-column="15" selection-end-line="63" selection-end-column="15" />
+          <caret line="63" column="15" selection-start-line="63" selection-start-column="15" selection-end-line="63" selection-end-column="15" />
           <folding>
             <element signature="n#property#0;n#widget#0;n#ui#0;n#!!top" />
             <element signature="n#property#1;n#widget#0;n#ui#0;n#!!top" />
@@ -546,39 +483,56 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/src/main/python/octacontroller.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="170">
+          <caret line="10" selection-start-line="10" selection-end-line="10" />
+          <folding>
+            <element signature="e#0#27#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/src/main/python/spectralradarcontroller.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state>
-          <caret line="39" column="64" lean-forward="true" selection-start-line="39" selection-start-column="64" selection-end-line="39" selection-end-column="64" />
+        <state relative-caret-position="17">
+          <caret line="39" column="64" selection-start-line="39" selection-start-column="64" selection-end-line="39" selection-end-column="64" />
           <folding>
             <element signature="e#0#43#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/main/ui/MainWindow_full.ui">
+    <entry file="file://$PROJECT_DIR$/src/main/python/widgets/__init__.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="73">
-          <caret line="842" column="15" lean-forward="true" selection-start-line="49" selection-start-column="6" selection-end-line="842" selection-end-column="15" />
-          <folding>
-            <element signature="n#widget#0;n#widget#0;n#item#0;n#layout#0;n#widget#0;n#widget#0;n#ui#0;n#!!top" />
-          </folding>
+        <state relative-caret-position="17">
+          <caret line="1" column="16" lean-forward="true" selection-start-line="1" selection-start-column="16" selection-end-line="1" selection-end-column="16" />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/main/ui/tabocta.ui">
+    <entry file="file://$PROJECT_DIR$/src/main/ui/filePanel.ui">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="102">
-          <caret line="6" column="40" lean-forward="true" selection-start-line="6" selection-start-column="40" selection-end-line="6" selection-end-column="40" />
+        <state relative-caret-position="85">
+          <caret line="222" column="15" lean-forward="true" selection-start-line="222" selection-start-column="15" selection-end-line="222" selection-end-column="15" />
+          <folding>
+            <element signature="n#widget#0;n#ui#0;n#!!top" />
+          </folding>
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/src/main/python/main.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="221">
-          <caret line="47" column="18" lean-forward="true" selection-start-line="47" selection-start-column="18" selection-end-line="47" selection-end-column="18" />
+        <state relative-caret-position="51">
+          <caret line="3" column="94" selection-start-line="3" selection-start-column="94" selection-end-line="3" selection-end-column="94" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/main/python/widgets/panels.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="136">
+          <caret line="108" column="32" lean-forward="true" selection-start-line="108" selection-start-column="32" selection-end-line="108" selection-end-column="32" />
           <folding>
-            <element signature="e#0#68#0" expanded="true" />
+            <element signature="e#0#21#0" expanded="true" />
           </folding>
         </state>
       </provider>
