@@ -69,8 +69,11 @@ class ScanPanelOCTA(QGroupBox):
         self.x_roi_spin.blockSignals(True)
         self.y_roi_spin.blockSignals(True)
 
-        self.x_roi_spin.setValue((self.x_spacing_spin.value() / 1000) * self.x_count_spin.value())
-        self.y_roi_spin.setValue((self.y_spacing_spin.value() / 1000) * self.y_count_spin.value())
+        try:
+            self.x_roi_spin.setValue((self.x_spacing_spin.value() / 1000) * (self.x_count_spin.value() - 0))
+            self.y_roi_spin.setValue((self.y_spacing_spin.value() / 1000) * (self.y_count_spin.value() - 0))
+        except ZeroDivisionError:
+            pass
 
         # Unblock them
         self.x_roi_spin.blockSignals(False)
@@ -80,8 +83,11 @@ class ScanPanelOCTA(QGroupBox):
         self.x_roi_spin.blockSignals(True)
         self.y_roi_spin.blockSignals(True)
 
-        self.x_roi_spin.setValue((self.x_spacing_spin.value() / 1000) * self.x_count_spin.value())
-        self.y_roi_spin.setValue((self.y_spacing_spin.value() / 1000) * self.y_count_spin.value())
+        try:
+            self.x_roi_spin.setValue((self.x_spacing_spin.value() / 1000) * (self.x_count_spin.value() - 0))
+            self.y_roi_spin.setValue((self.y_spacing_spin.value() / 1000) * (self.y_count_spin.value() - 0))
+        except ZeroDivisionError:
+            pass
 
         self.x_roi_spin.blockSignals(False)
         self.y_roi_spin.blockSignals(False)
@@ -91,11 +97,10 @@ class ScanPanelOCTA(QGroupBox):
         self.y_spacing_spin.blockSignals(True)
 
         try:
-            self.x_spacing_spin.setValue((self.x_roi_spin.value() * 1000) / (self.x_count_spin.value() - 1))
-            self.y_spacing_spin.setValue((self.y_roi_spin.value() * 1000) / (self.y_count_spin.value() - 1))
+            self.x_spacing_spin.setValue((self.x_roi_spin.value() * 1000) / self.x_count_spin.value())
+            self.y_spacing_spin.setValue((self.y_roi_spin.value() * 1000) / self.y_count_spin.value())
         except ZeroDivisionError:
-            self.x_spacing_spin.setValue(0)
-            self.y_spacing_spin.setValue(0)
+            pass
 
         self.x_spacing_spin.blockSignals(False)
         self.y_spacing_spin.blockSignals(False)

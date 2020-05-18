@@ -4,7 +4,6 @@
     <list default="true" id="953273ed-9c67-4db0-8d2d-b827690bb4de" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/python/widgets/panels.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/python/widgets/panels.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/ui/scan_octa.ui" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/ui/scan_octa.ui" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -26,8 +25,8 @@
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/src/main/python/widgets/panels.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="227">
-              <caret line="78" column="43" lean-forward="true" selection-start-line="78" selection-start-column="43" selection-end-line="78" selection-end-column="43" />
+            <state relative-caret-position="261">
+              <caret line="80" lean-forward="true" selection-start-line="80" selection-end-line="80" />
               <folding>
                 <element signature="e#0#21#0" expanded="true" />
               </folding>
@@ -259,7 +258,14 @@
       <option name="project" value="LOCAL" />
       <updated>1589749791851</updated>
     </task>
-    <option name="localTasksCounter" value="8" />
+    <task id="LOCAL-00008" summary="OCTA scan geometry GUI">
+      <created>1589823666078</created>
+      <option name="number" value="00008" />
+      <option name="presentableId" value="LOCAL-00008" />
+      <option name="project" value="LOCAL" />
+      <updated>1589823666078</updated>
+    </task>
+    <option name="localTasksCounter" value="9" />
     <servers />
   </component>
   <component name="ToolWindowManager">
@@ -326,7 +332,8 @@
     <MESSAGE value="PySpectralRadar updates" />
     <MESSAGE value="reorg into sub uis" />
     <MESSAGE value="Panels" />
-    <option name="LAST_COMMIT_MESSAGE" value="Panels" />
+    <MESSAGE value="OCTA scan geometry GUI" />
+    <option name="LAST_COMMIT_MESSAGE" value="OCTA scan geometry GUI" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -533,8 +540,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/src/main/python/widgets/panels.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="227">
-          <caret line="78" column="43" lean-forward="true" selection-start-line="78" selection-start-column="43" selection-end-line="78" selection-end-column="43" />
+        <state relative-caret-position="261">
+          <caret line="80" lean-forward="true" selection-start-line="80" selection-end-line="80" />
           <folding>
             <element signature="e#0#21#0" expanded="true" />
           </folding>
