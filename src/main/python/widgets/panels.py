@@ -24,6 +24,54 @@ Rates = {
     "146 kHz": 146000
 }
 
+Modes = ["BUSY", "IDLE", "SCANNING", "ACQUIRING"]
+
+class ControlPanel(QGroupBox):
+    """
+    Can go from IDLE into SCANNING or ACQUIRING, and from SCANNING into ACQUIRING. Can only go from BUSY to IDLE
+    """
+    def __init__(self):
+
+        super(QGroupBox, self).__init__()
+        ui = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))+"\\ui\\control.ui"
+        uic.loadUi(ui, self)
+
+        self.scan_button = self.findChild(QPushButton, "pushScan")
+        self.acquire_button = self.findChild(QPushButton, "pushAcquire")
+        self.stop_button = self.findChild(QPushButton, "pushStop")
+
+        self.buttons = [self.scan_button, self.acquire_button, self.stop_button]
+
+        self.MODE = "IDLE"
+
+    def connect_to_scan(self, slot):
+        self.scan_button.released.connect(slot)
+
+    def connect_to_acq(self, slot):
+        self.acquire_button.released.connect(slot)
+
+    def connect_to_stop(self, slot):
+        self.stop_button.released.connect(slot)
+
+    def set_idle(self):
+        self.scan_button.setEnabled(True)
+        self.acq_button.setEnabled(True)
+        self.stop_button.setEnabled(False)
+
+    def set_busy(self):
+        for button in self.buttons:
+            button.setEnabled(False)
+
+    def set_scanning(self):
+        self.scan_button.setEnabled(False)
+        self.acq_button.setEnabled(True)
+        self.stop_button.setEnabled(True)
+
+    def set_acquiring(self):
+        self.scan_button.setEnabled(False)
+        self.acquire_button.setEnabled(True)
+        self.stop_button.setEnabled(True)
+
 
 class ScanPanelOCTA(QGroupBox):
 

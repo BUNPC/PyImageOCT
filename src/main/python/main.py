@@ -1,7 +1,7 @@
 from fbs_runtime.application_context.PyQt5 import ApplicationContext
 from PyQt5.QtWidgets import QMainWindow, QWidget
 from PyQt5 import uic
-from src.main.python.widgets.panels import FilePanel, RepeatsPanel, ConfigPanel, ScanPanelOCTA
+from src.main.python.widgets.panels import FilePanel, RepeatsPanel, ConfigPanel, ScanPanelOCTA, ControlPanel
 
 import sys
 import os
@@ -25,7 +25,7 @@ class MainWindow(QMainWindow):
 
 if __name__ == '__main__':
     appctxt = ApplicationContext()       # 1. Instantiate ApplicationContext
-    window = ScanPanelOCTA()
+    window = ControlPanel()
     # window.resize(860, 920)
     # window.setMinimumSize(860,920)
     # # window.setMaximumSize(860,920)
