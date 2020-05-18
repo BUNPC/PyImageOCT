@@ -1,14 +1,15 @@
-from PyQt5 import uic
-from PyQt5.QtWidgets import QGroupBox, QLineEdit, QComboBox, QToolButton, QFileDialog, QSpinBox, QDoubleSpinBox, QCheckBox, QPushButton
-from datetime import datetime
-import os
 import glob
+import os
+from datetime import datetime
+
+from PyQt5 import uic
+from PyQt5.QtWidgets import QGroupBox, QLineEdit, QComboBox, QToolButton, QFileDialog, QSpinBox, QDoubleSpinBox, \
+    QCheckBox, QPushButton
 
 FileTypes = [
     ".npy",
     ".mat"
 ]
-
 
 FileSizes = [
     "250 MB",
@@ -18,7 +19,6 @@ FileSizes = [
     "4 GB"
 ]
 
-
 Rates = {
     "76 kHz": 76000,
     "146 kHz": 146000
@@ -26,14 +26,15 @@ Rates = {
 
 Modes = ["BUSY", "IDLE", "SCANNING", "ACQUIRING"]
 
+
 class ControlPanel(QGroupBox):
     """
     Can go from IDLE into SCANNING or ACQUIRING, and from SCANNING into ACQUIRING. Can only go from BUSY to IDLE
     """
-    def __init__(self):
 
+    def __init__(self):
         super(QGroupBox, self).__init__()
-        ui = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))+"\\ui\\control.ui"
+        ui = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))) + "\\ui\\control.ui"
         uic.loadUi(ui, self)
 
         self.scan_button = self.findChild(QPushButton, "pushScan")
@@ -78,7 +79,8 @@ class ScanPanelOCTA(QGroupBox):
     def __init__(self):
 
         super(QGroupBox, self).__init__()
-        ui = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))+"\\ui\\scan_octa.ui"  # Double escape dir
+        ui = os.path.dirname(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__)))) + "\\ui\\scan_octa.ui"  # Double escape dir
         uic.loadUi(ui, self)
 
         self.indefinite_check = self.findChild(QCheckBox, "checkIndefinite")
@@ -109,8 +111,6 @@ class ScanPanelOCTA(QGroupBox):
 
         self.x_count_spin.valueChanged.connect(self.count_changed)
         self.y_count_spin.valueChanged.connect(self.count_changed)
-
-        self.show()
 
     def count_changed(self):
         # Need to block signals so that update functions arent recursive
@@ -174,13 +174,13 @@ class ScanPanelOCTA(QGroupBox):
 class ConfigPanel(QGroupBox):
 
     def __init__(self):
-
         super(QGroupBox, self).__init__()
-        ui = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))+"\\ui\\config.ui"  # Double escape dir
+        ui = os.path.dirname(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__)))) + "\\ui\\config.ui"  # Double escape dir
         uic.loadUi(ui, self)
 
         self.configdir = "C:\\ThorLabs\\SpectralRadar\\config"  # TODO set this intelligently on startup
-        self.configpaths = glob.glob(self.configdir+"/*.ini")
+        self.configpaths = glob.glob(self.configdir + "/*.ini")
         print(self.configpaths)
 
         self.config_combo = self.findChild(QComboBox, "comboConfig")
@@ -193,8 +193,6 @@ class ConfigPanel(QGroupBox):
         self.bitness_check = self.findChild(QCheckBox, "check32")
         self.fft_check = self.findChild(QCheckBox, "checkFFT")
         self.interp_check = self.findChild(QCheckBox, "checkInterpolation")
-
-        self.show()
 
     def get_proc_stream(self):
         """
@@ -211,19 +209,19 @@ class ConfigPanel(QGroupBox):
     def get_apod(self):
         return self.apod_combo.text()
 
+
 class RepeatsPanel(QGroupBox):
 
     def __init__(self):
 
         super(QGroupBox, self).__init__()
-        ui = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))+"\\ui\\repeats.ui"  # Double escape dir
+        ui = os.path.dirname(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__)))) + "\\ui\\repeats.ui"  # Double escape dir
         uic.loadUi(ui, self)
 
         self.a_repeat_spin = self.findChild(QSpinBox, "spinARepeat")
         self.b_repeat_spin = self.findChild(QSpinBox, "spinBRepeat")
         self.avg_check = self.findChild(QCheckBox, "checkAveraging")
-
-        self.show()
 
     def get_a_repeat(self):
 
@@ -250,10 +248,10 @@ class RepeatsPanel(QGroupBox):
 class FilePanel(QGroupBox):
 
     def __init__(self):
-
         super(QGroupBox, self).__init__()
 
-        ui = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))+"\\ui\\filePanel.ui"  # Double escape dir
+        ui = os.path.dirname(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__)))) + "\\ui\\filePanel.ui"  # Double escape dir
         uic.loadUi(ui, self)
 
         self.exp_dir_line = self.findChild(QLineEdit, "lineExp")
@@ -268,7 +266,8 @@ class FilePanel(QGroupBox):
 
         # Defaults.  All fields managed by Qt elements themselves for now
 
-        self.default_exp_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) + "\\exp-" + datetime.today().strftime('%Y-%m-%d')
+        self.default_exp_dir = os.path.dirname(
+            os.path.dirname(os.path.abspath(__file__))) + "\\exp-" + datetime.today().strftime('%Y-%m-%d')
         self.exp_dir_line.setText(self.default_exp_dir)
 
         self.default_trial_name = "rec01"
@@ -277,8 +276,6 @@ class FilePanel(QGroupBox):
         self.file_type_combo.setCurrentIndex(0)
 
         self.file_type_combo.setCurrentIndex(1)
-
-        self.show()
 
     def browse_for_file(self):
         #  Uses QFileDialog to select a directory to save in
