@@ -38,10 +38,16 @@
          <property name="text">
           <string>Indefinite</string>
          </property>
+         <property name="checked">
+          <bool>true</bool>
+         </property>
         </widget>
        </item>
        <item row="2" column="1">
         <widget class="QSpinBox" name="spinScanNumber">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
          <property name="toolTip">
           <string>The number of scans to acquire. Note that these are saved independently, see Repeat/Averaging section</string>
          </property>
@@ -53,6 +59,9 @@
          </property>
          <property name="maximum">
           <number>100000</number>
+         </property>
+         <property name="value">
+          <number>500</number>
          </property>
         </widget>
        </item>
@@ -95,6 +104,9 @@
        </property>
        <property name="minimum">
         <double>0.000100000000000</double>
+       </property>
+       <property name="singleStep">
+        <double>0.010000000000000</double>
        </property>
        <property name="value">
         <double>0.500000000000000</double>
@@ -239,7 +251,7 @@
       </widget>
      </item>
      <item row="1" column="0">
-      <widget class="QSpinBox" name="spinBcount">
+      <widget class="QSpinBox" name="spinBCount">
        <property name="toolTip">
         <string>The number of B-scans to acquire</string>
        </property>
@@ -276,6 +288,9 @@
        </property>
        <property name="minimum">
         <double>0.000100000000000</double>
+       </property>
+       <property name="singleStep">
+        <double>0.010000000000000</double>
        </property>
        <property name="value">
         <double>0.500000000000000</double>

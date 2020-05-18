@@ -41,11 +41,11 @@ class ScanPanelOCTA(QGroupBox):
 
         self.scan_number_spin = self.findChild(QSpinBox, "spinScanNumber")
 
-        self.roi_x_spin = self.findChild(QDoubleSpinBox, "spinROIWidth")
+        self.x_roi_spin = self.findChild(QDoubleSpinBox, "spinROIWidth")
         self.x_count_spin = self.findChild(QSpinBox, "spinACount")
         self.x_spacing_spin = self.findChild(QDoubleSpinBox, "spinFastAxisSpacing")
 
-        self.roi_y_spin = self.findChild(QDoubleSpinBox, "spinROIHeight")
+        self.y_roi_spin = self.findChild(QDoubleSpinBox, "spinROIHeight")
         self.y_count_spin = self.findChild(QSpinBox, "spinBCount")
         self.y_spacing_spin = self.findChild(QDoubleSpinBox, "spinSlowAxisSpacing")
 
@@ -53,70 +53,70 @@ class ScanPanelOCTA(QGroupBox):
 
         self.x_spacing_spin.valueChanged.connect(self.x_spacing_changed)
 
-        self.x_spacing_spin.mousePressEvent = self.setSpacingDriving
-        self.y_spacing_spin.mousePressEvent = self.setSpacingDriving
+        self.x_roi_spin.valueChanged.connect(self.roi_changed)
+        self.y_roi_spin.valueChanged.connect(self.roi_changed)
 
-        self.roi_x_spin.mousePressEvent = self.setROIDriving
-        self.roi_y_spin.mousePressEvent = self.setROIDriving
+        self.x_spacing_spin.valueChanged.connect(self.spacing_changed)
+        self.y_spacing_spin.valueChanged.connect(self.spacing_changed)
 
-        self.mousePressEvent = self.update_dimensions
-
-        self.SPACING_DRIVING = False
-        self.ROI_DRIVING = False
+        self.x_count_spin.valueChanged.connect(self.count_changed)
+        self.y_count_spin.valueChanged.connect(self.count_changed)
 
         self.show()
 
+    def count_changed(self):
+        # Need to block signals so that update functions arent recursive
+        self.x_roi_spin.blockSignals(True)
+        self.y_roi_spin.blockSignals(True)
 
-    def setSpacingDriving(self, event):
-        print("Set spacing driving")
-        self.SPACING_DRIVING = True
-        self.ROI_DRIVING = False
+        self.x_roi_spin.setValue((self.x_spacing_spin.value() / 1000) * self.x_count_spin.value())
+        self.y_roi_spin.setValue((self.y_spacing_spin.value() / 1000) * self.y_count_spin.value())
 
-    def setROIDriving(self, event):
-        print("Set ROI driving")
-        self.SPACING_DRIVING = False
-        self.ROI_DRIVING = True
+        # Unblock them
+        self.x_roi_spin.blockSignals(False)
+        self.y_roi_spin.blockSignals(False)
+
+    def spacing_changed(self):
+        self.x_roi_spin.blockSignals(True)
+        self.y_roi_spin.blockSignals(True)
+
+        self.x_roi_spin.setValue((self.x_spacing_spin.value() / 1000) * self.x_count_spin.value())
+        self.y_roi_spin.setValue((self.y_spacing_spin.value() / 1000) * self.y_count_spin.value())
+
+        self.x_roi_spin.blockSignals(False)
+        self.y_roi_spin.blockSignals(False)
+
+    def roi_changed(self):
+        self.x_spacing_spin.blockSignals(True)
+        self.y_spacing_spin.blockSignals(True)
+
+        try:
+            self.x_spacing_spin.setValue((self.x_roi_spin.value() * 1000) / (self.x_count_spin.value() - 1))
+            self.y_spacing_spin.setValue((self.y_roi_spin.value() * 1000) / (self.y_count_spin.value() - 1))
+        except ZeroDivisionError:
+            self.x_spacing_spin.setValue(0)
+            self.y_spacing_spin.setValue(0)
+
+        self.x_spacing_spin.blockSignals(False)
+        self.y_spacing_spin.blockSignals(False)
 
     def indefinite_check_changed(self):
-
         if self.indefinite_check.isChecked():
-
             self.scan_number_spin.setEnabled(False)
-
         else:
-
             self.scan_number_spin.setEnabled(True)
 
     def equal_aspect_check_changed(self):
-
         if self.equal_aspect_check.isChecked():
-
             self.y_spacing_spin.setValue(self.x_spacing_spin.value())
             self.y_spacing_spin.setEnabled(False)
-
         else:
-
             self.y_spacing_spin.setEnabled(True)
 
     def x_spacing_changed(self):
-
         if self.equal_aspect_check.isChecked():
-
             self.y_spacing_spin.setValue(self.x_spacing_spin.value())
 
-    def update_dimensions(self, event):
-
-        if self.SPACING_DRIVING:
-            print("Updating roi re: spacing")
-            self.roi_x_spin.setValue( (self.x_spacing_spin.value() * self.x_count_spin.value()) / 1000)
-            self.roi_y_spin.setValue( (self.y_spacing_spin.value() * self.x_count_spin.value()) / 1000)
-
-        if self.ROI_DRIVING:
-            print("Updating spacing re: roi")
-            self.x_spacing_spin.setValue(
-                (self.roi_x_spin.value() * self.x_count_spin.value()) / self.x_spacing_spin.value())
-            self.y_spacing_spin.setValue(
-                (self.roi_y_spin.value() * self.x_count_spin.value()) / self.y_spacing_spin.value())
 
 class ConfigPanel(QGroupBox):
 

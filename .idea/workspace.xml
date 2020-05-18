@@ -2,12 +2,8 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="953273ed-9c67-4db0-8d2d-b827690bb4de" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/src/main/python/widgets/panels.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/python/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/python/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/python/main.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/ui/config.ui" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/ui/config.ui" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/ui/filePanel.ui" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/ui/filePanel.ui" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/python/widgets/panels.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/python/widgets/panels.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/ui/scan_octa.ui" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/ui/scan_octa.ui" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -30,8 +26,8 @@
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/src/main/python/widgets/panels.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="136">
-              <caret line="108" column="32" lean-forward="true" selection-start-line="108" selection-start-column="32" selection-end-line="108" selection-end-column="32" />
+            <state relative-caret-position="227">
+              <caret line="78" column="43" lean-forward="true" selection-start-line="78" selection-start-column="43" selection-end-line="78" selection-end-column="43" />
               <folding>
                 <element signature="e#0#21#0" expanded="true" />
               </folding>
@@ -256,7 +252,14 @@
       <option name="project" value="LOCAL" />
       <updated>1588791301301</updated>
     </task>
-    <option name="localTasksCounter" value="7" />
+    <task id="LOCAL-00007" summary="Panels">
+      <created>1589749791851</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1589749791851</updated>
+    </task>
+    <option name="localTasksCounter" value="8" />
     <servers />
   </component>
   <component name="ToolWindowManager">
@@ -267,7 +270,7 @@
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
-      <window_info anchor="bottom" id="Find" order="1" />
+      <window_info anchor="bottom" id="Find" order="1" weight="0.3292232" />
       <window_info active="true" anchor="bottom" id="Run" order="2" visible="true" weight="0.24167694" />
       <window_info anchor="bottom" id="Debug" order="3" weight="0.39950678" />
       <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
@@ -322,7 +325,8 @@
     <MESSAGE value="Reorg, controllers, new ui" />
     <MESSAGE value="PySpectralRadar updates" />
     <MESSAGE value="reorg into sub uis" />
-    <option name="LAST_COMMIT_MESSAGE" value="reorg into sub uis" />
+    <MESSAGE value="Panels" />
+    <option name="LAST_COMMIT_MESSAGE" value="Panels" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -529,8 +533,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/src/main/python/widgets/panels.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="136">
-          <caret line="108" column="32" lean-forward="true" selection-start-line="108" selection-start-column="32" selection-end-line="108" selection-end-column="32" />
+        <state relative-caret-position="227">
+          <caret line="78" column="43" lean-forward="true" selection-start-line="78" selection-start-column="43" selection-end-line="78" selection-end-column="43" />
           <folding>
             <element signature="e#0#21#0" expanded="true" />
           </folding>
