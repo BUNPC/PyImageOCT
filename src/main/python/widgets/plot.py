@@ -45,6 +45,9 @@ class SpectrumView(QWidget):
         self.plotWidget = SpectrumPlotWidget()
         plotwidget_placeholder_layout.replaceWidget(plotwidget_placeholder, self.plotWidget)
 
+    def update(self):
+        print("SpectrumView update")
+
 
 class BScanView(QWidget):
 
@@ -81,6 +84,9 @@ class BScanView(QWidget):
         self.set_slice(1)  # Slice 1 is index 0!
 
         self.enface = True
+
+    def update(self):
+        print("BScanViewer update")
 
     def set_scan_mode(self):
 

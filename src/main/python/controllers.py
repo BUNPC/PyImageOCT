@@ -2,18 +2,18 @@ from PySpectralRadar import PySpectralRadar
 import numpy as np
 from copy import deepcopy
 
+
 class SpectralRadarController:
     """
     Manages key SpectralRadar data and interfaces. The user of the class should never have to call
     SpectralRadar methods directly. Child classes should implement scan pattern and processing controls.
     """
-    def __init__(self, default_probe_config='ProbeLKM10-LV'):
+    def __init__(self):
 
         self.lam_path = 'lam.npy'  # Path to chirp data array in numpy format
 
         # SpectralRadar handles
-        self._config = default_probe_config
-
+        self._config = None
         self._device = None
         self._probe = None
         self._proc = None
@@ -50,6 +50,7 @@ class SpectralRadarController:
             self._lam = np.empty(2048)
             for y in np.arange(2048):
                 self._lam[y] = PySpectralRadar.getWavelengthAtPixel(self._device, y)
+            np.save(self._lam, self.lam_path)
 
         print('SpectralRadarController: Telesto initialized successfully.')
 
@@ -113,7 +114,7 @@ class SpectralRadarController:
     def grab_rawdata(self):
         """
         Grabs a raw data frame from the current Telesto device
-        :return: numpy array of frame
+        :return: numpy array of frame. Memory managed by Python
         """
         PySpectralRadar.getRawData(self._device, self._rawdatahandle)
         frame = np.empty(self._rawdatadim, dtype=np.uint16)

@@ -38,18 +38,18 @@ class ControlPanel(QGroupBox):
         uic.loadUi(ui, self)
 
         self.scan_button = self.findChild(QPushButton, "pushScan")
-        self.acquire_button = self.findChild(QPushButton, "pushAcquire")
+        self.acq_button = self.findChild(QPushButton, "pushAcquire")
         self.stop_button = self.findChild(QPushButton, "pushStop")
 
-        self.buttons = [self.scan_button, self.acquire_button, self.stop_button]
+        self.buttons = [self.scan_button, self.acq_button, self.stop_button]
 
-        self.MODE = "IDLE"
+        # self.MODE = "IDLE"
 
     def connect_to_scan(self, slot):
         self.scan_button.released.connect(slot)
 
     def connect_to_acq(self, slot):
-        self.acquire_button.released.connect(slot)
+        self.acq_button.released.connect(slot)
 
     def connect_to_stop(self, slot):
         self.stop_button.released.connect(slot)
@@ -70,7 +70,7 @@ class ControlPanel(QGroupBox):
 
     def set_acquiring(self):
         self.scan_button.setEnabled(False)
-        self.acquire_button.setEnabled(True)
+        self.acq_button.setEnabled(True)
         self.stop_button.setEnabled(True)
 
 
