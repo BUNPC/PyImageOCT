@@ -4,6 +4,7 @@ import numpy as np
 import pyqtgraph
 from PyQt5 import uic
 from PyQt5.QtWidgets import QWidget, QRadioButton, QCheckBox, QSlider, QLabel
+from PyQt5.QtCore import QTimer
 
 
 class SpectrumPlotWidget(pyqtgraph.PlotWidget):
@@ -83,7 +84,13 @@ class BScanView(QWidget):
         self.set_data(np.random.random([1024, 400, 500]))  # For testing only!
         self.set_slice(1)  # Slice 1 is index 0!
 
+        self.timer = QTimer()
+        self.timer.timeout.connect(self.slice_thru_advance)
+
         self.enface = True
+
+    def slice_thru_advance(self):
+        print("Slicey slicey!")
 
     def update(self):
         print("BScanViewer update")
@@ -93,11 +100,13 @@ class BScanView(QWidget):
         self.set_slice(1)
         if self.scan_check.isChecked():
             self.slice_slider.setEnabled(False)
-            print("Scanning")
+            self.timer.start(100)
+            print("Automatic scan")
 
         else:
             self.slice_slider.setEnabled(True)
-            print("Slicing")
+            self.timer.stop()
+            print("Manual control")
 
     def set_orientation(self):
         if self.enface_radio.isChecked():

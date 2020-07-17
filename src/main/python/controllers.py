@@ -3,6 +3,57 @@ import numpy as np
 from copy import deepcopy
 
 
+class Controller:
+    """
+    Base class for interfacing GUI with OCT hardware.
+    """
+
+    def __init__(self):
+        pass
+        # Initialize self.frame_buffer ringbuffer
+
+
+    def initialize(self):
+        """
+        Allocate memory and initialize objects for control of hardware
+        :return: 0 on success
+        """
+        raise NotImplementedError()
+
+    def close(self):
+        """
+        Close interface objects and free memory
+        :return: 0 on success
+        """
+        raise NotImplementedError()
+
+    def start_scan(self):
+        """
+        Launch a thread which sets up and starts scanning, acquisition, fill frame_buffer
+        :return: 0 on success
+        """
+        raise NotImplementedError()
+
+    def stop_scan(self):
+        """
+        Stop the scan and acquisition thread
+        :return: 0 on success
+        """
+        raise NotImplementedError()
+
+    def configure(self, cfg_path):
+        """
+        Load a .cfg file by name and use it to configure API
+        :return: 0 on success
+        """
+        raise NotImplementedError()
+
+    def set_scanpattern(self, scan_pattern):
+        raise NotImplementedError()
+        """
+        Takes a scan pattern object and configures scanning system
+        """
+
 class SpectralRadarController:
     """
     Manages key SpectralRadar data and interfaces. The user of the class should never have to call
@@ -130,3 +181,7 @@ class SpectralRadarController:
         PySpectralRadar.getRawData(self._device, self._rawdatahandle)
         self._rawdatadim = PySpectralRadar.getRawDatasShape(self._rawdatadim)
         self.stop_measurement()
+
+
+class IMAQController(class):
+    pass
