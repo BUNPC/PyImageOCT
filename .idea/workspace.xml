@@ -6,14 +6,10 @@
   <component name="ChangeListManager">
     <list default="true" id="953273ed-9c67-4db0-8d2d-b827690bb4de" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/python/circleacontroller.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/python/fig8acontroller.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/python/octacontroller.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/python/spectralradarcontroller.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/python/controllers.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/python/tabs.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/python/tabs.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/python/threads.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/python/threads.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/python/widgets/panels.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/python/widgets/panels.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/python/controllers.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/python/controllers.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/python/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/python/main.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/python/widgets/plot.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/python/widgets/plot.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/ui/bscanplotter.ui" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/ui/bscanplotter.ui" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -26,8 +22,11 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/main/python/main.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state>
-              <caret column="9" lean-forward="true" selection-start-column="9" selection-end-column="9" />
+            <state relative-caret-position="306">
+              <caret line="28" lean-forward="true" selection-start-line="28" selection-end-line="28" />
+              <folding>
+                <element signature="e#0#9#0" expanded="true" />
+              </folding>
             </state>
           </provider>
         </entry>
@@ -35,8 +34,8 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/main/python/controllers.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="1037">
-              <caret line="132" selection-start-line="132" selection-end-line="132" />
+            <state relative-caret-position="2613">
+              <caret line="185" selection-start-line="185" selection-start-column="2" selection-end-line="186" selection-end-column="10" />
               <folding>
                 <element signature="e#0#43#0" expanded="true" />
               </folding>
@@ -47,8 +46,8 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/main/python/tabs.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="289">
-              <caret line="110" column="70" lean-forward="true" selection-start-line="110" selection-start-column="70" selection-end-line="110" selection-end-column="70" />
+            <state relative-caret-position="1012">
+              <caret line="74" column="27" lean-forward="true" selection-start-line="74" selection-start-column="27" selection-end-line="74" selection-end-column="27" />
               <folding>
                 <element signature="e#0#48#0" expanded="true" />
               </folding>
@@ -59,7 +58,7 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/main/python/widgets/panels.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-1371">
+            <state relative-caret-position="-3663">
               <caret line="53" column="36" selection-start-line="53" selection-start-column="36" selection-end-line="53" selection-end-column="36" />
               <folding>
                 <element signature="e#0#11#0" expanded="true" />
@@ -71,8 +70,8 @@
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/src/main/python/widgets/plot.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="238">
-              <caret line="88" column="33" selection-start-line="88" selection-start-column="33" selection-end-line="88" selection-end-column="33" />
+            <state relative-caret-position="187">
+              <caret line="44" column="65" selection-start-line="44" selection-start-column="65" selection-end-line="44" selection-end-column="65" />
               <folding>
                 <element signature="e#0#9#0" expanded="true" />
               </folding>
@@ -111,6 +110,9 @@
       <find>imageitem</find>
       <find>self.m_abort:</find>
       <find>control</find>
+      <find>self.enface</find>
+      <find>self._current_slice =</find>
+      <find>text</find>
     </findStrings>
     <replaceStrings>
       <replace>self.default_file_type</replace>
@@ -148,19 +150,19 @@
         <option value="$PROJECT_DIR$/src/main/python/spectralradarcontroller.py" />
         <option value="$PROJECT_DIR$/src/main/ui/tabocta.ui" />
         <option value="$PROJECT_DIR$/src/main/python/filePanel.py" />
-        <option value="$PROJECT_DIR$/src/main/python/main.py" />
         <option value="$PROJECT_DIR$/src/main/python/threads.py" />
-        <option value="$PROJECT_DIR$/src/main/python/controllers.py" />
         <option value="$PROJECT_DIR$/src/main/python/widgets/panels.py" />
         <option value="$PROJECT_DIR$/src/main/python/tabs.py" />
+        <option value="$PROJECT_DIR$/src/main/python/main.py" />
+        <option value="$PROJECT_DIR$/src/main/python/controllers.py" />
         <option value="$PROJECT_DIR$/src/main/python/widgets/plot.py" />
       </list>
     </option>
   </component>
-  <component name="ProjectFrameBounds">
-    <option name="x" value="-11" />
-    <option name="y" value="46" />
-    <option name="width" value="1523" />
+  <component name="ProjectFrameBounds" extendedState="6">
+    <option name="x" value="-12" />
+    <option name="y" value="45" />
+    <option name="width" value="1524" />
     <option name="height" value="1404" />
   </component>
   <component name="ProjectId" id="1WoEXVfZ4wscEy1l8HAwVVPVfPl" />
@@ -170,6 +172,7 @@
       <foldersAlwaysOnTop value="true" />
     </navigator>
     <panes>
+      <pane id="Scope" />
       <pane id="ProjectPane">
         <subPane>
           <expand>
@@ -214,7 +217,6 @@
           <select />
         </subPane>
       </pane>
-      <pane id="Scope" />
     </panes>
   </component>
   <component name="PropertiesComponent">
@@ -367,25 +369,46 @@
       <option name="project" value="LOCAL" />
       <updated>1589920780703</updated>
     </task>
-    <option name="localTasksCounter" value="13" />
+    <task id="LOCAL-00013" summary="Dummy examples">
+      <created>1589927053169</created>
+      <option name="number" value="00013" />
+      <option name="presentableId" value="LOCAL-00013" />
+      <option name="project" value="LOCAL" />
+      <updated>1589927053169</updated>
+    </task>
+    <task id="LOCAL-00014" summary="Virtual controller class">
+      <created>1594955267300</created>
+      <option name="number" value="00014" />
+      <option name="presentableId" value="LOCAL-00014" />
+      <option name="project" value="LOCAL" />
+      <updated>1594955267300</updated>
+    </task>
+    <task id="LOCAL-00015" summary="pyinstaller hook">
+      <created>1595210061802</created>
+      <option name="number" value="00015" />
+      <option name="presentableId" value="LOCAL-00015" />
+      <option name="project" value="LOCAL" />
+      <updated>1595210061802</updated>
+    </task>
+    <option name="localTasksCounter" value="16" />
     <servers />
   </component>
   <component name="ToolWindowManager">
-    <frame x="-7" y="31" width="1015" height="936" extended-state="0" />
+    <frame x="-7" y="23" width="1721" height="944" extended-state="6" />
     <editor active="true" />
     <layout>
-      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.18324608" />
+      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.16142434" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
-      <window_info anchor="bottom" id="Find" order="1" weight="0.3292232" />
-      <window_info active="true" anchor="bottom" id="Run" order="2" visible="true" weight="0.24159402" />
+      <window_info anchor="bottom" id="Find" order="1" weight="0.32841328" />
+      <window_info anchor="bottom" id="Run" order="2" visible="true" weight="0.2398524" />
       <window_info anchor="bottom" id="Debug" order="3" weight="0.3985056" />
       <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
       <window_info anchor="bottom" id="TODO" order="6" />
-      <window_info anchor="bottom" id="Version Control" order="7" />
-      <window_info anchor="bottom" id="Terminal" order="8" weight="0.3321033" />
+      <window_info anchor="bottom" id="Version Control" order="7" weight="0.3296433" />
+      <window_info anchor="bottom" id="Terminal" order="8" weight="0.21525215" />
       <window_info anchor="bottom" id="Event Log" order="9" side_tool="true" />
       <window_info anchor="bottom" id="Python Console" order="10" weight="0.3292232" />
       <window_info anchor="right" id="Commander" internal_type="SLIDING" order="0" type="SLIDING" weight="0.4" />
@@ -439,7 +462,10 @@
     <MESSAGE value="Control panel" />
     <MESSAGE value="OCTA tab" />
     <MESSAGE value="Vis widgets" />
-    <option name="LAST_COMMIT_MESSAGE" value="Vis widgets" />
+    <MESSAGE value="Dummy examples" />
+    <MESSAGE value="Virtual controller class" />
+    <MESSAGE value="pyinstaller hook" />
+    <option name="LAST_COMMIT_MESSAGE" value="pyinstaller hook" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -460,9 +486,7 @@
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/src/main/python/controllers/__init__.py" />
-    <entry file="file://$PROJECT_DIR$/src/main/python/circleacontroller.py">
-      <provider selected="true" editor-type-id="text-editor" />
-    </entry>
+    <entry file="file://$PROJECT_DIR$/src/main/python/circleacontroller.py" />
     <entry file="file://C:/ProgramData/Anaconda3/envs/PyImageOCT/Lib/site-packages/pyqtgraph/widgets/PlotWidget.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="188">
@@ -491,26 +515,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state>
           <caret column="21" lean-forward="true" selection-start-column="21" selection-end-column="21" />
-          <folding>
-            <element signature="n#widget#0;n#ui#0;n#!!top" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/main/ui/bscanplotter.ui">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="102">
-          <caret line="71" column="15" selection-start-line="71" selection-start-column="15" selection-end-line="71" selection-end-column="15" />
-          <folding>
-            <element signature="n#widget#0;n#ui#0;n#!!top" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/main/ui/spectrumplotter.ui">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="102">
-          <caret line="26" column="15" selection-start-line="26" selection-start-column="15" selection-end-line="26" selection-end-column="15" />
           <folding>
             <element signature="n#widget#0;n#ui#0;n#!!top" />
           </folding>
@@ -607,19 +611,8 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/main/python/octacontroller.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="170">
-          <caret line="10" selection-start-line="10" selection-end-line="10" />
-          <folding>
-            <element signature="e#0#27#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/main/python/fig8acontroller.py">
-      <provider selected="true" editor-type-id="text-editor" />
-    </entry>
+    <entry file="file://$PROJECT_DIR$/src/main/python/octacontroller.py" />
+    <entry file="file://$PROJECT_DIR$/src/main/python/fig8acontroller.py" />
     <entry file="file://$PROJECT_DIR$/src/main/python/threads.py">
       <provider selected="true" editor-type-id="text-editor">
         <state>
@@ -627,36 +620,19 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/main/python/main.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state>
-          <caret column="9" lean-forward="true" selection-start-column="9" selection-end-column="9" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/src/main/python/tabs.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="289">
-          <caret line="110" column="70" lean-forward="true" selection-start-line="110" selection-start-column="70" selection-end-line="110" selection-end-column="70" />
+        <state relative-caret-position="1012">
+          <caret line="74" column="27" lean-forward="true" selection-start-line="74" selection-start-column="27" selection-end-line="74" selection-end-column="27" />
           <folding>
             <element signature="e#0#48#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/main/python/controllers.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1037">
-          <caret line="132" selection-start-line="132" selection-end-line="132" />
-          <folding>
-            <element signature="e#0#43#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/src/main/python/widgets/panels.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-1371">
+        <state relative-caret-position="-3663">
           <caret line="53" column="36" selection-start-line="53" selection-start-column="36" selection-end-line="53" selection-end-column="36" />
           <folding>
             <element signature="e#0#11#0" expanded="true" />
@@ -664,10 +640,51 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/src/main/python/controllers.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="2613">
+          <caret line="185" selection-start-line="185" selection-start-column="2" selection-end-line="186" selection-end-column="10" />
+          <folding>
+            <element signature="e#0#43#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/main/python/main.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="306">
+          <caret line="28" lean-forward="true" selection-start-line="28" selection-end-line="28" />
+          <folding>
+            <element signature="e#0#9#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/main/ui/spectrumplotter.ui">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="391">
+          <caret line="23" column="40" lean-forward="true" selection-start-line="23" selection-start-column="40" selection-end-line="23" selection-end-column="40" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$USER_HOME$/.PyCharmCE2019.1/system/python_stubs/-1120166012/PyQt5/QtWidgets/QWidget.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="197">
+          <caret line="1024" column="8" selection-start-line="1024" selection-start-column="8" selection-end-line="1024" selection-end-column="8" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/main/ui/bscanplotter.ui">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="165">
+          <caret line="119" column="12" lean-forward="true" selection-start-line="119" selection-start-column="12" selection-end-line="119" selection-end-column="12" />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/src/main/python/widgets/plot.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="238">
-          <caret line="88" column="33" selection-start-line="88" selection-start-column="33" selection-end-line="88" selection-end-column="33" />
+        <state relative-caret-position="187">
+          <caret line="44" column="65" selection-start-line="44" selection-start-column="65" selection-end-line="44" selection-end-column="65" />
           <folding>
             <element signature="e#0#9#0" expanded="true" />
           </folding>

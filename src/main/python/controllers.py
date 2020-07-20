@@ -183,5 +183,5 @@ class SpectralRadarController:
         self.stop_measurement()
 
 
-class IMAQController(class):
-    pass
+# class IMAQController(Controller):
+#     pass
