@@ -1,3 +1,7 @@
 [submodule "src/main/python/PySpectralRadar"]
 	path = src/main/python/PySpectralRadar
 	url = https://github.com/BUNPC/PySpectralRadar
+[submodule "src/main/python/PyIMAQ"]
+	path = src/main/python/PyIMAQ
+	url = https://github.com/sstucker/PyIMAQ
+	branch = master
