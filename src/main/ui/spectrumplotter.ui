@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>128</width>
-    <height>42</height>
+    <width>135</width>
+    <height>74</height>
    </rect>
   </property>
   <layout class="QGridLayout" name="layoutSpectrumGroup">
@@ -29,7 +29,7 @@
     </widget>
    </item>
    <item row="2" column="0">
-    <widget class="QCheckBox" name="checkBox">
+    <widget class="QCheckBox" name="checkDb">
      <property name="text">
       <string>dB</string>
      </property>

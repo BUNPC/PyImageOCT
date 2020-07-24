@@ -1,5 +1,6 @@
+import time
+
 from PySpectralRadar import PySpectralRadar
-from PyIMAQ import *
 import nidaqmx
 from nidaqmx import _task_modules
 from nidaqmx.stream_writers import AnalogMultiChannelWriter
@@ -7,15 +8,22 @@ from nidaqmx.constants import LineGrouping, Edge, AcquisitionType
 import numpy as np
 from copy import deepcopy
 from collections import deque
+from PyIMAQ import PyIMAQ
+from PyScanPattern import ScanPattern
+
+# Size of line camera
+ALINE_SIZE = 2048
+
+# Controller modes
+SCANNING = 1
+READY = 0
+NOT_READY = -1
 
 
 class Controller:
     """
     Base class for interfacing GUI with OCT hardware.
     """
-
-    def __init__(self, buffer_size=256):
-        self._buffer = deque(maxlen=buffer_size)
 
     def initialize(self):
         """
@@ -37,6 +45,12 @@ class Controller:
         :return: 0 on success
         """
         raise NotImplementedError()
+
+    def grab(self):
+        """
+        Grab a frame and return it
+        :return: OCT data
+        """
 
     def stop_scan(self):
         """
@@ -64,9 +78,9 @@ class SpectralRadarController:
     Interfaces with SpectralRadar API for control of Thorlabs OCT systems
     """
 
-    def __init__(self):
+    def __init__(self, cfg=None):
         # SpectralRadar handles
-        self._config = None
+        self._config = cfg
         self._device = None
         self._probe = None
         self._proc = None
@@ -77,13 +91,12 @@ class SpectralRadarController:
         self._rawdatahandle = None
         self._rawdatadim = 0  # Size of raw data array
 
-        # Flag set true upon initialization. No two controllers can be online simultaneously.
-        self._online = False
+        self.mode = NOT_READY
 
     def initialize(self):
         """
         Initializes device, probe, processing device with default settings.
-        :return: 0 if successful, -1 otherwise
+        :return: 0 if successful, -1 on fail
         """
         self._device = PySpectralRadar.initDevice()
         self._probe = PySpectralRadar.initProbe(self._device, self._config)
@@ -99,7 +112,10 @@ class SpectralRadarController:
 
         print('SpectralRadarController: Telesto initialized successfully.')
 
-        self._online = True
+        if self._scanpattern is not None:
+            self.mode = READY
+        else:
+            self.mode = NOT_READY
 
         return 0
 
@@ -113,53 +129,78 @@ class SpectralRadarController:
         PySpectralRadar.closeProbe(self._probe)
         PySpectralRadar.closeDevice(self._device)
 
-        self._online = False
+        self.mode = NOT_READY
 
         return 0
 
     def configure(self, config_file_name):
         """
-        Sets config file. Note that this will not take effect until the probe is reinitialized
+        Sets .cfg file by name (located in Thorlabs directory) and reinitializes probe
         :param config_file_name: Name of .txt file in the Thorlabs directory to be used
+        :return: 0 if successful
         """
         self._config = config_file_name
         self._probe = PySpectralRadar.initProbe(self._device, self._config)
         PySpectralRadar.setCameraPreset(self._device, self._probe, self._proc, 0)  # 0 is the main camera
 
+        return 0
+
     def set_scanpattern(self, scanpatternhandle):
         """
         Directly sets the current SpectralRadar scan pattern handle
         :param scanpatternhandle: SpectralRadar scan pattern handle object
+        :return: 0 if successful
         """
         self._scanpattern = scanpatternhandle
 
-    def create_scanpattern(self, positions, size_x, size_y, apodization):
+        return 0
+
+    def create_freeform_scanpattern(self, positions, size_x, size_y, apodization):
         """
         By default, uses createFreeformScanPattern to generate and store a scan pattern object.
-        If a different scan pattern generator function is to be used, override this method or use
-        set_scanpattern.
-        :return: 0 if successful
+        Returns a handle to it also
+        :return: Handle to the scanpattern object if successful
         """
         self._scanpattern = PySpectralRadar.createFreeformScanPattern(self._probe, positions, size_x, size_y,
                                                                       apodization)
+        return self._scanpattern
 
     def clear_scanpattern(self):
         """
         Clears SpectralRadar scan pattern object.
+        :return: 0 if successful
         """
         PySpectralRadar.clearScanPattern(self._scanpattern)
         self._scanpattern = None
 
+        return 0
+
     def start_scan(self):
+        """
+        Begins scanning, launches frame grab thread
+        :return: 0 if successfully started scanning
+        """
         self._rawdatahandle = PySpectralRadar.createRawData()
         PySpectralRadar.startMeasurement(self._device, self._scanpattern, self._acquisitiontype)
 
+        self.mode = SCANNING
+
+        return 0
+
     def stop_scan(self):
+        """
+        Stops scanning, stops frame grab thread
+        :return: 0 if successful
+        """
         self._rawdatadim = 0
         PySpectralRadar.stopMeasurement(self._device)
         PySpectralRadar.clearRawData(self._rawdatahandle)
 
-    def grab_rawdata(self):
+        self.mode = READY
+
+        return 0
+
+    def grab(self):
         """
         Grabs a raw data frame from the current Telesto device
         :return: numpy array of frame. Memory managed by Python
@@ -178,6 +219,8 @@ class SpectralRadarController:
         PySpectralRadar.getRawData(self._device, self._rawdatahandle)
         self._rawdatadim = PySpectralRadar.getRawDatasShape(self._rawdatadim)
         self.stop_measurement()
+
+        return self._rawdatadim
 
 
 class NIController(Controller):
@@ -210,22 +253,31 @@ class NIController(Controller):
         self._imaq_buffer_size = imaq_buffer_size
         self._imaq_frame_size = 0
         self._bytes_per_frame = 0
+        self._buffer_size_alines = 0
+        self._aline_size = 0
         self._daq_sample_rate = daq_sample_rate
         self._scan_task = None
         self._scan_writer = None
 
-    def initialize(self):
+        self._cam_trig = []
+        self._x = []
+        self._y = []
+
+    def initialize(self, scan_pattern=None):
         # Open the camera interface. PyMAQ environment affords only one camera interface at a time
-        imgShowErrorMsg(imgOpen(self._camera_name))
-        imgShowErrorMsg(imgInitBuffer(self._imaq_buffer_size))
-        # TODO buffer size based on scan pattern
-        self._imaq_frame_size = imgShowErrorMsg(imgGetFrameSize())
-        self._bytes_per_frame = imgShowErrorMsg(imgGetBufferSize())
+
+        PyIMAQ.imgShowErrorMsg(PyIMAQ.imgOpen(self._camera_name))
+        PyIMAQ.imgShowErrorMsg(PyIMAQ.imgSetAttributeROI(0, 0, self._buffer_size_alines, self._aline_size))
+        PyIMAQ.imgShowErrorMsg(PyIMAQ.imgInitBuffer(self._imaq_buffer_size))
+
+        self._aline_size = ALINE_SIZE
+        self._imaq_frame_size = PyIMAQ.imgShowErrorMsg(PyIMAQ.imgGetFrameSize())
+        self._bytes_per_frame = PyIMAQ.imgShowErrorMsg(PyIMAQ.imgGetBufferSize())
 
         # Create the DAQmx task
         self._scan_task = nidaqmx.Task()
-        for id in self._daq_channel_ids:
-            self._scan_task.ao_channels.add_ao_voltage_chan(id)
+        for ch_name in self._daq_channel_ids:
+            self._scan_task.ao_channels.add_ao_voltage_chan(ch_name)
 
         self._scan_task.timing.cfg_samp_clk_timing(self._daq_sample_rate,
                                                    source="",
@@ -233,3 +285,101 @@ class NIController(Controller):
                                                    sample_mode=AcquisitionType.CONTINUOUS)
 
         self._scan_writer = AnalogMultiChannelWriter(self._scan_task.out_stream)
+
+        print('NIController: IMAQ and DAQmx initialized')
+        print('Buffer size init', PyIMAQ.imgGetBufferSize())
+
+        if scan_pattern is not None:
+            self.set_scanpattern(scan_pattern)
+
+        if len(self._x) > 0 and len(self._y) > 0 and len(self._cam_trig) > 0:
+            self.mode = READY
+        else:
+            self.mode = NOT_READY
+
+        return 0
+
+    def start_scan(self):
+        if len(self._x) == 0 or len(self._y) == 0 or len(self._cam_trig) == 0:
+            # No scan pattern defined
+            print('NO SCAN PAT', self._cam_trig, self._x)
+            self.mode = NOT_READY
+            return -1
+        else:
+            PyIMAQ.imgShowErrorMsg(PyIMAQ.imgStartAcq())
+            self._scan_writer.write_many_sample(np.array([4*self._cam_trig,
+                                                          0.2*self._x,
+                                                          0.2*self._y]))
+            self._scan_task.start()
+
+            self._imaq_frame_size = PyIMAQ.imgGetFrameSize()
+
+            self.mode = SCANNING
+
+            return 0
+
+    def stop_scan(self):
+        self._scan_task.stop()
+        PyIMAQ.imgStopAcq()
+
+        self.mode = READY
+
+        return 0
+
+    def close(self):
+        self.stop_scan()
+        self._scan_task.close()
+        self._scan_task = None
+        PyIMAQ.imgShowErrorMsg(PyIMAQ.imgAbortAcq())  # TODO this might fail
+        PyIMAQ.imgShowErrorMsg(PyIMAQ.imgClose())
+
+        self.mode = NOT_READY
+        return 0
+
+    def set_scanpattern(self, scan_pattern):
+        self._cam_trig = scan_pattern.get_trigger()
+        self._x = scan_pattern.get_x()
+        self._y = scan_pattern.get_y()
+        self._daq_sample_rate = scan_pattern.get_sample_rate()
+        self._buffer_size_alines = scan_pattern.get_number_of_alines()
+        self._reinitialize()
+
+    def grab(self):
+        """
+        Grabs frame most recently acquired by IMAQ by locking it out briefly and copying it to returned array
+        :return: OCT frame, IMAQ buffer number
+        """
+        if self.mode is SCANNING:  # This acts as an external flag because this method is called from a thread
+            self._bytes_per_frame = PyIMAQ.imgGetBufferSize()
+            fbuff = np.empty(self._bytes_per_frame, dtype=np.uint16)
+            PyIMAQ.imgGetCurrentFrame(fbuff)
+            return fbuff
+
+    def configure(self, cfg_path):
+        self._reinitialize()  # TODO implemenet configure(cfg)
+
+    def _reinitialize(self):
+        rescan = False
+        if self.mode is SCANNING:
+            self.stop_scan()
+            self.mode = NOT_READY
+            rescan = True
+
+        PyIMAQ.imgShowErrorMsg(PyIMAQ.imgSetAttributeROI(0, 0, self._buffer_size_alines, self._aline_size))
+        self._scan_task.timing.cfg_samp_clk_timing(self._daq_sample_rate,
+                                                   source="",
+                                                   active_edge=Edge.RISING,  # TODO implemenet parameters
+                                                   sample_mode=AcquisitionType.CONTINUOUS)
+
+        if PyIMAQ.imgSessionConfigure() is 0:
+            if rescan:
+                self.start_scan()  # DAQ scan buffers are updated here
+            else:
+                self.mode = READY
+
+
+
+
+
+
+

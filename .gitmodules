@@ -5,3 +5,7 @@
 	path = src/main/python/PyIMAQ
 	url = https://github.com/sstucker/PyIMAQ
 	branch = master
+[submodule "src/main/python/PyScanPattern"]
+	path = src/main/python/PyScanPattern
+	url = https://github.com/sstucker/PyScanPattern
+	branch = master

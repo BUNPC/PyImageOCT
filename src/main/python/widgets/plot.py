@@ -10,8 +10,30 @@ from PyQt5.QtWidgets import QWidget, QRadioButton, QCheckBox, QSlider, QLabel
 
 class SpectrumPlotWidget(pyqtgraph.PlotWidget):
 
-    def __init__(self):
-        super(pyqtgraph.PlotWidget, self).__init__()
+    def __init__(self, bins=2048, chirp=[]):
+        super().__init__()
+        if ~(len(chirp) > 0):
+            self._chirp = np.arange(bins)
+        else:
+            self._chirp = chirp
+
+        self._bins = bins
+
+        self._spectrum = pyqtgraph.PlotCurveItem(chirp, chirp*0, color='#FFFFFF', legend='Spectrum')
+        self._spectrum2 = pyqtgraph.PlotCurveItem(chirp, chirp*0, color='#FF0000', legend='Spectrum - DC')
+
+    def set_spectrum_data(self, y):
+        if len(y) == self._bins:
+            self._spectrum.setData(self._chirp, y)
+            pyqtgraph.QtGui.QApplication.processEvents()
+
+    def set_spectrum2_data(self, y):
+        if len(y) == self._bins:
+            self._spectrum2.setData(self._chirp, y)
+            pyqtgraph.QtGui.QApplication.processEvents()
+
+    def set_chirp(self, chirp):
+        self._chirp = chirp
 
 
 class OCTViewer(pyqtgraph.GraphicsLayoutWidget):
@@ -19,16 +41,20 @@ class OCTViewer(pyqtgraph.GraphicsLayoutWidget):
     def __init__(self):
         super().__init__()
 
+        # TODO implement spatial units
+
         self._viewbox = self.addViewBox(row=1, col=1)
         self._viewbox.setAspectLocked()
         self.image = pyqtgraph.ImageItem()
         self._viewbox.addItem(self.image)
 
     def setImage(self, img):
-        self.image.setImage(np.rot90(img))
+        self.image.setImage(np.rot90(img, k=3))
+        pyqtgraph.QtGui.QApplication.processEvents()
 
     def setLevels(self, levels):
         self.image.setLevels(levels)
+        pyqtgraph.QtGui.QApplication.processEvents()
 
 
 class SpectrumView(QWidget):
@@ -39,13 +65,65 @@ class SpectrumView(QWidget):
             os.path.dirname(os.path.dirname(os.path.abspath(__file__)))) + "\\ui\\spectrumplotter.ui"
         uic.loadUi(ui, self)
 
+        self._display_update_timer = QTimer()
+
         plotwidget_placeholder = self.findChild(QWidget, "widgetSpec")
         plotwidget_placeholder_layout = plotwidget_placeholder.parent().layout()
-        self.plotWidget = SpectrumPlotWidget()
-        plotwidget_placeholder_layout.replaceWidget(plotwidget_placeholder, self.plotWidget)
+        self.viewer = SpectrumPlotWidget()
+        plotwidget_placeholder_layout.replaceWidget(plotwidget_placeholder, self.viewer)
 
-    def update(self):
-        print("SpectrumView update")
+        self._dc_check = self.findChild(QCheckBox, "checkRemoveDC")
+        self._db_check = self.findChild(QCheckBox, "checkDb")
+
+        self._dc_check.toggled.connect(self._draw_frame)
+        self._db_check.toggled.connect(self._draw_frame)
+
+        self._frame_shape = []
+        self._current_frame = []
+
+        self._buffer = deque(maxlen=12)  # TODO implement parameter for maxlen
+        self._display_update_timer.timeout.connect(self._update_display)
+
+    def start_refresh(self):
+        self._display_update_timer.start(16)  # > 60 FPS. TODO implement parameter
+
+    def stop_refresh(self):
+        self._display_update_timer.stop()
+
+    def enqueue_frame(self, frame):
+        """
+        Enques a 1D signal. Will overwrite previously queued undisplayed frames if the circular queue
+        is full. The rate at which the display updates and displays a new frame from the buffer can be set with
+        set_update_rate(rate_in_hz). Default is 60.
+        :param frame: 1D spectral data
+        :return: 0 on success
+        """
+        self._buffer.append(np.array(frame).astype(int))
+        # print('SpectrumView: Frame appended. Frames in buffer:', len(self._buffer))
+
+    def _update_display(self):
+        try:
+            f = self._buffer.pop()
+            # print('Frame popped. Frames in buffer:', len(self._buffer))
+        except IndexError:  # If deque is empty
+            f = self._current_frame
+
+        self._current_frame = f
+
+        if self._draw_frame() is -1:  # Draws the frame
+            print('Couldn\'t draw a frame')
+
+    def _draw_frame(self):
+        frame = self._current_frame
+        # TODO implement dc
+        try:
+            if self._db_check.isChecked():
+                frame = 20 * np.log10(frame)
+            self.viewer.set_spectrum_data(frame)
+        except IndexError:  # Usually occurs when a new frame has been added with different dimensions
+            return -1
+        except ValueError:
+            return -1
 
 
 class BScanView(QWidget):
@@ -79,20 +157,24 @@ class BScanView(QWidget):
         self._slice_max = 0
         self.enface_enabled = None  # Intentionally public
 
-        self._buffer = deque(maxlen=16)  # TODO implement parameter for maxlen
+        self._buffer = deque(maxlen=12)  # TODO implement parameter for maxlen
 
         self._slice_slider.valueChanged.connect(self._slider_change)
         self._enface_radio.toggled.connect(self._set_orientation)
         self._scan_check.toggled.connect(self._set_scan_toggle)
         self._mip_check.toggled.connect(self._mip_changed)
         self._db_check.toggled.connect(self._db_changed)
+
         self._slice_timer.timeout.connect(self._slice_thru_advance)
         self._display_update_timer.timeout.connect(self._update_display)
 
-        for i in range(32):
-            self.enque_frame(500 * np.random.random([40, 20, 20]))  # For testing only!
+    def start_refresh(self):
+        self._display_update_timer.start(16)  # > 60 FPS. TODO implement parameter
 
-    def enque_frame(self, frame):
+    def stop_refresh(self):
+        self._display_update_timer.stop()
+
+    def enqueue_frame(self, frame):
         """
         Enques a 3D OCT frame for display. Will overwrite previously queued undisplayed frames if the circular queue
         is full. The rate at which the display updates and displays a new frame from the buffer can be set with
@@ -104,13 +186,12 @@ class BScanView(QWidget):
         :return: 0 on success
         """
         self._buffer.append(np.array(frame).astype(np.complex64))
-        self._frame_shape = np.shape(frame)
         if not self._display_update_timer.isActive():  # If buffer emptied out or this is startup
             if self._current_slice is -1:  # On initial startup only
                 self._set_slice(1)  # Slice 1 is index 0!
-            self._set_orientation()
-            self._display_update_timer.start(16)  # > 60 FPS. TODO implement parameter
-        print('Frame appended. Frames in buffer:', len(self._buffer))
+                self._frame_shape = np.shape(frame)
+                self._set_orientation()
+        # print('BScanView: Frame appended. Frames in buffer:', len(self._buffer))
 
     def get_frame_shape(self):
         """
@@ -126,18 +207,18 @@ class BScanView(QWidget):
             self._set_slice(self._current_slice + 1)
 
     def _update_display(self):
-
+        # print('BScanView: updating display')
         try:
             f = self._buffer.pop()
-            print('Frame popped. Frames in buffer:', len(self._buffer))
+            # # print('Frame popped. Frames in buffer:', len(self._buffer))
         except IndexError:  # If deque is empty
             f = self._current_frame
-            print('Buffer empty. Stopping refresh timer until a new frame is added')
-            self._display_update_timer.stop()
+            # # print('Buffer empty. Stopping refresh timer until a new frame is added')
 
         self._current_frame = f
 
-        self._draw_frame()  # Draws the frame. This is called from GUI callbacks as well
+        if self._draw_frame() is -1:  # Draws the frame
+            self._display_update_timer.stop()
 
     def _draw_frame(self):
         frame = self._current_frame
@@ -158,17 +239,19 @@ class BScanView(QWidget):
             return 0
         except IndexError:  # Occurs when a new frame has been added with different dimensions
             return -1
+        except ValueError:
+            return -1
 
     def _set_scan_toggle(self):
         if self._scan_check.isChecked():
             self._slice_slider.setEnabled(False)
             self._slice_timer.start(64)  # TODO implement parameter
-            print("Automatic scan")
+            # # print("Automatic scan")
             self._slice_slider.blockSignals(True)
         else:
             self._slice_slider.setEnabled(True)
             self._slice_timer.stop()
-            print("Manual control")
+            # # print("Manual control")
             self._slice_slider.blockSignals(False)
 
     def _mip_changed(self):
@@ -177,13 +260,13 @@ class BScanView(QWidget):
             self._scan_check.setEnabled(0)
             self.slice_label.setEnabled(0)
             self._slice_timer.stop()
-            print('MIP mode entered')
+            # # print('MIP mode entered')
         else:
             self._slice_slider.setEnabled(1)
             self._scan_check.setEnabled(1)
             self.slice_label.setEnabled(1)
             self._set_scan_toggle()  # Resume normal scan control
-            print('MIP mode exit')
+            # # print('MIP mode exit')
         self._draw_frame()
 
     def _db_changed(self):
@@ -192,18 +275,27 @@ class BScanView(QWidget):
     def _set_orientation(self):
         if self._enface_radio.isChecked():
             self.enface_enabled = True
-            self._slice_max = self._frame_shape[0]  # Slice through z
+            try:
+                self._slice_max = self._frame_shape[0]  # Slice through z
+            except IndexError:
+                return
         else:
             self.enface_enabled = False
-            self._slice_max = self._frame_shape[2]  # Slice through slow axis
+            try:
+                self._slice_max = self._frame_shape[2]  # Slice through slow axis
+            except IndexError:
+                self._slice_max = 0
         if self._current_slice > self._slice_max:  # If current slice too big for new orientation
-            self._set_slice(self._frame_shape[2])
+            try:
+                self._set_slice(self._frame_shape[2])
+            except IndexError:
+                self._slice_max = 0
         else:
             self._set_slice(self._current_slice)  # Update slice label
         self._slice_slider.setMaximum(self._slice_max)
 
     def _set_slice(self, index):
-        print('Current slice', index)
+        # # print('Current slice', index)
         self._current_slice = index  # Only place where this assignment is allowed!
         self.slice_label.setText(str(self._current_slice) + "/" + str(self._slice_max))
         self._slice_slider.setValue(self._current_slice)  # Slider not connected to this method on auto slice

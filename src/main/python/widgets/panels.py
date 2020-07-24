@@ -6,12 +6,12 @@ from PyQt5 import uic
 from PyQt5.QtWidgets import QGroupBox, QLineEdit, QComboBox, QToolButton, QFileDialog, QSpinBox, QDoubleSpinBox, \
     QCheckBox, QPushButton
 
-FileTypes = [
+FILETYPES = [
     ".npy",
     ".mat"
 ]
 
-FileSizes = [
+FILESIZES = [
     "250 MB",
     "500 MB",
     "1 GB",
@@ -19,12 +19,16 @@ FileSizes = [
     "4 GB"
 ]
 
-Rates = {
+RATES = {
     "76 kHz": 76000,
     "146 kHz": 146000
 }
 
-Modes = ["BUSY", "IDLE", "SCANNING", "ACQUIRING"]
+# ControlPanel modes
+BUSY = -1
+IDLE = 0
+SCANNING = 1
+ACQUIRING = 2
 
 
 class ControlPanel(QGroupBox):
@@ -37,41 +41,70 @@ class ControlPanel(QGroupBox):
         ui = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))) + "\\ui\\control.ui"
         uic.loadUi(ui, self)
 
-        self.scan_button = self.findChild(QPushButton, "pushScan")
-        self.acq_button = self.findChild(QPushButton, "pushAcquire")
-        self.stop_button = self.findChild(QPushButton, "pushStop")
+        self._scan_button = self.findChild(QPushButton, "pushScan")
+        self._acq_button = self.findChild(QPushButton, "pushAcquire")
+        self._stop_button = self.findChild(QPushButton, "pushStop")
 
-        self.buttons = [self.scan_button, self.acq_button, self.stop_button]
+        self._buttons = [self._scan_button, self._acq_button, self._stop_button]
 
-        # self.MODE = "IDLE"
+        self._scan_button.released.connect(self._scan_released)
+        self._acq_button.released.connect(self._acq_released)
+        self._stop_button.released.connect(self._stop_released)
+
+        # Public
+        self.mode = IDLE
 
     def connect_to_scan(self, slot):
-        self.scan_button.released.connect(slot)
+        self._scan_button.released.connect(slot)
 
     def connect_to_acq(self, slot):
-        self.acq_button.released.connect(slot)
+        self._acq_button.released.connect(slot)
 
     def connect_to_stop(self, slot):
-        self.stop_button.released.connect(slot)
-
-    def set_idle(self):
-        self.scan_button.setEnabled(True)
-        self.acq_button.setEnabled(True)
-        self.stop_button.setEnabled(False)
+        self._stop_button.released.connect(slot)
 
     def set_busy(self):
-        for button in self.buttons:
+        """
+        Disables GUI entirely
+        :return: 0 on success
+        """
+        self.mode = BUSY
+        for button in self._buttons:
             button.setEnabled(False)
+        return 0
 
-    def set_scanning(self):
-        self.scan_button.setEnabled(False)
-        self.acq_button.setEnabled(True)
-        self.stop_button.setEnabled(True)
+    def set_idle(self):
+        """
+        GUI is ready to begin another scan/acq session
+        :return: 0 on success
+        """
+        self.mode = IDLE
+        self._scan_button.setEnabled(True)
+        self._acq_button.setEnabled(True)
+        self._stop_button.setEnabled(False)
+        return 0
 
-    def set_acquiring(self):
-        self.scan_button.setEnabled(False)
-        self.acq_button.setEnabled(True)
-        self.stop_button.setEnabled(True)
+    def _scan_released(self):
+        self._set_scanning()
+
+    def _acq_released(self):
+        self._set_acquiring()
+
+    def _stop_released(self):
+        # Parent must reenable GUI when processing/saving/displaying is complete
+        self.set_busy()
+
+    def _set_scanning(self):
+        self.mode = SCANNING
+        self._scan_button.setEnabled(False)
+        self._acq_button.setEnabled(True)
+        self._stop_button.setEnabled(True)
+
+    def _set_acquiring(self):
+        self.mode = ACQUIRING
+        self._scan_button.setEnabled(True)
+        self._acq_button.setEnabled(False)
+        self._stop_button.setEnabled(True)
 
 
 class ScanPanelOCTA(QGroupBox):
@@ -84,10 +117,10 @@ class ScanPanelOCTA(QGroupBox):
         uic.loadUi(ui, self)
 
         self.indefinite_check = self.findChild(QCheckBox, "checkIndefinite")
-        self.indefinite_check.stateChanged.connect(self.indefinite_check_changed)
+        self.indefinite_check.stateChanged.connect(self._indefinite_check_changed)
 
         self.equal_aspect_check = self.findChild(QCheckBox, "checkEqualAspect")
-        self.equal_aspect_check.stateChanged.connect(self.equal_aspect_check_changed)
+        self.equal_aspect_check.stateChanged.connect(self._equal_aspect_check_changed)
 
         self.scan_number_spin = self.findChild(QSpinBox, "spinScanNumber")
 
@@ -101,18 +134,18 @@ class ScanPanelOCTA(QGroupBox):
 
         self.preview_button = self.findChild(QPushButton, "previewButton")
 
-        self.x_spacing_spin.valueChanged.connect(self.x_spacing_changed)
+        self.x_spacing_spin.valueChanged.connect(self._x_spacing_changed)
 
-        self.x_roi_spin.valueChanged.connect(self.roi_changed)
-        self.y_roi_spin.valueChanged.connect(self.roi_changed)
+        self.x_roi_spin.valueChanged.connect(self._roi_changed)
+        self.y_roi_spin.valueChanged.connect(self._roi_changed)
 
-        self.x_spacing_spin.valueChanged.connect(self.spacing_changed)
-        self.y_spacing_spin.valueChanged.connect(self.spacing_changed)
+        self.x_spacing_spin.valueChanged.connect(self._spacing_changed)
+        self.y_spacing_spin.valueChanged.connect(self._spacing_changed)
 
-        self.x_count_spin.valueChanged.connect(self.count_changed)
-        self.y_count_spin.valueChanged.connect(self.count_changed)
+        self.x_count_spin.valueChanged.connect(self._count_changed)
+        self.y_count_spin.valueChanged.connect(self._count_changed)
 
-    def count_changed(self):
+    def _count_changed(self):
         # Need to block signals so that update functions arent recursive
         self.x_roi_spin.blockSignals(True)
         self.y_roi_spin.blockSignals(True)
@@ -127,7 +160,7 @@ class ScanPanelOCTA(QGroupBox):
         self.x_roi_spin.blockSignals(False)
         self.y_roi_spin.blockSignals(False)
 
-    def spacing_changed(self):
+    def _spacing_changed(self):
         self.x_roi_spin.blockSignals(True)
         self.y_roi_spin.blockSignals(True)
 
@@ -140,7 +173,7 @@ class ScanPanelOCTA(QGroupBox):
         self.x_roi_spin.blockSignals(False)
         self.y_roi_spin.blockSignals(False)
 
-    def roi_changed(self):
+    def _roi_changed(self):
         self.x_spacing_spin.blockSignals(True)
         self.y_spacing_spin.blockSignals(True)
 
@@ -153,20 +186,20 @@ class ScanPanelOCTA(QGroupBox):
         self.x_spacing_spin.blockSignals(False)
         self.y_spacing_spin.blockSignals(False)
 
-    def indefinite_check_changed(self):
+    def _indefinite_check_changed(self):
         if self.indefinite_check.isChecked():
             self.scan_number_spin.setEnabled(False)
         else:
             self.scan_number_spin.setEnabled(True)
 
-    def equal_aspect_check_changed(self):
+    def _equal_aspect_check_changed(self):
         if self.equal_aspect_check.isChecked():
             self.y_spacing_spin.setValue(self.x_spacing_spin.value())
             self.y_spacing_spin.setEnabled(False)
         else:
             self.y_spacing_spin.setEnabled(True)
 
-    def x_spacing_changed(self):
+    def _x_spacing_changed(self):
         if self.equal_aspect_check.isChecked():
             self.y_spacing_spin.setValue(self.x_spacing_spin.value())
 
@@ -204,7 +237,7 @@ class ConfigPanel(QGroupBox):
         return self.config_combo.text()
 
     def get_rate(self):
-        return Rates[self.rate_combo.text()]
+        return RATES[self.rate_combo.text()]
 
     def get_apod(self):
         return self.apod_combo.text()
