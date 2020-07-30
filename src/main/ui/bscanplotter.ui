@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>296</width>
+    <width>322</width>
     <height>164</height>
    </rect>
   </property>
@@ -20,7 +20,7 @@
       <string>Enface</string>
      </property>
      <property name="checked">
-      <bool>true</bool>
+      <bool>false</bool>
      </property>
     </widget>
    </item>
@@ -71,6 +71,9 @@
      </property>
      <property name="text">
       <string>B-scan</string>
+     </property>
+     <property name="checked">
+      <bool>true</bool>
      </property>
     </widget>
    </item>

@@ -231,7 +231,7 @@ class NIController(Controller):
                  cam_trig_ch_name,
                  x_ch_name,
                  y_ch_name,
-                 daq_sample_rate=40000,
+                 dac_sample_rate=40000,
                  imaq_buffer_size=32):
         """
         For use with CameraLink line camera controlled via National Instruments IMAQ software (with PyIMAQ
@@ -241,9 +241,10 @@ class NIController(Controller):
         :param cam_trig_ch_name: Name of channel for line camera triggering
         :param x_ch_name: Name of channel for x galvo
         :param y_ch_name: Name of channel for y galvo
-        :param daq_sample_rate: Sample rate for scan samples to be written
+        :param dac_sample_rate: Sample rate for scan samples to be written
         :param imaq_buffer_size: Size of IMAQ's ring buffer
         """
+        super().__init__()
         self._camera_name = camera_name
         self._daq_channel_ids = [
             daq_name + '/' + cam_trig_ch_name,
@@ -251,77 +252,99 @@ class NIController(Controller):
             daq_name + '/' + y_ch_name
         ]
         self._imaq_buffer_size = imaq_buffer_size
-        self._imaq_frame_size = 0
+        self._dac_sample_rate = dac_sample_rate
         self._bytes_per_frame = 0
+        self._frame_size = 0
         self._buffer_size_alines = 0
         self._aline_size = 0
-        self._daq_sample_rate = daq_sample_rate
         self._scan_task = None
+        self._timing = None
         self._scan_writer = None
+
+        # TODO implement calibration params
+        self._trigger_gain = -3
+        self._x_volts_to_mm = 1
+        self._y_volts_to_mm = 1
 
         self._cam_trig = []
         self._x = []
         self._y = []
 
-    def initialize(self, scan_pattern=None):
-        # Open the camera interface. PyMAQ environment affords only one camera interface at a time
+        self.mode = NOT_READY
 
+    def initialize(self, scanpattern=None):
+
+        self._aline_size = ALINE_SIZE  # N
+
+        if scanpattern is not None:
+            print('Initializing with scan pattern')
+            self.set_scanpattern(scanpattern)
+
+        # Open the camera interface. PyMAQ environment affords only one camera interface at a time
         PyIMAQ.imgShowErrorMsg(PyIMAQ.imgOpen(self._camera_name))
+        start = time.time()
+
+        print((0, 0, self._buffer_size_alines, self._aline_size))
         PyIMAQ.imgShowErrorMsg(PyIMAQ.imgSetAttributeROI(0, 0, self._buffer_size_alines, self._aline_size))
         PyIMAQ.imgShowErrorMsg(PyIMAQ.imgInitBuffer(self._imaq_buffer_size))
 
-        self._aline_size = ALINE_SIZE
-        self._imaq_frame_size = PyIMAQ.imgShowErrorMsg(PyIMAQ.imgGetFrameSize())
+        self._frame_size = PyIMAQ.imgShowErrorMsg(PyIMAQ.imgGetFrameSize())
         self._bytes_per_frame = PyIMAQ.imgShowErrorMsg(PyIMAQ.imgGetBufferSize())
 
+        # print('NIController: Size of IMAQ buffer:', self._imaq_buffer_size*self._bytes_per_frame*10**-6, 'MB')
+
+        elapsed = time.time() - start
+        print('NIController: Initialized camera', elapsed, 's')
+
+        print('NIController: Buffer size:', int(PyIMAQ.imgGetBufferSize() / 2))
+
+        start = time.time()
         # Create the DAQmx task
         self._scan_task = nidaqmx.Task()
+        self._timing = nidaqmx.task.Timing(self._scan_task)
+
         for ch_name in self._daq_channel_ids:
             self._scan_task.ao_channels.add_ao_voltage_chan(ch_name)
 
-        self._scan_task.timing.cfg_samp_clk_timing(self._daq_sample_rate,
+        self._scan_writer = AnalogMultiChannelWriter(self._scan_task.out_stream)
+
+        self._scan_task.timing.cfg_samp_clk_timing(self._dac_sample_rate,
                                                    source="",
                                                    active_edge=Edge.RISING,  # TODO implemenet parameters
                                                    sample_mode=AcquisitionType.CONTINUOUS)
+        self._scan_writer.write_many_sample(np.array([-self._trigger_gain * np.array(self._cam_trig),
+                                                      self._x_volts_to_mm * self._x,
+                                                      self._y_volts_to_mm * self._y]))
 
-        self._scan_writer = AnalogMultiChannelWriter(self._scan_task.out_stream)
-
-        print('NIController: IMAQ and DAQmx initialized')
-        print('Buffer size init', PyIMAQ.imgGetBufferSize())
-
-        if scan_pattern is not None:
-            self.set_scanpattern(scan_pattern)
-
-        if len(self._x) > 0 and len(self._y) > 0 and len(self._cam_trig) > 0:
-            self.mode = READY
-        else:
-            self.mode = NOT_READY
-
+        elapsed = time.time() - start
+        print('NIController: DAQmx initialized', elapsed, 's')
         return 0
 
     def start_scan(self):
         if len(self._x) == 0 or len(self._y) == 0 or len(self._cam_trig) == 0:
             # No scan pattern defined
-            print('NO SCAN PAT', self._cam_trig, self._x)
+            print('NIController: Cannot start scanning without a scan pattern!')
             self.mode = NOT_READY
             return -1
         else:
             PyIMAQ.imgShowErrorMsg(PyIMAQ.imgStartAcq())
-            self._scan_writer.write_many_sample(np.array([4*self._cam_trig,
-                                                          0.2*self._x,
-                                                          0.2*self._y]))
             self._scan_task.start()
 
-            self._imaq_frame_size = PyIMAQ.imgGetFrameSize()
+            self._bytes_per_frame = PyIMAQ.imgGetBufferSize()
+            self._frame_size = PyIMAQ.imgGetFrameSize()  # Should be same as bytes per frame / 2 for uint16 data
+
+            print('NIController: Frame size:', self._frame_size)
 
             self.mode = SCANNING
 
             return 0
 
     def stop_scan(self):
+        start = time.time()
         self._scan_task.stop()
-        PyIMAQ.imgStopAcq()
-
+        print('NIController: DAQmx task stopped elapsed', time.time() - start)
+        PyIMAQ.imgShowErrorMsg(PyIMAQ.imgStopAcq())
+        print('NIController: IMAQ acq stopped elapsed', time.time() - start)
         self.mode = READY
 
         return 0
@@ -337,23 +360,21 @@ class NIController(Controller):
         return 0
 
     def set_scanpattern(self, scan_pattern):
-        self._cam_trig = scan_pattern.get_trigger()
+        self._cam_trig = scan_pattern.get_trigger()  # TODO ensure proper polarity
         self._x = scan_pattern.get_x()
         self._y = scan_pattern.get_y()
-        self._daq_sample_rate = scan_pattern.get_sample_rate()
-        self._buffer_size_alines = scan_pattern.get_number_of_alines()
-        self._reinitialize()
+        self._dac_sample_rate = scan_pattern.get_sample_rate()
+        self._buffer_size_alines = scan_pattern.get_raster_dimensions()[0]  # A-lines per B per C!!
+        return 0
 
     def grab(self):
         """
         Grabs frame most recently acquired by IMAQ by locking it out briefly and copying it to returned array
         :return: OCT frame, IMAQ buffer number
         """
-        if self.mode is SCANNING:  # This acts as an external flag because this method is called from a thread
-            self._bytes_per_frame = PyIMAQ.imgGetBufferSize()
-            fbuff = np.empty(self._bytes_per_frame, dtype=np.uint16)
-            PyIMAQ.imgGetCurrentFrame(fbuff)
-            return fbuff
+        fbuff = np.empty(self._frame_size, dtype=np.uint16)
+        PyIMAQ.imgGetCurrentFrame(fbuff)
+        return fbuff
 
     def configure(self, cfg_path):
         self._reinitialize()  # TODO implemenet configure(cfg)
@@ -362,6 +383,7 @@ class NIController(Controller):
         rescan = False
         if self.mode is SCANNING:
             self.stop_scan()
+            PyIMAQ.imgShowErrorMsg(PyIMAQ.imgStopAcq())
             self.mode = NOT_READY
             rescan = True
 
@@ -371,12 +393,19 @@ class NIController(Controller):
                                                    active_edge=Edge.RISING,  # TODO implemenet parameters
                                                    sample_mode=AcquisitionType.CONTINUOUS)
 
-        if PyIMAQ.imgSessionConfigure() is 0:
+        self._scan_writer.write_many_sample(np.array([-self._trigger_gain * np.array(self._cam_trig),
+                                                      self._x_volts_to_mm * self._x,
+                                                      self._y_volts_to_mm * self._y]))
+        if PyIMAQ.imgInitBuffer(self._imaq_buffer_size) is 0:
             if rescan:
                 self.start_scan()  # DAQ scan buffers are updated here
             else:
                 self.mode = READY
 
+            return 0
+        else:
+            print('NIController: Something went wrong when reconfiguring IMAQ device', self._camera_name)
+            return -1
 
 
 

@@ -1,89 +1,112 @@
-from PyQt5.QtGui import QCloseEvent
-from PyQt5.QtWidgets import QWidget, QGridLayout
-
 from src.main.python.PyScanPattern.ScanPattern import RasterScanPattern
 from src.main.python.widgets.panels import FilePanel, RepeatsPanel, ConfigPanel, ScanPanelOCTA, ControlPanel
 from src.main.python.widgets.plot import BScanView, SpectrumView
 from src.main.python.controllers import SpectralRadarController, NIController
 
-from PyQt5.QtCore import QThread, QObject, pyqtSignal, pyqtSlot
-
-import matplotlib.pyplot as plt
+from PyQt5.QtWidgets import QWidget, QGridLayout, QDialog
+from PyQt5.QtCore import QThread, QObject, pyqtSignal, pyqtSlot, Qt
 
 import numpy as np
 from collections import deque
-from queue import Queue
+
+import matplotlib
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as Canvas
+from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as Toolbar
+from matplotlib.figure import Figure
 
 import numba
+import pyfftw
 import time
 
+matplotlib.use('Qt5Agg')
 
-@numba.jit(forceobj=True)
-def process_oct(raw, alines, blines, window, n=2048):
+def plan_1d_r2c_fftw(fft_input_len):
+    start = time.time()
 
-    spatial = np.empty([int(n/2), alines, blines], dtype=np.complex64)
-    window = np.hanning(n)
+    in_arr = pyfftw.empty_aligned(fft_input_len, dtype='float32')
+    out_arr = pyfftw.empty_aligned(int(fft_input_len / 2 + 1), dtype='complex64')
 
-    k = 0
-    for j in numba.prange(blines):
+    fftw_obj = pyfftw.FFTW(in_arr,
+                           out_arr,
+                           # direction='FFT_FORWARD',
+                           flags=['FFTW_PATIENT']
+                           )
 
-        for i in numba.prange(alines):
+    print('Planned fftw', time.time() - start, 'elapsed')
 
-            spatial[:, i, j] = np.fft.ifft(raw[n*k:n*k + n] * window)[0:int(n/2)]
-            k += 1
+    return in_arr, out_arr, fftw_obj
+
+
+# @numba.jit(parallel=True, forceobj=True)
+def process_oct_b(raw, n_alines, window, fft, n=2048):
+    spatial = np.empty([int(n/2), n_alines], dtype=np.complex64)
+    for i in numba.prange(n_alines):
+        fft_in = pyfftw.byte_align(raw[n*i:n*i + n] * window, dtype='float32')
+        fft_out = pyfftw.empty_aligned(int(n / 2) + 1, dtype='complex64')
+        fft.update_arrays(fft_in, fft_out)
+        fft()
+        spatial[:, i] = fft_out[1::]
 
     return spatial
 
 
-class PyImageOCTWorker(QObject):
+class ProcessWorker(QObject):
 
-    def __init__(self, parent):
-        """
-        Managing worker that gets directs processed frames to the save or display buffers
-        :param parent: The parent PyImageOCT tab GUI. Will pass handles to the relevant buffers with get_buffers()
-        """
+    started = pyqtSignal()
+    finished = pyqtSignal()
+    frame_processed = pyqtSignal()
+
+    def __init__(self, parent, src_buffer, dst_buffer, spec_display_method=None, b_display_method=None, n=2048, window=np.hanning(2048)):
         super(QObject, self).__init__()
 
-        self._msg_queue = Queue()  # Queue for messages from other threads or the parent GUI tab TODO implement
-        self._parent = parent
-        [self._raw_buffer, self._proc_buffer, self._export_buffer] = parent.get_buffers()
-        [self._3D_display, self._spectrum_display] = parent.get_displays()
+        self._src_buffer = src_buffer
+        self._dst_buffer = dst_buffer
+        self._spec_display_method = spec_display_method
+        self._b_display_method = b_display_method
+        self._window = window
+        self._n = n
+        fft_in, fft_out, self._fft = plan_1d_r2c_fftw(self._n)
 
-        self.started = pyqtSignal()
-        self.paused = pyqtSignal()
-        self.error = pyqtSignal()
-
+        self.parent = parent
         self.abort_flag = False
 
     def start(self):
 
-        i = 0
-        interval = 30
-        window = np.hanning(2048)
+        self.started.emit()
 
-        while not self.abort_flag:
+        while self.abort_flag is not True:
 
-            try:
+            start = time.time()
+            frame = np.empty([int(self._n/2), self.parent.alines, self.parent.blines], dtype=np.complex64)
 
-                f = self._raw_buffer.pop()
-
-                if i % interval == 0:
-                    self._spectrum_display.enqueue_frame(f[0:2048])
-
-                    # TODO pass to a processing object
-                    p = process_oct(f, self._parent.scan_dim[0], self._parent.scan_dim[1], window)
-
-                    self._3D_display.enqueue_frame(p[0:500, :, :])
-
-                i += 1
-
-            except IndexError:
-                continue
+            i = 0
+            while i < self.parent.blines:
+                if self._src_buffer:
+                    b = self._src_buffer.pop()
+                    if self._spec_display_method is not None:
+                        self._spec_display_method(b[2048:4096])
+                        if b is not []:
+                            frame[:, :, i] = process_oct_b(b,
+                                                           self.parent.alines,
+                                                           self._window,
+                                                           self._fft)
+                            i = i + 1
+                            # print('ProcessWorker: Processed B-line', i, 'of', self.parent.blines)
 
 
+            self._dst_buffer.append(frame)
+            if self._b_display_method is not None:
+                self._b_display_method(frame)
+            elapsed = time.time() - start
+            print('ProcessWorker: Frame appended. A-line rate',
+                  (self.parent.alines*self.parent.blines) / elapsed, 'Hz')
+            self.frame_processed.emit()
+
+        self.finished.emit()
 
 
 class GrabWorker(QObject):
+
     started = pyqtSignal()
     finished = pyqtSignal()
     frame_grabbed = pyqtSignal()
@@ -122,12 +145,12 @@ class GrabWorker(QObject):
             try:
                 self._put_fn(self._grab_fn(*self._grab_fn_args), *self._put_fn_args)
             except OSError:
-                print('GrabWorker: exiting due to illegal grab attempt...')
-                self.finished.emit()
-                self.thread().quit()
+                print('GrabWorker: illegal grab attempt... frame is unavailable or camera is improperly configured')
+                # self.finished.emit()
+                # self.thread().quit()
                 return
             self.frames_grabbed += 1  # TODO implement in a way that won't overflow
-            self.frame_grabbed.emit()
+            # self.frame_grabbed.emit()
 
         self.finished.emit()
         self.thread().quit()
@@ -149,6 +172,9 @@ class TabOCTA(QWidget):
         self.layout.addWidget(self.configPanel)
 
         self.scanPanel = ScanPanelOCTA()
+        self.scanPanel.commit_button.released.connect(self._commit_scan_pattern)
+        self.scanPanel.preview_button.released.connect(self._scan_pattern_plot)
+
         self.layout.addWidget(self.scanPanel)
 
         self.repeatsPanel = RepeatsPanel()
@@ -165,46 +191,58 @@ class TabOCTA(QWidget):
 
         self.setLayout(self.layout)
 
+        # TODO implement proper scan pattern init stuff
+        # Don't change here on startup! Use GUI!
+        self.alines = 100
+        self.blines = 100
+        self.scan_dim = [self.alines, self.blines]
+
+        self._dac_fs = 400000
+        self._imaq_buffers = self.blines
+
         # self.controller = SpectralRadarController()
         self.controller = NIController('img0',  # Camera name
                                        'Dev1',  # Scan DAQ name
                                        'ao0',  # Camera trigger ch name
                                        'ao1',  # X galvo ch name
-                                       'ao2')  # Y galvo ch name
+                                       'ao2',  # Y galvo ch name
+                                       dac_sample_rate=self._dac_fs,
+                                       imaq_buffer_size=self._imaq_buffers)
 
-        self._raw_queue = deque(maxlen=32)  # Queue for unprocessed frames TODO add max size
-        self._proc_queue = deque(maxlen=32)  # Queue for processed frames
-        self._export_queue = deque(maxlen=32)  # Queue for acquired frames
+        self._raw_buffer = deque(maxlen=100)  # Queue for unprocessed frames TODO add max size
+        self._processed_buffer = deque(maxlen=100)  # Queue for unprocessed frames TODO add max size
+        self._disp_bscan_buffer = self.bscanView.get_buffer()
+        self._disp_spec_buffer = self.spectrumView.get_buffer()
 
         self._grab_worker = None
         self._grab_thread = None
 
-        self._pyimageoct_worker = None
-        self._pyimageoct_thread = None
+        self._process_worker = None
+        self._process_thread = None
 
         self.scanning = False  # One bool state machine
-
-        # TODO implement proper scan pattern stuff
-        self.alines = 600
-        self.blines = 1
-        self._scan_pattern = RasterScanPattern()
-        self._scan_pattern._generate_raster_scan(self.alines, self.blines)
-        self.scan_dim = [self.alines, self.blines]
 
         self.controlPanel.connect_to_scan(self._start_scan)
         self.controlPanel.connect_to_stop(self._stop_scan)
         self.controlPanel.connect_to_acq(self._start_acq)
 
-        err = self.controller.initialize()
+        err = self.controller.initialize(scanpattern=self.get_scanpattern())
 
-        self._launch_manager_thread()
+    def setEnabled(self, val):
+        self.controlPanel.setEnabled(val)
+        self.scanPanel.setEnabled(val)
+        self.spectrumView.setEnabled(val)
+        self.bscanView.setEnabled(val)
+        self.configPanel.setEnabled(val)
+        self.repeatsPanel.setEnabled(val)
+        self.filePanel.setEnabled(val)
 
     def get_buffers(self):
         """
         Get the buffers associated with this imaging mode
         :return: [raw_buffer, processed_buffer, export_buffer]
         """
-        return [self._raw_queue, self._proc_queue, self._export_queue]
+        return self._raw_buffer
 
     def get_displays(self):
         """
@@ -213,11 +251,80 @@ class TabOCTA(QWidget):
         """
         return [self.bscanView, self.spectrumView]
 
+    def get_scanpattern(self):
+        # TODO implement threaded/responsive
+        self.alines = self.scanPanel.x_count_spin.value()
+        self.blines = self.scanPanel.y_count_spin.value()
+        pat = RasterScanPattern(dac_samples_per_second=self._dac_fs,
+                                debug=True)
+        fov2d = [self.scanPanel.x_roi_spin.value(), self.scanPanel.y_roi_spin.value()]
+        # spacing2d = [self.scanPanel.x_spacing_spin.value(), self.scanPanel.y_spacing_spin.value()]
+        pat.generate_raster_scan(
+            self.scanPanel.x_count_spin.value(),  # A-lines
+            self.scanPanel.y_count_spin.value(),  # B-lines
+            # exposure_time_us=25,  # Width of trigger pulse in us
+            fov=fov2d,  # FOV
+            # spacing=spacing2d  # Spacing
+        )
+        return pat
+
     def close(self):
         print('Closing!')
         if self.controller.mode is 1:
             self.controller.stop_scan()
         self.controller.close()
+
+    @pyqtSlot()
+    def _scan_pattern_plot(self):
+        # TODO implement in pyqtgraph, matplotlib is slow
+        pat = self.get_scanpattern()
+        x = pat.get_x()
+        y = pat.get_y()
+        exposures = pat.get_trigger()
+        scan_exposure_starts = pat.get_exposure_starts()
+        print('Scan pattern preview')
+
+        dlg = QDialog(self)
+        dlg.f = Figure()
+        dlg.canvas = Canvas(dlg.f)
+        dlg.toolbar = Toolbar(dlg.canvas, dlg)
+        dlg.layout = QGridLayout()
+        dlg.layout.addWidget(dlg.toolbar)
+        dlg.layout.addWidget(dlg.canvas)
+        dlg.setLayout(dlg.layout)
+
+        ax_signal_x = dlg.f.add_subplot(4, 1, 1)
+        ax_signal_y = dlg.f.add_subplot(4, 1, 2)
+        ax_signal_cam = dlg.f.add_subplot(4, 1, 3)
+
+        ax_signal_x.plot(x, label='x-galvo')
+        ax_signal_y.plot(y, label='y-galvo')
+        ax_signal_cam.plot(exposures*.5, label='cam trigger')
+
+        ax_spatial = dlg.f.add_subplot(4, 1, 4)
+
+        ax_spatial.plot(x, y)
+        ax_spatial.scatter(x[0], y[0], label='initial position')
+        ax_spatial.scatter(x[scan_exposure_starts], y[scan_exposure_starts], label='exposures')
+        # ax_spatial.legend()
+
+        dlg.setWindowModality(Qt.ApplicationModal)
+        dlg.setWindowTitle('Scan pattern preview')
+        dlg.exec_()
+        dlg.canvas.draw()
+        dlg.show()
+
+    @pyqtSlot()
+    def _commit_scan_pattern(self):
+        """
+        Updates controller with new scan pattern geometry. Launches a thread to do so because it takes
+        awhile to allocate the buffers (?)
+        """
+        self.setEnabled(False)
+        self.controller.close()
+        pat = self.get_scanpattern()
+        self.controller.initialize(scanpattern=pat)
+        self.setEnabled(True)
 
     def _start_acq(self):
         self.controller.start_scan()
@@ -225,7 +332,8 @@ class TabOCTA(QWidget):
 
     def _start_scan(self):
         self.scanning = True
-        self.controller.set_scanpattern(self._scan_pattern)
+        self._launch_process_thread()
+        self.scanPanel.setEnabled(False)  # TODO implement mid-scan pattern changes
         self.controller.start_scan()
         self._launch_grab_thread()
 
@@ -236,6 +344,8 @@ class TabOCTA(QWidget):
     def _stop_scan(self):
         self._grab_worker.abort_flag = True
         self._grab_thread.wait(500)  # Abort the thread and wait for frame grabbing to stop
+        print('TabOCTA: GrabThread exited')
+        self.scanPanel.setEnabled(True)
         self._end_scan()
 
     def _end_scan(self):
@@ -248,16 +358,19 @@ class TabOCTA(QWidget):
     def _launch_grab_thread(self):
         self._grab_thread = QThread()
         self._grab_worker = GrabWorker(self.controller.grab,
-                                       self._raw_queue.append)
+                                       self._raw_buffer.append)
         self._grab_worker.moveToThread(self._grab_thread)
+        self._grab_worker.started.connect(self._start_display)
         self._grab_thread.started.connect(self._grab_worker.start)
-        self._grab_worker.frame_grabbed.connect(self._start_display)
         self._grab_worker.finished.connect(self._end_scan)
         self._grab_thread.start()
 
-    def _launch_manager_thread(self):
-        self._pyimageoct_thread = QThread()
-        self._pyimageoct_worker = PyImageOCTWorker(self)
-        self._pyimageoct_worker.moveToThread(self._pyimageoct_thread)
-        self._pyimageoct_thread.started.connect(self._pyimageoct_worker.start)
-        self._pyimageoct_thread.start()
+    def _launch_process_thread(self):
+        self._process_thread = QThread()
+        self._process_worker = ProcessWorker(self, self._raw_buffer,
+                                             self._processed_buffer,
+                                             spec_display_method=self.spectrumView.enqueue_frame,
+                                             b_display_method=self.bscanView.enqueue_frame)
+        self._process_worker.moveToThread(self._process_thread)
+        self._process_thread.started.connect(self._process_worker.start)
+        self._process_thread.start()

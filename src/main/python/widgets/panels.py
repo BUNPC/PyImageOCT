@@ -3,6 +3,7 @@ import os
 from datetime import datetime
 
 from PyQt5 import uic
+from PyQt5.QtCore import pyqtSignal, pyqtSlot
 from PyQt5.QtWidgets import QGroupBox, QLineEdit, QComboBox, QToolButton, QFileDialog, QSpinBox, QDoubleSpinBox, \
     QCheckBox, QPushButton
 
@@ -109,6 +110,8 @@ class ControlPanel(QGroupBox):
 
 class ScanPanelOCTA(QGroupBox):
 
+    changed = pyqtSignal()
+
     def __init__(self):
 
         super(QGroupBox, self).__init__()
@@ -128,22 +131,21 @@ class ScanPanelOCTA(QGroupBox):
         self.x_count_spin = self.findChild(QSpinBox, "spinACount")
         self.x_spacing_spin = self.findChild(QDoubleSpinBox, "spinFastAxisSpacing")
 
+        self.x_roi_spin.valueChanged.connect(self._roi_changed)
+        self.x_count_spin.valueChanged.connect(self._count_changed)
+        self.x_spacing_spin.valueChanged.connect(self._x_spacing_changed)
+        self.x_spacing_spin.valueChanged.connect(self._spacing_changed)
+
         self.y_roi_spin = self.findChild(QDoubleSpinBox, "spinROIHeight")
         self.y_count_spin = self.findChild(QSpinBox, "spinBCount")
         self.y_spacing_spin = self.findChild(QDoubleSpinBox, "spinSlowAxisSpacing")
 
-        self.preview_button = self.findChild(QPushButton, "previewButton")
-
-        self.x_spacing_spin.valueChanged.connect(self._x_spacing_changed)
-
-        self.x_roi_spin.valueChanged.connect(self._roi_changed)
         self.y_roi_spin.valueChanged.connect(self._roi_changed)
-
-        self.x_spacing_spin.valueChanged.connect(self._spacing_changed)
         self.y_spacing_spin.valueChanged.connect(self._spacing_changed)
-
-        self.x_count_spin.valueChanged.connect(self._count_changed)
         self.y_count_spin.valueChanged.connect(self._count_changed)
+
+        self.preview_button = self.findChild(QPushButton, "previewButton")
+        self.commit_button = self.findChild(QPushButton, "commitButton")
 
     def _count_changed(self):
         # Need to block signals so that update functions arent recursive
@@ -159,6 +161,7 @@ class ScanPanelOCTA(QGroupBox):
         # Unblock them
         self.x_roi_spin.blockSignals(False)
         self.y_roi_spin.blockSignals(False)
+        self.changed.emit()
 
     def _spacing_changed(self):
         self.x_roi_spin.blockSignals(True)
@@ -172,6 +175,7 @@ class ScanPanelOCTA(QGroupBox):
 
         self.x_roi_spin.blockSignals(False)
         self.y_roi_spin.blockSignals(False)
+        self.changed.emit()
 
     def _roi_changed(self):
         self.x_spacing_spin.blockSignals(True)
@@ -185,12 +189,14 @@ class ScanPanelOCTA(QGroupBox):
 
         self.x_spacing_spin.blockSignals(False)
         self.y_spacing_spin.blockSignals(False)
+        self.changed.emit()
 
     def _indefinite_check_changed(self):
         if self.indefinite_check.isChecked():
             self.scan_number_spin.setEnabled(False)
         else:
             self.scan_number_spin.setEnabled(True)
+        self.changed.emit()
 
     def _equal_aspect_check_changed(self):
         if self.equal_aspect_check.isChecked():
@@ -198,6 +204,7 @@ class ScanPanelOCTA(QGroupBox):
             self.y_spacing_spin.setEnabled(False)
         else:
             self.y_spacing_spin.setEnabled(True)
+        self.changed.emit()
 
     def _x_spacing_changed(self):
         if self.equal_aspect_check.isChecked():
