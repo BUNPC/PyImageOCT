@@ -1,6 +1,8 @@
 from src.main.python.PyScanPattern.ScanPattern import RasterScanPattern
 from src.main.python.widgets.panels import FilePanel, RepeatsPanel, ConfigPanel, ScanPanelOCTA, ControlPanel
 from src.main.python.widgets.plot import BScanView, SpectrumView
+from src.main.python.widgets.plot import start_refresh as start_plot_refresh
+from src.main.python.widgets.plot import stop_refresh as stop_plot_refresh
 from src.main.python.controllers import SpectralRadarController, NIController
 
 from PyQt5.QtWidgets import QWidget, QGridLayout, QDialog
@@ -20,6 +22,22 @@ import time
 
 matplotlib.use('Qt5Agg')
 
+
+# Controller modes
+SCANNING = 1
+READY = 0
+NOT_READY = -1
+
+# Size of line camera
+ALINE_SIZE = 2048
+
+
+@numba.jit(nopython=True)
+def subtract_dc(buffer, n, dc):
+    for i in numba.prange(n):
+        buffer[i*ALINE_SIZE:i*ALINE_SIZE + ALINE_SIZE] = buffer[i*ALINE_SIZE:i*ALINE_SIZE + ALINE_SIZE] - dc
+
+
 def plan_1d_r2c_fftw(fft_input_len):
     start = time.time()
 
@@ -37,11 +55,11 @@ def plan_1d_r2c_fftw(fft_input_len):
     return in_arr, out_arr, fftw_obj
 
 
-# @numba.jit(parallel=True, forceobj=True)
+@numba.jit(parallel=True, forceobj=True)
 def process_oct_b(raw, n_alines, window, fft, n=2048):
     spatial = np.empty([int(n/2), n_alines], dtype=np.complex64)
     for i in numba.prange(n_alines):
-        fft_in = pyfftw.byte_align(raw[n*i:n*i + n] * window, dtype='float32')
+        fft_in = pyfftw.byte_align(np.multiply(raw[n*i:n*i + n], window), dtype='float32')
         fft_out = pyfftw.empty_aligned(int(n / 2) + 1, dtype='complex64')
         fft.update_arrays(fft_in, fft_out)
         fft()
@@ -56,14 +74,33 @@ class ProcessWorker(QObject):
     finished = pyqtSignal()
     frame_processed = pyqtSignal()
 
-    def __init__(self, parent, src_buffer, dst_buffer, spec_display_method=None, b_display_method=None, n=2048, window=np.hanning(2048)):
+    def __init__(self, parent, src_pop_fn, dst_put_fn, spec_display_fn=None, b_display_fn=None, n=2048,
+                 window=np.hanning(2048), display_interval=2):
+        """
+
+        :param parent: The parent GUI element  TODO remove
+        :param src_pop_fn: Method used to pop raw frame from source buffer
+        :param dst_put_fn: Method used to put processed frame in destination buffer for export or display
+        :param spec_display_fn: The method passed a raw spectrum
+        :param b_display_fn The method passed a 3D processed frame
+        :param n: The number of spectrometer bins
+        :param window: The window used to apodize the spectrum
+        :param display_interval: The number of processed frames to skip before calling b_display_fn
+            again. Default is 3. TODO determine automatically
+        """
         super(QObject, self).__init__()
 
-        self._src_buffer = src_buffer
-        self._dst_buffer = dst_buffer
-        self._spec_display_method = spec_display_method
-        self._b_display_method = b_display_method
-        self._window = window
+        self._pop_fn = src_pop_fn
+        self._put_fn = dst_put_fn
+        self._spec_display_fn = spec_display_fn
+        self._b_display_fn = b_display_fn
+        self._disp_interval = display_interval
+        self._dc = parent.controller.get_dc()
+        try:
+            self._window = np.divide(window, self._dc + -2**31 + 1)
+        except ValueError:  # DC spectrum is invalid
+            self._window = window
+        self._total_alines = parent.alines * parent.blines
         self._n = n
         fft_in, fft_out, self._fft = plan_1d_r2c_fftw(self._n)
 
@@ -73,36 +110,44 @@ class ProcessWorker(QObject):
     def start(self):
 
         self.started.emit()
+        buffer_size = self.parent.alines * self._n
+
+        count = 0  # Counts up to display_interval
 
         while self.abort_flag is not True:
 
             start = time.time()
             frame = np.empty([int(self._n/2), self.parent.alines, self.parent.blines], dtype=np.complex64)
 
-            i = 0
-            while i < self.parent.blines:
-                if self._src_buffer:
-                    b = self._src_buffer.pop()
-                    if self._spec_display_method is not None:
-                        self._spec_display_method(b[2048:4096])
-                        if b is not []:
-                            frame[:, :, i] = process_oct_b(b,
-                                                           self.parent.alines,
-                                                           self._window,
-                                                           self._fft)
-                            i = i + 1
-                            # print('ProcessWorker: Processed B-line', i, 'of', self.parent.blines)
+            try:
+                b = self._pop_fn().astype(np.float32)
+                if b is not [] and not None:
+                    count += 1
+                    subtract_dc(b, self._total_alines, self._dc)
+                    if self._spec_display_fn is not None:
+                        self._spec_display_fn(b[2048:4096])
+                    for i in range(self.parent.blines):
+                        frame[:, :, i] = process_oct_b(b[i * buffer_size: i * buffer_size + buffer_size],
+                                                       self.parent.alines,
+                                                       self._window,
+                                                       self._fft)
+                    # print('ProcessWorker: Processed B-line', i, 'of', self.parent.blines)
 
-
-            self._dst_buffer.append(frame)
-            if self._b_display_method is not None:
-                self._b_display_method(frame)
-            elapsed = time.time() - start
-            print('ProcessWorker: Frame appended. A-line rate',
-                  (self.parent.alines*self.parent.blines) / elapsed, 'Hz')
-            self.frame_processed.emit()
+                    self._put_fn(frame)
+                    if self._b_display_fn is not None and count >= self._disp_interval:
+                        # TODO fix this connection
+                        self.parent.bscanView._ROI_z = self.parent.scanPanel.z_count_spin.value()
+                        self._b_display_fn(frame)
+                        count = 0
+                    # elapsed = time.time() - start
+                    # print('ProcessWorker: Frame appended. A-line rate',
+                    #       (self.parent.alines*self.parent.blines) / elapsed, 'Hz')
+                    self.frame_processed.emit()
+            except IndexError:  # Pop from empty deque
+                pass
 
         self.finished.emit()
+        self.thread().quit()
 
 
 class GrabWorker(QObject):
@@ -174,6 +219,8 @@ class TabOCTA(QWidget):
         self.scanPanel = ScanPanelOCTA()
         self.scanPanel.commit_button.released.connect(self._commit_scan_pattern)
         self.scanPanel.preview_button.released.connect(self._scan_pattern_plot)
+        self.scanPanel.blockSignals(True)
+        self.scanPanel.changedScale.connect(self._set_scan_scale)
 
         self.layout.addWidget(self.scanPanel)
 
@@ -193,9 +240,8 @@ class TabOCTA(QWidget):
 
         # TODO implement proper scan pattern init stuff
         # Don't change here on startup! Use GUI!
-        self.alines = 100
-        self.blines = 100
-        self.scan_dim = [self.alines, self.blines]
+        self.alines = self.scanPanel.x_count_spin.value()
+        self.blines = self.scanPanel.y_count_spin.value()
 
         self._dac_fs = 400000
         self._imaq_buffers = self.blines
@@ -209,8 +255,8 @@ class TabOCTA(QWidget):
                                        dac_sample_rate=self._dac_fs,
                                        imaq_buffer_size=self._imaq_buffers)
 
-        self._raw_buffer = deque(maxlen=100)  # Queue for unprocessed frames TODO add max size
-        self._processed_buffer = deque(maxlen=100)  # Queue for unprocessed frames TODO add max size
+        self._raw_buffer = deque(maxlen=100)  # Queue for unprocessed frames TODO add max size param
+        self._processed_buffer = deque(maxlen=100)  # Queue for unprocessed frames TODO add max size param
         self._disp_bscan_buffer = self.bscanView.get_buffer()
         self._disp_spec_buffer = self.spectrumView.get_buffer()
 
@@ -220,8 +266,9 @@ class TabOCTA(QWidget):
         self._process_worker = None
         self._process_thread = None
 
-        self.scanning = False  # One bool state machine
+        self.scanning = False  # Simple on/off state
 
+        # Main control button callbacks
         self.controlPanel.connect_to_scan(self._start_scan)
         self.controlPanel.connect_to_stop(self._stop_scan)
         self.controlPanel.connect_to_acq(self._start_acq)
@@ -252,27 +299,38 @@ class TabOCTA(QWidget):
         return [self.bscanView, self.spectrumView]
 
     def get_scanpattern(self):
-        # TODO implement threaded/responsive
+        # TODO implement threaded/responsive, maybe don't regenerate scan pattern every time
+        start = time.time()
+        # Get scan pattern params from GUI
         self.alines = self.scanPanel.x_count_spin.value()
         self.blines = self.scanPanel.y_count_spin.value()
         pat = RasterScanPattern(dac_samples_per_second=self._dac_fs,
-                                debug=True)
+                                debug=False)
         fov2d = [self.scanPanel.x_roi_spin.value(), self.scanPanel.y_roi_spin.value()]
         # spacing2d = [self.scanPanel.x_spacing_spin.value(), self.scanPanel.y_spacing_spin.value()]
-        pat.generate_raster_scan(
+        pat.generate(
             self.scanPanel.x_count_spin.value(),  # A-lines
             self.scanPanel.y_count_spin.value(),  # B-lines
             # exposure_time_us=25,  # Width of trigger pulse in us
             fov=fov2d,  # FOV
-            # spacing=spacing2d  # Spacing
+            # spacing=spacing2d  # Spacing TODO implement spacing
         )
+        print('TabOCTA: get_scanpattern elapsed', time.time() - start)
         return pat
 
     def close(self):
         print('Closing!')
-        if self.controller.mode is 1:
+        if self.controller.mode is SCANNING:
             self.controller.stop_scan()
         self.controller.close()
+
+    @pyqtSlot()
+    def _set_scan_scale(self):
+        """
+        Callback for adjustments to scan pattern during acquisition that do not require IMAQ initialization
+        """
+        pat = self.get_scanpattern()
+        self.controller.set_scan_scale(pat)
 
     @pyqtSlot()
     def _scan_pattern_plot(self):
@@ -306,6 +364,7 @@ class TabOCTA(QWidget):
         ax_spatial.plot(x, y)
         ax_spatial.scatter(x[0], y[0], label='initial position')
         ax_spatial.scatter(x[scan_exposure_starts], y[scan_exposure_starts], label='exposures')
+        ax_spatial.aspect('equal')
         # ax_spatial.legend()
 
         dlg.setWindowModality(Qt.ApplicationModal)
@@ -317,12 +376,11 @@ class TabOCTA(QWidget):
     @pyqtSlot()
     def _commit_scan_pattern(self):
         """
-        Updates controller with new scan pattern geometry. Launches a thread to do so because it takes
-        awhile to allocate the buffers (?)
+        Updates controller with new scan buffer
         """
         self.setEnabled(False)
-        self.controller.close()
         pat = self.get_scanpattern()
+        self.controller.close()
         self.controller.initialize(scanpattern=pat)
         self.setEnabled(True)
 
@@ -332,45 +390,45 @@ class TabOCTA(QWidget):
 
     def _start_scan(self):
         self.scanning = True
-        self._launch_process_thread()
-        self.scanPanel.setEnabled(False)  # TODO implement mid-scan pattern changes
+        self._launch_process_thread()  # Will block until a frame is available
+        self.scanPanel.blockSignals(False)
+        self.scanPanel.setSizeLocked(True)
         self.controller.start_scan()
         self._launch_grab_thread()
-
-    def _start_display(self):
-        self.spectrumView.start_refresh()
-        self.bscanView.start_refresh()
+        start_plot_refresh(hz=30)
 
     def _stop_scan(self):
+        self.controlPanel.setEnabled(False)
+        self._process_worker.abort_flag = True
+        if not self._process_thread.wait(500):  # Abort processing thread and wait for it to finish
+            self._process_thread.terminate()  # If it doesn't finish before 500 ms, unsafely kill it
         self._grab_worker.abort_flag = True
-        self._grab_thread.wait(500)  # Abort the thread and wait for frame grabbing to stop
-        print('TabOCTA: GrabThread exited')
-        self.scanPanel.setEnabled(True)
-        self._end_scan()
-
-    def _end_scan(self):
-        self.controller.stop_scan()
-        self.controlPanel.set_idle()
-        self.spectrumView.stop_refresh()
-        self.bscanView.stop_refresh()
+        if not self._grab_thread.wait(500):
+            self._grab_thread.terminate()
+        print('TabOCTA: GrabThread and ProcessThread exited')
+        self.scanPanel.blockSignals(True)  # Only get params from scanPanel when we ask
+        self.scanPanel.setSizeLocked(False)  # Re-enabled buffer size fields in GUI
+        self.controller.stop_scan()  # Stop the controller
+        self.controlPanel.set_idle()  # Set the control buttons up for another scan or acq
+        stop_plot_refresh()  # Stop the plot timer
         self.scanning = False
 
     def _launch_grab_thread(self):
         self._grab_thread = QThread()
         self._grab_worker = GrabWorker(self.controller.grab,
-                                       self._raw_buffer.append)
+                                       self._raw_buffer.append,
+                                       grab_fn_args=[np.arange(self.blines), self.blines])
         self._grab_worker.moveToThread(self._grab_thread)
-        self._grab_worker.started.connect(self._start_display)
         self._grab_thread.started.connect(self._grab_worker.start)
-        self._grab_worker.finished.connect(self._end_scan)
         self._grab_thread.start()
 
     def _launch_process_thread(self):
         self._process_thread = QThread()
-        self._process_worker = ProcessWorker(self, self._raw_buffer,
-                                             self._processed_buffer,
-                                             spec_display_method=self.spectrumView.enqueue_frame,
-                                             b_display_method=self.bscanView.enqueue_frame)
+        self._process_worker = ProcessWorker(self,
+                                             src_pop_fn=self._raw_buffer.pop,
+                                             dst_put_fn=self._processed_buffer.append,
+                                             spec_display_fn=self.spectrumView.enqueue_frame,
+                                             b_display_fn=self.bscanView.enqueue_frame)
         self._process_worker.moveToThread(self._process_thread)
         self._process_thread.started.connect(self._process_worker.start)
         self._process_thread.start()

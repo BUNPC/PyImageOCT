@@ -8,8 +8,19 @@ from PyQt5.QtCore import QTimer
 from PyQt5.QtWidgets import QWidget, QRadioButton, QCheckBox, QSlider, QLabel
 
 
+_display_update_timer = QTimer()
+
+
+def start_refresh(hz=60):
+    t = int(1 / hz)
+    _display_update_timer.start(t)  # > 60 FPS
+
+
+def stop_refresh():
+    _display_update_timer.stop()
+
+
 class SpectrumPlotWidget(pyqtgraph.GraphicsWindow):
-    # TODO fix
     def __init__(self, bins=2048, chirp=[]):
         super().__init__()
         if ~(len(chirp) > 0):
@@ -20,7 +31,7 @@ class SpectrumPlotWidget(pyqtgraph.GraphicsWindow):
         self._bins = bins
 
         self._plot_item = self.addPlot()
-        self._plot_item.setYRange(0, 4000)
+        self._plot_item.setYRange(-2000, 2000)
 
         self._spectrum = self._plot_item.plot(color='#FFFFFF')
         self._spectrum.setData(self._chirp, np.zeros(len(self._chirp)))
@@ -52,6 +63,7 @@ class OCTViewer(pyqtgraph.GraphicsLayoutWidget):
         self._plot.setAspectLocked()
         self.image = pyqtgraph.ImageItem()
         self._plot.addItem(self.image)
+        self.setLevels([-2, 100])
 
     def setImage(self, img):
         self.image.setImage(np.rot90(img, k=3))
@@ -70,7 +82,6 @@ class SpectrumView(QWidget):
             os.path.dirname(os.path.dirname(os.path.abspath(__file__)))) + "\\ui\\spectrumplotter.ui"
         uic.loadUi(ui, self)
 
-        self._display_update_timer = QTimer()
 
         plotwidget_placeholder = self.findChild(QWidget, "widgetSpec")
         plotwidget_placeholder_layout = plotwidget_placeholder.parent().layout()
@@ -87,19 +98,13 @@ class SpectrumView(QWidget):
         self._current_frame = []
 
         self._buffer = deque(maxlen=12)  # TODO implement parameter for maxlen
-        self._display_update_timer.timeout.connect(self._update_display)
+        _display_update_timer.timeout.connect(self._update_display)
 
     def get_buffer(self):
         """
         :return: Handle to deque object
         """
         return self._buffer
-
-    def start_refresh(self):
-        self._display_update_timer.start(16)  # > 60 FPS. TODO implement parameter
-
-    def stop_refresh(self):
-        self._display_update_timer.stop()
 
     def enqueue_frame(self, frame):
         """
@@ -152,8 +157,6 @@ class BScanView(QWidget):
         self.viewer = OCTViewer()
         viewer_placeholder_layout.replaceWidget(viewer_placeholder, self.viewer)
 
-        # self._slice_timer = QTimer()  # TODO remove slice timer
-        self._display_update_timer = QTimer()
         self._slice_slider = self.findChild(QSlider, "sliderSlice")
         self._enface_radio = self.findChild(QRadioButton, "radioEnface")
         self._scan_check = self.findChild(QCheckBox, "checkScanThrough")
@@ -161,7 +164,8 @@ class BScanView(QWidget):
         self._mip_check = self.findChild(QCheckBox, "checkMIP")
         self.slice_label = self.findChild(QLabel, "sliceLabel")
 
-        self._ROI_z = 200
+        self._lf_crop = 0
+        self._ROI_z = 100
 
         # Initial conditions
         self._frame_shape = []
@@ -179,19 +183,13 @@ class BScanView(QWidget):
         self._db_check.toggled.connect(self._db_changed)
 
         # self._slice_timer.timeout.connect(self._slice_thru_advance)
-        self._display_update_timer.timeout.connect(self._update_display)
+        _display_update_timer.timeout.connect(self._update_display)
 
     def get_buffer(self):
         """
         :return: Handle to deque object
         """
         return self._buffer
-
-    def start_refresh(self):
-        self._display_update_timer.start(16)  # > 60 FPS. TODO implement parameter
-
-    def stop_refresh(self):
-        self._display_update_timer.stop()
 
     def enqueue_frame(self, frame):
         """
@@ -204,7 +202,9 @@ class BScanView(QWidget):
             Third dimension (optional): Slow axis
         :return: 0 on success
         """
-        f = np.array(frame).astype(np.complex64)[0:self._ROI_z, :, :] # Crop to ROI
+        if np.max(frame) is 0:  # Don't enqueue null arrays
+            return -1
+        f = np.array(frame).astype(np.complex64)[self._lf_crop:self._lf_crop + self._ROI_z, :, :]  # Crop to ROI
         self._buffer.append(f)
         if self._current_slice is -1:  # On initial startup only
             self._set_slice(1)  # Slice 1 is index 0!
@@ -242,11 +242,11 @@ class BScanView(QWidget):
         if self._draw_frame() is -1:  # Draws the frame
             # print('BScanView: draw failed')
             pass
-            # self._display_update_timer.stop()
+            # _display_update_timer.stop()
 
     def _draw_frame(self):
         frame = self._current_frame
-        frame = np.abs(frame)  # TODO make abs vs real vs imag etc parameters
+        frame = np.abs(np.real(frame))  # TODO make abs vs real vs imag etc parameters
         try:
             if self._db_check.isChecked():
                 frame = 20 * np.log10(frame)
@@ -262,8 +262,10 @@ class BScanView(QWidget):
                     self.viewer.setImage(frame[:, :, self._current_slice - 1])
             return 0
         except IndexError:  # Occurs when a new frame has been added with different dimensions
+            # print('BScanViewer: IndexError raised on draw')
             return -1
         except ValueError:
+            # print('BScanViewer: ValueError raised on draw')
             return -1
 
     def _set_scan_toggle(self):
@@ -302,6 +304,7 @@ class BScanView(QWidget):
             self.enface_enabled = True
             try:
                 self._slice_max = self._frame_shape[0]  # Slice through z
+                print('BScanViewer: Enface mode', self._slice_max)
             except IndexError:
                 return
         else:

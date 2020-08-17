@@ -10,6 +10,9 @@ from copy import deepcopy
 from collections import deque
 from PyIMAQ import PyIMAQ
 from PyScanPattern import ScanPattern
+import numba
+
+import matplotlib.pyplot as plt
 
 # Size of line camera
 ALINE_SIZE = 2048
@@ -108,10 +111,7 @@ class SpectralRadarController:
         PySpectralRadar.setTriggerMode(self._device, self._triggertype)
         PySpectralRadar.setTriggerTimeoutSec(self._device, self._trigger_timeout)
 
-        self._prescan()
-
         print('SpectralRadarController: Telesto initialized successfully.')
-
         if self._scanpattern is not None:
             self.mode = READY
         else:
@@ -128,9 +128,7 @@ class SpectralRadarController:
         PySpectralRadar.closeProcessing(self._proc)
         PySpectralRadar.closeProbe(self._probe)
         PySpectralRadar.closeDevice(self._device)
-
         self.mode = NOT_READY
-
         return 0
 
     def configure(self, config_file_name):
@@ -142,7 +140,6 @@ class SpectralRadarController:
         self._config = config_file_name
         self._probe = PySpectralRadar.initProbe(self._device, self._config)
         PySpectralRadar.setCameraPreset(self._device, self._probe, self._proc, 0)  # 0 is the main camera
-
         return 0
 
     def set_scanpattern(self, scanpatternhandle):
@@ -152,7 +149,6 @@ class SpectralRadarController:
         :return: 0 if successful
         """
         self._scanpattern = scanpatternhandle
-
         return 0
 
     def create_freeform_scanpattern(self, positions, size_x, size_y, apodization):
@@ -210,18 +206,6 @@ class SpectralRadarController:
         PySpectralRadar.copyRawDataContent(self._rawdatahandle, frame)
         return frame
 
-    def _prescan(self):
-        """
-        Pre-scan routine which determines necessary buffer size
-        :return: Returns the raw data size. It is stored as a private member also, however
-        """
-        self.start_measurement()
-        PySpectralRadar.getRawData(self._device, self._rawdatahandle)
-        self._rawdatadim = PySpectralRadar.getRawDatasShape(self._rawdatadim)
-        self.stop_measurement()
-
-        return self._rawdatadim
-
 
 class NIController(Controller):
 
@@ -256,25 +240,26 @@ class NIController(Controller):
         self._bytes_per_frame = 0
         self._frame_size = 0
         self._buffer_size_alines = 0
-        self._aline_size = 0
+        self._buffer_size_blines = 0
+        self._buffer_size_total = 0
         self._scan_task = None
         self._timing = None
         self._scan_writer = None
 
         # TODO implement calibration params
-        self._trigger_gain = -3
-        self._x_volts_to_mm = 1
-        self._y_volts_to_mm = 1
+        self._max_galvo_voltage = 4  # Volts
+        self._trigger_gain = -2
+        self._x_volts_to_mm = 1 / 0.092 * 1 / 1.056  # ~92 um/V, sq aspect  (calibrated 8/6/2020)
+        self._y_volts_to_mm = 1 / 0.092 * 1 / 1.288  # ~92 um/V, sq aspect
 
-        self._cam_trig = []
-        self._x = []
-        self._y = []
+        self._cam_trig = []  # Camera trigger pulse train
+        self._x = []  # Slow axis galvo signal
+        self._y = []  # Fast axis galvo signal
+        self._dc = np.zeros(ALINE_SIZE, dtype=np.float)  # Reference spectrum
 
         self.mode = NOT_READY
 
     def initialize(self, scanpattern=None):
-
-        self._aline_size = ALINE_SIZE  # N
 
         if scanpattern is not None:
             print('Initializing with scan pattern')
@@ -284,14 +269,12 @@ class NIController(Controller):
         PyIMAQ.imgShowErrorMsg(PyIMAQ.imgOpen(self._camera_name))
         start = time.time()
 
-        print((0, 0, self._buffer_size_alines, self._aline_size))
-        PyIMAQ.imgShowErrorMsg(PyIMAQ.imgSetAttributeROI(0, 0, self._buffer_size_alines, self._aline_size))
+        print((0, 0, self._buffer_size_alines, ALINE_SIZE))
+        PyIMAQ.imgShowErrorMsg(PyIMAQ.imgSetAttributeROI(0, 0, self._buffer_size_alines, ALINE_SIZE))
         PyIMAQ.imgShowErrorMsg(PyIMAQ.imgInitBuffer(self._imaq_buffer_size))
 
-        self._frame_size = PyIMAQ.imgShowErrorMsg(PyIMAQ.imgGetFrameSize())
         self._bytes_per_frame = PyIMAQ.imgShowErrorMsg(PyIMAQ.imgGetBufferSize())
-
-        # print('NIController: Size of IMAQ buffer:', self._imaq_buffer_size*self._bytes_per_frame*10**-6, 'MB')
+        self._frame_size = PyIMAQ.imgGetFrameSize()  # Should be same as bytes per frame / 2 for uint16 data
 
         elapsed = time.time() - start
         print('NIController: Initialized camera', elapsed, 's')
@@ -308,16 +291,18 @@ class NIController(Controller):
 
         self._scan_writer = AnalogMultiChannelWriter(self._scan_task.out_stream)
 
-        self._scan_task.timing.cfg_samp_clk_timing(self._dac_sample_rate,
-                                                   source="",
-                                                   active_edge=Edge.RISING,  # TODO implemenet parameters
-                                                   sample_mode=AcquisitionType.CONTINUOUS)
-        self._scan_writer.write_many_sample(np.array([-self._trigger_gain * np.array(self._cam_trig),
-                                                      self._x_volts_to_mm * self._x,
-                                                      self._y_volts_to_mm * self._y]))
-
         elapsed = time.time() - start
         print('NIController: DAQmx initialized', elapsed, 's')
+
+        # Once IMAQ stuff, scan task and scan writer are set up, prescan to acquire reference spectrum
+        self._prescan()
+
+        self._scan_task.timing.cfg_samp_clk_timing(self._dac_sample_rate,
+                                                   source="",
+                                                   active_edge=Edge.RISING,
+                                                   sample_mode=AcquisitionType.CONTINUOUS)
+        self.mode = READY
+
         return 0
 
     def start_scan(self):
@@ -327,13 +312,18 @@ class NIController(Controller):
             self.mode = NOT_READY
             return -1
         else:
+            # Begin scan
+
+            self._write_scansignal(np.array([-self._trigger_gain * np.array(self._cam_trig),
+                                             self._x_volts_to_mm * self._x,
+                                             self._y_volts_to_mm * self._y]))
+
             PyIMAQ.imgShowErrorMsg(PyIMAQ.imgStartAcq())
+
             self._scan_task.start()
 
             self._bytes_per_frame = PyIMAQ.imgGetBufferSize()
             self._frame_size = PyIMAQ.imgGetFrameSize()  # Should be same as bytes per frame / 2 for uint16 data
-
-            print('NIController: Frame size:', self._frame_size)
 
             self.mode = SCANNING
 
@@ -353,21 +343,31 @@ class NIController(Controller):
         self.stop_scan()
         self._scan_task.close()
         self._scan_task = None
-        PyIMAQ.imgShowErrorMsg(PyIMAQ.imgAbortAcq())  # TODO this might fail
+        PyIMAQ.imgShowErrorMsg(PyIMAQ.imgStopAcq())  # TODO this might fail
         PyIMAQ.imgShowErrorMsg(PyIMAQ.imgClose())
 
         self.mode = NOT_READY
         return 0
 
-    def set_scanpattern(self, scan_pattern):
-        self._cam_trig = scan_pattern.get_trigger()  # TODO ensure proper polarity
-        self._x = scan_pattern.get_x()
-        self._y = scan_pattern.get_y()
-        self._dac_sample_rate = scan_pattern.get_sample_rate()
-        self._buffer_size_alines = scan_pattern.get_raster_dimensions()[0]  # A-lines per B per C!!
+    def set_scanpattern(self, scanpattern):
+        self._cam_trig = scanpattern.get_trigger()  # TODO ensure proper polarity
+        self._x = scanpattern.get_x()
+        self._y = scanpattern.get_y()
+        self._dac_sample_rate = scanpattern.get_sample_rate()
+        self._buffer_size_alines = scanpattern.get_raster_dimensions()[0]  # A-lines per B
+        self._buffer_size_blines = scanpattern.get_raster_dimensions()[1]  # B-lines per C
+        self._buffer_size_total = self._buffer_size_alines * self._buffer_size_blines
         return 0
 
-    def grab(self):
+    def set_scan_scale(self, scanpattern):
+        self._cam_trig = scanpattern.get_trigger()
+        self._x = scanpattern.get_x()
+        self._y = scanpattern.get_y()
+        self._write_scansignal(np.array([-self._trigger_gain * np.array(self._cam_trig),
+                                         self._x_volts_to_mm * self._x,
+                                         self._y_volts_to_mm * self._y]))
+
+    def grab_current(self):
         """
         Grabs frame most recently acquired by IMAQ by locking it out briefly and copying it to returned array
         :return: OCT frame, IMAQ buffer number
@@ -376,39 +376,83 @@ class NIController(Controller):
         PyIMAQ.imgGetCurrentFrame(fbuff)
         return fbuff
 
+    def grab(self, buffer_ids, buffer_ids_len):
+        """
+        Grabs the frames by id listed in buffer_ids and returns 2D array with buffers along first axis and
+        buffer numbers along 2nd axis
+        :return: OCT frame, IMAQ buffer number
+        """
+        fbuff = np.empty(self._frame_size * buffer_ids_len, dtype=np.uint16)
+        for i, bid in enumerate(buffer_ids):
+            PyIMAQ.imgCopyBuffer(bid, fbuff[i * self._frame_size:i * self._frame_size + self._frame_size])
+        return fbuff
+
     def configure(self, cfg_path):
         self._reinitialize()  # TODO implemenet configure(cfg)
 
-    def _reinitialize(self):
-        rescan = False
-        if self.mode is SCANNING:
-            self.stop_scan()
-            PyIMAQ.imgShowErrorMsg(PyIMAQ.imgStopAcq())
-            self.mode = NOT_READY
-            rescan = True
+    def get_dc(self):
+        return self._dc.astype(np.float32)
 
-        PyIMAQ.imgShowErrorMsg(PyIMAQ.imgSetAttributeROI(0, 0, self._buffer_size_alines, self._aline_size))
-        self._scan_task.timing.cfg_samp_clk_timing(self._daq_sample_rate,
-                                                   source="",
-                                                   active_edge=Edge.RISING,  # TODO implemenet parameters
+    def _prescan(self):
+        # Prescan
+
+        MAX_POS = 4  # volts
+
+        PyIMAQ.imgShowErrorMsg(PyIMAQ.imgStartAcq())
+
+        start = time.time()
+        print('Prescanning...')
+
+        self._scan_task.timing.cfg_samp_clk_timing(self._dac_sample_rate,
+                                                   sample_mode=AcquisitionType.FINITE)
+
+        # Ramp galvo to corner
+        self._write_scansignal(np.array([np.zeros(int(self._dac_sample_rate / 4)),
+                                         np.linspace(0, MAX_POS, int(self._dac_sample_rate / 4)),
+                                         np.linspace(0, MAX_POS, int(self._dac_sample_rate / 4))]))
+        self._scan_task.start()
+        self._scan_task.wait_until_done()
+        self._scan_task.stop()
+
+        # Acquire fully vignetted image
+        self._scan_task.timing.cfg_samp_clk_timing(self._dac_sample_rate,
                                                    sample_mode=AcquisitionType.CONTINUOUS)
 
-        self._scan_writer.write_many_sample(np.array([-self._trigger_gain * np.array(self._cam_trig),
-                                                      self._x_volts_to_mm * self._x,
-                                                      self._y_volts_to_mm * self._y]))
-        if PyIMAQ.imgInitBuffer(self._imaq_buffer_size) is 0:
-            if rescan:
-                self.start_scan()  # DAQ scan buffers are updated here
-            else:
-                self.mode = READY
+        self._write_scansignal(np.array([-self._trigger_gain * np.array(self._cam_trig),
+                                         MAX_POS * np.ones(len(self._cam_trig)),
+                                         MAX_POS * np.ones(len(self._cam_trig))]))
+        self._scan_task.start()
 
-            return 0
-        else:
-            print('NIController: Something went wrong when reconfiguring IMAQ device', self._camera_name)
+        time.sleep(1)  # Galvos settling time before frame grab
+
+        # Acquire reference/dc spectra
+        dc_buffer = self.grab(np.arange(self._buffer_size_blines), self._buffer_size_blines)
+        # dc_buffer = self.grab_current()
+        dc_alines = np.split(dc_buffer, self._buffer_size_alines * self._buffer_size_blines)
+        self._dc = np.mean(dc_alines, axis=0).astype(np.float)
+
+        self._scan_task.stop()
+        print('Grabbed reference spectra...')
+
+        self._scan_task.timing.cfg_samp_clk_timing(self._dac_sample_rate,
+                                                   sample_mode=AcquisitionType.FINITE)
+
+        # Ramp galvo to center
+        self._write_scansignal(np.array([np.zeros(int(self._dac_sample_rate / 4)),
+                                         np.linspace(MAX_POS, 0, int(self._dac_sample_rate / 4)),
+                                         np.linspace(MAX_POS, 0, int(self._dac_sample_rate / 4))]))
+        self._scan_task.start()
+        self._scan_task.wait_until_done()
+        self._scan_task.stop()
+
+        print('DC spectrum acquired via prescan routine elapsed', time.time() - start)
+
+        # Stop the prescan acquisition
+        PyIMAQ.imgShowErrorMsg(PyIMAQ.imgStopAcq())
+
+    def _write_scansignal(self, scansignal3d):
+        if np.max(np.abs(scansignal3d)) > self._max_galvo_voltage:
+            print('NIController: Cannot exceed user-defined maximum galvo voltage of', self._max_galvo_voltage, 'V !')
             return -1
-
-
-
-
-
-
+        else:
+            self._scan_writer.write_many_sample(scansignal3d)

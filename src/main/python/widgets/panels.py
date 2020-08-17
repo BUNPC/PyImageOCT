@@ -110,7 +110,8 @@ class ControlPanel(QGroupBox):
 
 class ScanPanelOCTA(QGroupBox):
 
-    changed = pyqtSignal()
+    changedScale = pyqtSignal()
+    changedSize = pyqtSignal()
 
     def __init__(self):
 
@@ -144,8 +145,23 @@ class ScanPanelOCTA(QGroupBox):
         self.y_spacing_spin.valueChanged.connect(self._spacing_changed)
         self.y_count_spin.valueChanged.connect(self._count_changed)
 
+        self.z_count_spin = self.findChild(QSpinBox, 'spinZCount')
+
         self.preview_button = self.findChild(QPushButton, "previewButton")
         self.commit_button = self.findChild(QPushButton, "commitButton")
+
+    def setSizeLocked(self, val):
+        """
+        If val is True, disables fields that affect buffer size/require acquisition to be restarted
+        :param val: If true, scanning mode is enabled: some controls are disabled
+        """
+        self.x_count_spin.setEnabled(not val)
+        self.y_count_spin.setEnabled(not val)
+        self.commit_button.setEnabled(not val)
+        self.commit_button.setEnabled(not val)
+        self.indefinite_check.setEnabled(not val)
+        self.scan_number_spin.setEnabled(not val)
+
 
     def _count_changed(self):
         # Need to block signals so that update functions arent recursive
@@ -161,7 +177,7 @@ class ScanPanelOCTA(QGroupBox):
         # Unblock them
         self.x_roi_spin.blockSignals(False)
         self.y_roi_spin.blockSignals(False)
-        self.changed.emit()
+        self.changedSize.emit()
 
     def _spacing_changed(self):
         self.x_roi_spin.blockSignals(True)
@@ -175,7 +191,7 @@ class ScanPanelOCTA(QGroupBox):
 
         self.x_roi_spin.blockSignals(False)
         self.y_roi_spin.blockSignals(False)
-        self.changed.emit()
+        # self.changedScale.emit()
 
     def _roi_changed(self):
         self.x_spacing_spin.blockSignals(True)
@@ -189,14 +205,13 @@ class ScanPanelOCTA(QGroupBox):
 
         self.x_spacing_spin.blockSignals(False)
         self.y_spacing_spin.blockSignals(False)
-        self.changed.emit()
+        self.changedScale.emit()
 
     def _indefinite_check_changed(self):
         if self.indefinite_check.isChecked():
             self.scan_number_spin.setEnabled(False)
         else:
             self.scan_number_spin.setEnabled(True)
-        self.changed.emit()
 
     def _equal_aspect_check_changed(self):
         if self.equal_aspect_check.isChecked():
@@ -204,11 +219,12 @@ class ScanPanelOCTA(QGroupBox):
             self.y_spacing_spin.setEnabled(False)
         else:
             self.y_spacing_spin.setEnabled(True)
-        self.changed.emit()
+        self.changedScale.emit()
 
     def _x_spacing_changed(self):
         if self.equal_aspect_check.isChecked():
             self.y_spacing_spin.setValue(self.x_spacing_spin.value())
+        self.changedScale.emit()
 
 
 class ConfigPanel(QGroupBox):

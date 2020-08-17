@@ -84,6 +84,26 @@
      <item row="0" column="0">
       <widget class="QSpinBox" name="spinBox">
        <property name="toolTip">
+        <string>Number of pixels to crop from the top of the A-line. These pixels are most affected by DC artifacts</string>
+       </property>
+       <property name="suffix">
+        <string> px</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="1">
+      <widget class="QLabel" name="label">
+       <property name="toolTip">
+        <string>Number of pixels to crop from the top of the A-line. These pixels are most affected by DC artifacts</string>
+       </property>
+       <property name="text">
+        <string>Z-Crop</string>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="0">
+      <widget class="QSpinBox" name="spinZCount">
+       <property name="toolTip">
         <string>A-lines are cropped to this number of uppermost pixels on display and acquisition</string>
        </property>
        <property name="suffix">
@@ -97,7 +117,7 @@
        </property>
       </widget>
      </item>
-     <item row="0" column="1">
+     <item row="1" column="1">
       <widget class="QLabel" name="labelZROI">
        <property name="toolTip">
         <string>A-lines are cropped to this number of uppermost pixels on display and acquisition</string>
@@ -119,41 +139,6 @@
    <item row="2" column="0">
     <layout class="QFormLayout" name="formX">
      <item row="0" column="0">
-      <widget class="QDoubleSpinBox" name="spinROIWidth">
-       <property name="toolTip">
-        <string>The length of the B-scan in physical units</string>
-       </property>
-       <property name="buttonSymbols">
-        <enum>QAbstractSpinBox::PlusMinus</enum>
-       </property>
-       <property name="suffix">
-        <string> mm</string>
-       </property>
-       <property name="decimals">
-        <number>4</number>
-       </property>
-       <property name="minimum">
-        <double>0.000100000000000</double>
-       </property>
-       <property name="singleStep">
-        <double>0.010000000000000</double>
-       </property>
-       <property name="value">
-        <double>0.500000000000000</double>
-       </property>
-      </widget>
-     </item>
-     <item row="0" column="1">
-      <widget class="QLabel" name="labelROIWidth">
-       <property name="toolTip">
-        <string>The length of the B-scan in physical units</string>
-       </property>
-       <property name="text">
-        <string>X-axis ROI width</string>
-       </property>
-      </widget>
-     </item>
-     <item row="1" column="0">
       <widget class="QSpinBox" name="spinACount">
        <property name="toolTip">
         <string>The number of A-scans in a B-scan</string>
@@ -171,17 +156,52 @@
         <number>2400</number>
        </property>
        <property name="value">
-        <number>200</number>
+        <number>50</number>
        </property>
       </widget>
      </item>
-     <item row="1" column="1">
+     <item row="0" column="1">
       <widget class="QLabel" name="labelACount">
        <property name="toolTip">
         <string>The number of A-scans in a B-scan</string>
        </property>
        <property name="text">
         <string>A-scan count</string>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="0">
+      <widget class="QDoubleSpinBox" name="spinROIWidth">
+       <property name="toolTip">
+        <string>The length of the B-scan in physical units</string>
+       </property>
+       <property name="buttonSymbols">
+        <enum>QAbstractSpinBox::PlusMinus</enum>
+       </property>
+       <property name="suffix">
+        <string> mm</string>
+       </property>
+       <property name="decimals">
+        <number>4</number>
+       </property>
+       <property name="minimum">
+        <double>0.000100000000000</double>
+       </property>
+       <property name="singleStep">
+        <double>0.001000000000000</double>
+       </property>
+       <property name="value">
+        <double>0.050000000000000</double>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="1">
+      <widget class="QLabel" name="labelROIWidth">
+       <property name="toolTip">
+        <string>The length of the B-scan in physical units</string>
+       </property>
+       <property name="text">
+        <string>X-axis ROI width</string>
        </property>
       </widget>
      </item>
@@ -202,8 +222,11 @@
        <property name="minimum">
         <double>0.001000000000000</double>
        </property>
+       <property name="singleStep">
+        <double>0.010000000000000</double>
+       </property>
        <property name="value">
-        <double>5.000000000000000</double>
+        <double>1.000000000000000</double>
        </property>
       </widget>
      </item>
@@ -221,23 +244,70 @@
    </item>
    <item row="2" column="1">
     <layout class="QFormLayout" name="formY">
-     <item row="0" column="1">
-      <widget class="QLabel" name="labelROIHeight">
+     <item row="0" column="0">
+      <widget class="QSpinBox" name="spinBCount">
        <property name="toolTip">
-        <string>The width of the C-scan in physical units</string>
+        <string>The number of B-scans to acquire</string>
        </property>
-       <property name="text">
-        <string>Y-axis ROI height</string>
+       <property name="buttonSymbols">
+        <enum>QAbstractSpinBox::PlusMinus</enum>
+       </property>
+       <property name="suffix">
+        <string> px</string>
+       </property>
+       <property name="minimum">
+        <number>1</number>
+       </property>
+       <property name="maximum">
+        <number>3600</number>
+       </property>
+       <property name="value">
+        <number>50</number>
        </property>
       </widget>
      </item>
-     <item row="1" column="1">
+     <item row="0" column="1">
       <widget class="QLabel" name="labelBcount">
        <property name="toolTip">
         <string>The number of B-scans to acquire</string>
        </property>
        <property name="text">
         <string>B-scan count</string>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="0">
+      <widget class="QDoubleSpinBox" name="spinROIHeight">
+       <property name="toolTip">
+        <string>The width of the C-scan in physical units</string>
+       </property>
+       <property name="buttonSymbols">
+        <enum>QAbstractSpinBox::PlusMinus</enum>
+       </property>
+       <property name="suffix">
+        <string> mm</string>
+       </property>
+       <property name="decimals">
+        <number>4</number>
+       </property>
+       <property name="minimum">
+        <double>0.000100000000000</double>
+       </property>
+       <property name="singleStep">
+        <double>0.001000000000000</double>
+       </property>
+       <property name="value">
+        <double>0.050000000000000</double>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="1">
+      <widget class="QLabel" name="labelROIHeight">
+       <property name="toolTip">
+        <string>The width of the C-scan in physical units</string>
+       </property>
+       <property name="text">
+        <string>Y-axis ROI height</string>
        </property>
       </widget>
      </item>
@@ -258,8 +328,11 @@
        <property name="minimum">
         <double>0.001000000000000</double>
        </property>
+       <property name="singleStep">
+        <double>0.010000000000000</double>
+       </property>
        <property name="value">
-        <double>5.000000000000000</double>
+        <double>1.000000000000000</double>
        </property>
       </widget>
      </item>
@@ -270,53 +343,6 @@
        </property>
        <property name="text">
         <string>Slow axis spacing</string>
-       </property>
-      </widget>
-     </item>
-     <item row="0" column="0">
-      <widget class="QDoubleSpinBox" name="spinROIHeight">
-       <property name="toolTip">
-        <string>The width of the C-scan in physical units</string>
-       </property>
-       <property name="buttonSymbols">
-        <enum>QAbstractSpinBox::PlusMinus</enum>
-       </property>
-       <property name="suffix">
-        <string> mm</string>
-       </property>
-       <property name="decimals">
-        <number>4</number>
-       </property>
-       <property name="minimum">
-        <double>0.000100000000000</double>
-       </property>
-       <property name="singleStep">
-        <double>0.010000000000000</double>
-       </property>
-       <property name="value">
-        <double>0.500000000000000</double>
-       </property>
-      </widget>
-     </item>
-     <item row="1" column="0">
-      <widget class="QSpinBox" name="spinBCount">
-       <property name="toolTip">
-        <string>The number of B-scans to acquire</string>
-       </property>
-       <property name="buttonSymbols">
-        <enum>QAbstractSpinBox::PlusMinus</enum>
-       </property>
-       <property name="suffix">
-        <string> px</string>
-       </property>
-       <property name="minimum">
-        <number>1</number>
-       </property>
-       <property name="maximum">
-        <number>3600</number>
-       </property>
-       <property name="value">
-        <number>1</number>
        </property>
       </widget>
      </item>
